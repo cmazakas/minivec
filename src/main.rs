@@ -64,7 +64,7 @@ impl<T> Drop for MiniVec<T> {
         #[allow(clippy::cast_ptr_alignment)]
         let header = unsafe { ptr::read(self.buf_ as *const Header<T>) };
 
-        let size = next_aligned(mem::size_of::<Header<T>>(), max_align::<T>())
+        let size = next_aligned(mem::size_of::<Header<T>>(), mem::align_of::<T>())
             + header.len_ * mem::size_of::<T>();
 
         let layout = Layout::from_size_align(size, max_align::<T>()).unwrap();

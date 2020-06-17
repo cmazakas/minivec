@@ -74,5 +74,10 @@ impl<T> Drop for MiniVec<T> {
 }
 
 fn main() {
+    assert_eq!(
+        mem::size_of::<MiniVec::<i64>>(),
+        mem::size_of::<*const ()>()
+    );
+
     let _ = MiniVec::<i64>::new();
 }

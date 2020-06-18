@@ -33,7 +33,23 @@ fn next_aligned(num_bytes: usize, alignment: usize) -> usize {
 }
 
 impl<T> MiniVec<T> {
+    fn header(&self) -> &Header<T> {
+        #[allow(clippy::cast_ptr_alignment)]
+        let header = unsafe { &*(self.buf_ as *const Header<T>) };
+        header
+    }
+
+    fn len(&self) -> usize {
+        self.header().len_
+    }
+
+    fn capacity(&self) -> usize {
+        self.header().cap_
+    }
+
     fn new() -> MiniVec<T> {
+        assert!(mem::size_of::<T>() > 0, "ZSTs currently not supported");
+
         let size = mem::size_of::<Header<T>>();
         let layout = Layout::from_size_align(size, max_align::<T>()).unwrap();
 
@@ -76,5 +92,8 @@ impl<T> Drop for MiniVec<T> {
 fn main() {
     assert_eq!(mem::size_of::<MiniVec<i64>>(), mem::size_of::<*const ()>());
 
-    let _: MiniVec<i64> = MiniVec::new();
+    let v: MiniVec<i64> = MiniVec::new();
+
+    assert_eq!(v.len(), 0);
+    assert_eq!(v.capacity(), 0);
 }

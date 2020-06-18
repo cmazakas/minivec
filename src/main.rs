@@ -45,7 +45,7 @@ impl<T> MiniVec<T> {
             cap_: 0,
         };
 
-        debug_assert_eq!(p.align_offset(mem::align_of::<Header::<T>>()), 0);
+        debug_assert_eq!(p.align_offset(mem::align_of::<Header<T>>()), 0);
 
         #[allow(clippy::cast_ptr_alignment)]
         unsafe {
@@ -74,10 +74,7 @@ impl<T> Drop for MiniVec<T> {
 }
 
 fn main() {
-    assert_eq!(
-        mem::size_of::<MiniVec::<i64>>(),
-        mem::size_of::<*const ()>()
-    );
+    assert_eq!(mem::size_of::<MiniVec<i64>>(), mem::size_of::<*const ()>());
 
-    let _ = MiniVec::<i64>::new();
+    let _: MiniVec<i64> = MiniVec::new();
 }

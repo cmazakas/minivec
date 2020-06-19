@@ -6,10 +6,45 @@ use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
 
+fn next_aligned(num_bytes: usize, alignment: usize) -> usize {
+    let remaining = num_bytes % alignment;
+    if remaining == 0 {
+        num_bytes
+    } else {
+        num_bytes + (alignment - remaining)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn next_aligned_test() {
+        assert_eq!(next_aligned(9, 4), 12);
+        assert_eq!(next_aligned(13, 4), 16);
+        assert_eq!(next_aligned(12, 4), 12);
+        assert_eq!(next_aligned(13, 1), 13);
+        assert_eq!(next_aligned(8, 8), 8);
+        assert_eq!(next_aligned(16, 32), 32);
+        assert_eq!(next_aligned(16, 512), 512);
+    }
+}
+
 struct Header<T> {
     data_: *mut T,
     len_: usize,
     cap_: usize,
+}
+
+fn get_layout<T>(cap: usize) -> Layout {
+    let header_size = mem::size_of::<Header<T>>();
+    let num_bytes = if cap == 0 {
+        header_size
+    } else {
+        next_aligned(header_size, mem::align_of::<T>()) + cap * mem::size_of::<T>()
+    };
+
+    Layout::from_size_align(num_bytes, max_align::<T>()).unwrap()
 }
 
 struct MiniVec<T> {
@@ -18,18 +53,9 @@ struct MiniVec<T> {
 }
 
 fn max_align<T>() -> usize {
-    let align_t = std::mem::align_of::<T>();
-    let header_align = std::mem::align_of::<Header<T>>();
+    let align_t = mem::align_of::<T>();
+    let header_align = mem::align_of::<Header<T>>();
     std::cmp::max(align_t, header_align)
-}
-
-fn next_aligned(num_bytes: usize, alignment: usize) -> usize {
-    let remaining = num_bytes % alignment;
-    if remaining == 0 {
-        num_bytes
-    } else {
-        num_bytes + (alignment - remaining)
-    }
 }
 
 impl<T> MiniVec<T> {
@@ -87,13 +113,4 @@ impl<T> Drop for MiniVec<T> {
 
         unsafe { alloc::dealloc(self.buf_, layout) };
     }
-}
-
-fn main() {
-    assert_eq!(mem::size_of::<MiniVec<i64>>(), mem::size_of::<*const ()>());
-
-    let v: MiniVec<i64> = MiniVec::new();
-
-    assert_eq!(v.len(), 0);
-    assert_eq!(v.capacity(), 0);
 }

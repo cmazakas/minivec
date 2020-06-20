@@ -53,6 +53,48 @@ mod tests {
         assert!(mem::align_of::<OverAligned>() > mem::align_of::<Header<()>>());
         assert_eq!(max_align::<OverAligned>(), mem::align_of::<OverAligned>());
     }
+
+    #[test]
+    fn make_layout_test() {
+        // empty
+        //
+        let layout = make_layout::<i32>(0);
+
+        assert_eq!(layout.align(), mem::align_of::<Header<i32>>());
+        assert_eq!(layout.size(), mem::size_of::<Header<i32>>());
+
+        // non-empty, less than
+        //
+        let layout = make_layout::<i32>(512);
+        assert!(mem::align_of::<i32>() < mem::align_of::<Header<i32>>());
+        assert_eq!(layout.align(), mem::align_of::<Header<i32>>());
+        assert_eq!(
+            layout.size(),
+            mem::size_of::<Header<i32>>() + 512 * mem::size_of::<i32>()
+        );
+
+        // non-empty, equal
+        //
+        let layout = make_layout::<i64>(512);
+        assert_eq!(mem::align_of::<i64>(), mem::align_of::<Header<i64>>());
+        assert_eq!(layout.align(), mem::align_of::<Header<i64>>());
+        assert_eq!(
+            layout.size(),
+            mem::size_of::<Header<i64>>() + 512 * mem::size_of::<i64>()
+        );
+
+        // non-empty, greater
+        let layout = make_layout::<OverAligned>(512);
+        assert!(mem::align_of::<OverAligned>() > mem::align_of::<Header<OverAligned>>());
+        assert_eq!(layout.align(), mem::align_of::<OverAligned>());
+        assert_eq!(
+            layout.size(),
+            next_aligned(
+                mem::size_of::<Header<OverAligned>>(),
+                mem::align_of::<OverAligned>()
+            ) + 512 * mem::size_of::<OverAligned>()
+        );
+    }
 }
 
 fn max_align<T>() -> usize {
@@ -68,7 +110,7 @@ fn make_layout<T>(cap: usize) -> Layout {
     let num_bytes = if cap == 0 {
         header_size
     } else {
-        next_aligned(header_size, alignment) + cap * mem::size_of::<T>()
+        next_aligned(header_size, mem::align_of::<T>()) + cap * mem::size_of::<T>()
     };
 
     Layout::from_size_align(num_bytes, alignment).unwrap()

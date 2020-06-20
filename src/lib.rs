@@ -116,7 +116,7 @@ fn make_layout<T>(cap: usize) -> Layout {
     Layout::from_size_align(num_bytes, alignment).unwrap()
 }
 
-struct MiniVec<T> {
+pub struct MiniVec<T> {
     buf_: *mut u8,
     phantom_: PhantomData<T>,
 }
@@ -128,19 +128,22 @@ impl<T> MiniVec<T> {
         header
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.header().len_
     }
 
-    fn capacity(&self) -> usize {
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn capacity(&self) -> usize {
         self.header().cap_
     }
 
-    fn new() -> MiniVec<T> {
+    pub fn new() -> MiniVec<T> {
         assert!(mem::size_of::<T>() > 0, "ZSTs currently not supported");
 
-        let size = mem::size_of::<Header<T>>();
-        let layout = Layout::from_size_align(size, max_align::<T>()).unwrap();
+        let layout = make_layout::<T>(0);
 
         let p = unsafe { alloc::alloc(layout) };
 
@@ -161,6 +164,12 @@ impl<T> MiniVec<T> {
             buf_: p,
             phantom_: std::marker::PhantomData,
         }
+    }
+}
+
+impl<T> Default for MiniVec<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

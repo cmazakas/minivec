@@ -176,6 +176,78 @@ impl<T> MiniVec<T> {
             phantom_: std::marker::PhantomData,
         }
     }
+
+    fn grow(&mut self) {
+        #[allow(clippy::cast_ptr_alignment)]
+        let old_header = unsafe { ptr::read(self.buf_ as *mut Header<T>) };
+        let old_capacity = old_header.cap_;
+        let old_layout = make_layout::<T>(old_capacity);
+
+        let new_capacity = if old_capacity == 0 {
+            16
+        } else {
+            2 * old_capacity
+        };
+
+        let new_layout = make_layout::<T>(new_capacity);
+
+        let new_buf = unsafe { alloc::alloc(new_layout) };
+        if new_buf.is_null() {
+            alloc::handle_alloc_error(new_layout);
+        }
+
+        let data = unsafe {
+            new_buf.add(next_aligned(
+                mem::size_of::<Header<T>>(),
+                mem::align_of::<T>(),
+            )) as *mut T
+        };
+
+        let header = Header::<T> {
+            data_: data,
+            len_: old_header.len_,
+            cap_: new_capacity,
+        };
+
+        #[allow(clippy::cast_ptr_alignment)]
+        unsafe {
+            ptr::write(new_buf as *mut Header<T>, header)
+        };
+
+        if old_header.len_ > 0 {
+            unsafe {
+                ptr::copy_nonoverlapping(
+                    old_header.data_,
+                    data,
+                    old_header.len_ * mem::size_of::<T>(),
+                )
+            };
+        }
+
+        unsafe {
+            alloc::dealloc(self.buf_, old_layout);
+        };
+
+        self.buf_ = new_buf;
+    }
+
+    pub fn push(&mut self, value: T) {
+        if self.len() == self.capacity() {
+            self.grow();
+        }
+
+        let len = self.len();
+        let mut header = self.header_mut();
+
+        let data = header.data_;
+        let dst = unsafe { data.add(len) };
+
+        unsafe {
+            ptr::write(dst, value);
+        };
+
+        header.len_ += 1;
+    }
 }
 
 impl<T> Default for MiniVec<T> {

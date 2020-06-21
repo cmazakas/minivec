@@ -3,6 +3,14 @@ extern crate minivec;
 use minivec::MiniVec;
 
 #[test]
+fn size_test() {
+  assert_eq!(
+    std::mem::size_of::<MiniVec<i32>>(),
+    std::mem::size_of::<*const i32>()
+  );
+}
+
+#[test]
 fn minivec_default_constructed() {
   let v: MiniVec<i32> = MiniVec::new();
   assert_eq!(v.capacity(), 0);

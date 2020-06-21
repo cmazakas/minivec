@@ -50,3 +50,15 @@ fn minivec_push() {
   assert_eq!(v.len(), 32);
   assert!(v.capacity() >= v.len());
 }
+
+#[test]
+fn deref_test() {
+  let mut v: MiniVec<i32> = MiniVec::new();
+  v.push(1);
+  v.push(2);
+  v.push(3);
+
+  assert_eq!(v[0], 1);
+  assert_eq!(v[1], 2);
+  assert_eq!(v[2], 3);
+}

@@ -263,3 +263,14 @@ impl<T> Drop for MiniVec<T> {
         unsafe { alloc::dealloc(self.buf_, layout) };
     }
 }
+
+impl<T> std::ops::Deref for MiniVec<T> {
+    type Target = [T];
+
+    fn deref(&self) -> &Self::Target {
+        let header = self.header();
+        let data = header.data_;
+        let len = header.len_;
+        unsafe { std::slice::from_raw_parts(data, len) }
+    }
+}

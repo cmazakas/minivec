@@ -215,13 +215,7 @@ impl<T> MiniVec<T> {
         };
 
         if old_header.len_ > 0 {
-            unsafe {
-                ptr::copy_nonoverlapping(
-                    old_header.data_,
-                    data,
-                    old_header.len_ * mem::size_of::<T>(),
-                )
-            };
+            unsafe { ptr::copy_nonoverlapping(old_header.data_, data, old_header.len_) };
         }
 
         unsafe {

@@ -38,4 +38,15 @@ fn minivec_push() {
 
   assert_eq!(v.len(), 3);
   assert!(v.capacity() >= v.len());
+
+  let mut v: MiniVec<String> = MiniVec::new();
+
+  assert_eq!(v.len(), v.capacity());
+
+  for _ in 0..32 {
+    v.push(String::from("Hello, world!"));
+  }
+
+  assert_eq!(v.len(), 32);
+  assert!(v.capacity() >= v.len());
 }

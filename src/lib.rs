@@ -189,11 +189,11 @@ impl<T> Drop for MiniVec<T> {
         #[allow(clippy::cast_ptr_alignment)]
         let header = unsafe { ptr::read(self.buf_ as *const Header<T>) };
 
-        let size = next_aligned(mem::size_of::<Header<T>>(), mem::align_of::<T>())
-            + header.len_ * mem::size_of::<T>();
+        for i in 0..header.len_ {
+            unsafe { ptr::read(header.data_.add(i)) };
+        }
 
-        let layout = Layout::from_size_align(size, max_align::<T>()).unwrap();
-
+        let layout = make_layout::<T>(header.cap_);
         unsafe { alloc::dealloc(self.buf_, layout) };
     }
 }

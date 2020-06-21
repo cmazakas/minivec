@@ -129,6 +129,13 @@ impl<T> MiniVec<T> {
         }
     }
 
+    fn header_mut(&mut self) -> &mut Header<T> {
+        #[allow(clippy::cast_ptr_alignment)]
+        unsafe {
+            &mut *(self.buf_ as *mut Header<T>)
+        }
+    }
+
     pub fn len(&self) -> usize {
         self.header().len_
     }

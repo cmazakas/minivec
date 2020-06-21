@@ -124,8 +124,9 @@ pub struct MiniVec<T> {
 impl<T> MiniVec<T> {
     fn header(&self) -> &Header<T> {
         #[allow(clippy::cast_ptr_alignment)]
-        let header = unsafe { &*(self.buf_ as *const Header<T>) };
-        header
+        unsafe {
+            &*(self.buf_ as *const Header<T>)
+        }
     }
 
     pub fn len(&self) -> usize {

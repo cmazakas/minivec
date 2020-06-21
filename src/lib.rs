@@ -154,6 +154,9 @@ impl<T> MiniVec<T> {
         let layout = make_layout::<T>(0);
 
         let p = unsafe { alloc::alloc(layout) };
+        if p.is_null() {
+            alloc::handle_alloc_error(layout);
+        }
 
         let header = Header::<T> {
             data_: ptr::null_mut::<T>(),

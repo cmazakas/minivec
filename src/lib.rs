@@ -242,6 +242,18 @@ impl<T> MiniVec<T> {
 
         header.len_ += 1;
     }
+
+    pub fn reserve(&mut self, additional: usize) {
+        loop {
+            let capacity = self.capacity();
+            let total_required = self.len() + additional;
+            if total_required <= capacity {
+                return;
+            }
+
+            self.grow()
+        }
+    }
 }
 
 impl<T> Default for MiniVec<T> {

@@ -286,3 +286,47 @@ impl<T> std::ops::Deref for MiniVec<T> {
         unsafe { std::slice::from_raw_parts(data, len) }
     }
 }
+
+impl<T: Clone> Clone for MiniVec<T> {
+    fn clone(&self) -> Self {
+        let mut copy = MiniVec::<T>::new();
+
+        copy.reserve(self.len());
+        for i in 0..self.len() {
+            copy.push(self[i].clone());
+        }
+
+        copy
+    }
+}
+
+impl<T: PartialEq> PartialEq for MiniVec<T> {
+    fn eq(&self, other: &Self) -> bool {
+        let a: &[T] = &*self;
+        let b: &[T] = &*other;
+
+        a == b
+    }
+}
+
+impl<T: std::fmt::Debug> std::fmt::Debug for MiniVec<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        (&&*self).fmt(f)
+    }
+}
+
+#[macro_export]
+macro_rules! mini_vec {
+    () => (
+        $crate::MiniVec::new()
+    );
+    ($($x:expr),+ $(,)?) => {
+        {
+            let mut tmp = $crate::MiniVec::new();
+            $(
+                tmp.push($x);
+            )*
+            tmp
+        }
+    };
+}

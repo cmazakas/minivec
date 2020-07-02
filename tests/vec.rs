@@ -100,8 +100,8 @@ fn test_reserve() {
 
 // #[test]
 // fn test_extend() {
-//     let mut v = Vec::new();
-//     let mut w = Vec::new();
+//     let mut v = MiniVec::new();
+//     let mut w = MiniVec::new();
 
 //     v.extend(w.clone());
 //     assert_eq!(v, &[]);
@@ -123,7 +123,7 @@ fn test_reserve() {
 //     v.extend(w.clone()); // specializes to `append`
 //     assert!(v.iter().eq(w.iter().chain(w.iter())));
 
-//     // Zero sized types
+//     Zero sized types
 //     #[derive(PartialEq, Debug)]
 //     struct Foo;
 
@@ -137,7 +137,9 @@ fn test_reserve() {
 //     let mut count_x = 0;
 //     {
 //         let mut x = Vec::new();
-//         let y = vec![DropCounter { count: &mut count_x }];
+//         let y = vec![DropCounter {
+//             count: &mut count_x,
+//         }];
 //         x.extend(y);
 //     }
 //     assert_eq!(count_x, 1);
@@ -211,18 +213,18 @@ fn test_reserve() {
 //     assert_eq!(values, [2, 3, 5, 6, 7]);
 // }
 
-// #[test]
-// fn test_clone() {
-//     let v: Vec<i32> = vec![];
-//     let w = vec![1, 2, 3];
+#[test]
+fn test_clone() {
+    let v: MiniVec<i32> = minivec::mini_vec![];
+    let w = minivec::mini_vec![1, 2, 3];
 
-//     assert_eq!(v, v.clone());
+    assert_eq!(v, v.clone());
 
-//     let z = w.clone();
-//     assert_eq!(w, z);
-//     // they should be disjoint in memory.
-//     assert!(w.as_ptr() != z.as_ptr())
-// }
+    let z = w.clone();
+    assert_eq!(w, z);
+    // they should be disjoint in memory.
+    assert!(w.as_ptr() != z.as_ptr())
+}
 
 // #[test]
 // fn test_clone_from() {

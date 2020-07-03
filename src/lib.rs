@@ -287,6 +287,15 @@ impl<T> std::ops::Deref for MiniVec<T> {
     }
 }
 
+impl<T> std::ops::DerefMut for MiniVec<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        let header = self.header();
+        let data = header.data_;
+        let len = header.len_;
+        unsafe { std::slice::from_raw_parts_mut(data, len) }
+    }
+}
+
 impl<T: Clone> Clone for MiniVec<T> {
     fn clone(&self) -> Self {
         let mut copy = MiniVec::<T>::new();
@@ -300,22 +309,25 @@ impl<T: Clone> Clone for MiniVec<T> {
     }
 }
 
-impl<T, U> PartialEq<MiniVec<U>> for MiniVec<T>
+impl<T, V> PartialEq<V> for MiniVec<T>
 where
-    T: PartialEq<U>,
+    V: std::convert::AsRef<[T]>,
+    T: PartialEq<T>,
 {
-    fn eq(&self, other: &MiniVec<U>) -> bool {
-        self[..] == other[..]
-    }
-
-    fn ne(&self, other: &MiniVec<U>) -> bool {
-        self[..] != other[..]
+    fn eq(&self, other: &V) -> bool {
+        &self[..] == AsRef::<[T]>::as_ref(other)
     }
 }
 
 impl<T: std::fmt::Debug> std::fmt::Debug for MiniVec<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         (&&*self).fmt(f)
+    }
+}
+
+impl<T> AsRef<[T]> for MiniVec<T> {
+    fn as_ref(&self) -> &[T] {
+        &*self
     }
 }
 

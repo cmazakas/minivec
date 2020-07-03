@@ -160,19 +160,19 @@ fn test_reserve() {
 //     assert_eq!(v, [1, 2, 3, 4, 5, 6, 7]);
 // }
 
-// #[test]
-// fn test_slice_from_mut() {
-//     let mut values = vec![1, 2, 3, 4, 5];
-//     {
-//         let slice = &mut values[2..];
-//         assert!(slice == [3, 4, 5]);
-//         for p in slice {
-//             *p += 2;
-//         }
-//     }
+#[test]
+fn test_slice_from_mut() {
+    let mut values = minivec::mini_vec![1, 2, 3, 4, 5];
+    {
+        let slice = &mut values[2..];
+        assert!(slice == [3, 4, 5]);
+        for p in slice {
+            *p += 2;
+        }
+    }
 
-//     assert!(values == [1, 2, 5, 6, 7]);
-// }
+    assert!(values == [1, 2, 5, 6, 7]);
+}
 
 // #[test]
 // fn test_slice_to_mut() {

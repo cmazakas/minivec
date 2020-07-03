@@ -300,9 +300,16 @@ impl<T: Clone> Clone for MiniVec<T> {
     }
 }
 
-impl<T: PartialEq> PartialEq for MiniVec<T> {
-    fn eq(&self, other: &Self) -> bool {
+impl<T, U> PartialEq<MiniVec<U>> for MiniVec<T>
+where
+    T: PartialEq<U>,
+{
+    fn eq(&self, other: &MiniVec<U>) -> bool {
         self[..] == other[..]
+    }
+
+    fn ne(&self, other: &MiniVec<U>) -> bool {
+        self[..] != other[..]
     }
 }
 

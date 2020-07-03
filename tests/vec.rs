@@ -226,27 +226,27 @@ fn test_clone() {
     assert!(w.as_ptr() != z.as_ptr())
 }
 
-// #[test]
-// fn test_clone_from() {
-//     let mut v = vec![];
-//     let three: Vec<Box<_>> = vec![box 1, box 2, box 3];
-//     let two: Vec<Box<_>> = vec![box 4, box 5];
-//     // zero, long
-//     v.clone_from(&three);
-//     assert_eq!(v, three);
+#[test]
+fn test_clone_from() {
+    let mut v = minivec::mini_vec![];
+    let three: MiniVec<Box<_>> = minivec::mini_vec![Box::new(1), Box::new(2), Box::new(3)];
+    let two: MiniVec<Box<_>> = minivec::mini_vec![Box::new(4), Box::new(5)];
+    // zero, long
+    v.clone_from(&three);
+    assert_eq!(v, three);
 
-//     // equal
-//     v.clone_from(&three);
-//     assert_eq!(v, three);
+    // equal
+    v.clone_from(&three);
+    assert_eq!(v, three);
 
-//     // long, short
-//     v.clone_from(&two);
-//     assert_eq!(v, two);
+    // long, short
+    v.clone_from(&two);
+    assert_eq!(v, two);
 
-//     // short, long
-//     v.clone_from(&three);
-//     assert_eq!(v, three)
-// }
+    // short, long
+    v.clone_from(&three);
+    assert_eq!(v, three)
+}
 
 // #[test]
 // fn test_retain() {

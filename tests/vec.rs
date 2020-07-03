@@ -174,19 +174,19 @@ fn test_slice_from_mut() {
     assert!(values == [1, 2, 5, 6, 7]);
 }
 
-// #[test]
-// fn test_slice_to_mut() {
-//     let mut values = vec![1, 2, 3, 4, 5];
-//     {
-//         let slice = &mut values[..2];
-//         assert!(slice == [1, 2]);
-//         for p in slice {
-//             *p += 1;
-//         }
-//     }
+#[test]
+fn test_slice_to_mut() {
+    let mut values = minivec::mini_vec![1, 2, 3, 4, 5];
+    {
+        let slice = &mut values[..2];
+        assert!(slice == [1, 2]);
+        for p in slice {
+            *p += 1;
+        }
+    }
 
-//     assert!(values == [2, 3, 3, 4, 5]);
-// }
+    assert!(values == [2, 3, 3, 4, 5]);
+}
 
 // #[test]
 // fn test_split_at_mut() {

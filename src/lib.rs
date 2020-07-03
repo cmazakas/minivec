@@ -302,10 +302,7 @@ impl<T: Clone> Clone for MiniVec<T> {
 
 impl<T: PartialEq> PartialEq for MiniVec<T> {
     fn eq(&self, other: &Self) -> bool {
-        let a: &[T] = &*self;
-        let b: &[T] = &*other;
-
-        a == b
+        self[..] == other[..]
     }
 }
 

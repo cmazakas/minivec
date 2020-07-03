@@ -408,11 +408,11 @@ fn test_clone_from() {
 //     v.truncate(0);
 // }
 
-// #[test]
-// fn test_index() {
-//     let vec = vec![1, 2, 3];
-//     assert!(vec[1] == 2);
-// }
+#[test]
+fn test_index() {
+    let vec = minivec::mini_vec![1, 2, 3];
+    assert!(vec[1] == 2);
+}
 
 // #[test]
 // #[should_panic]

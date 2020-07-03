@@ -312,7 +312,7 @@ impl<T: Clone> Clone for MiniVec<T> {
 impl<T, V> PartialEq<V> for MiniVec<T>
 where
     V: std::convert::AsRef<[T]>,
-    T: PartialEq<T>,
+    T: PartialEq,
 {
     fn eq(&self, other: &V) -> bool {
         &self[..] == AsRef::<[T]>::as_ref(other)

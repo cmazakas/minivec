@@ -317,6 +317,10 @@ where
     fn eq(&self, other: &V) -> bool {
         &self[..] == AsRef::<[T]>::as_ref(other)
     }
+
+    fn ne(&self, other: &V) -> bool {
+        &self[..] != AsRef::<[T]>::as_ref(other)
+    }
 }
 
 impl<T: std::fmt::Debug> std::fmt::Debug for MiniVec<T> {

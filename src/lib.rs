@@ -15,6 +15,20 @@ fn next_aligned(num_bytes: usize, alignment: usize) -> usize {
     }
 }
 
+fn next_capacity<T>(capacity: usize) -> usize {
+    let elem_size = mem::size_of::<T>();
+
+    if capacity == 0 {
+        return match elem_size {
+            1 => 8,
+            2..=1024 => 4,
+            _ => 1,
+        };
+    }
+
+    2 * capacity
+}
+
 struct Header<T> {
     data_: *mut T,
     len_: usize,
@@ -223,8 +237,7 @@ impl<T> MiniVec<T> {
     pub fn push(&mut self, value: T) {
         let (len, capacity) = (self.len(), self.capacity());
         if len == capacity {
-            let new_capacity = if capacity == 0 { 16 } else { 2 * capacity };
-            self.grow(new_capacity);
+            self.grow(next_capacity::<T>(capacity));
         }
 
         let len = self.len();
@@ -248,8 +261,7 @@ impl<T> MiniVec<T> {
                 return;
             }
 
-            let new_capacity = if capacity == 0 { 16 } else { 2 * capacity };
-            self.grow(new_capacity);
+            self.grow(next_capacity::<T>(capacity));
         }
     }
 

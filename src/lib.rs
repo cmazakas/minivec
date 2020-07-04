@@ -264,6 +264,15 @@ impl<T> MiniVec<T> {
 
         self.grow(total_required);
     }
+
+    pub fn shrink_to_fit(&mut self) {
+        let (len, capacity) = (self.len(), self.capacity());
+        if len == capacity {
+            return;
+        }
+
+        self.grow(len);
+    }
 }
 
 impl<T> Drop for MiniVec<T> {

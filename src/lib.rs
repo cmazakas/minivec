@@ -177,18 +177,13 @@ impl<T> MiniVec<T> {
         }
     }
 
-    fn grow(&mut self) {
+    fn grow(&mut self, capacity: usize) {
         #[allow(clippy::cast_ptr_alignment)]
         let old_header = unsafe { ptr::read(self.buf_ as *mut Header<T>) };
         let old_capacity = old_header.cap_;
         let old_layout = make_layout::<T>(old_capacity);
 
-        let new_capacity = if old_capacity == 0 {
-            16
-        } else {
-            2 * old_capacity
-        };
-
+        let new_capacity = capacity;
         let new_layout = make_layout::<T>(new_capacity);
 
         let new_buf = unsafe { alloc::alloc(new_layout) };
@@ -226,8 +221,10 @@ impl<T> MiniVec<T> {
     }
 
     pub fn push(&mut self, value: T) {
-        if self.len() == self.capacity() {
-            self.grow();
+        let (len, capacity) = (self.len(), self.capacity());
+        if len == capacity {
+            let new_capacity = if capacity == 0 { 16 } else { 2 * capacity };
+            self.grow(new_capacity);
         }
 
         let len = self.len();
@@ -251,7 +248,8 @@ impl<T> MiniVec<T> {
                 return;
             }
 
-            self.grow()
+            let new_capacity = if capacity == 0 { 16 } else { 2 * capacity };
+            self.grow(new_capacity);
         }
     }
 }

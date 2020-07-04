@@ -1125,29 +1125,29 @@ fn overaligned_allocations() {
 //     assert_eq!(vec, [2, 4]);
 // }
 
-// #[test]
-// fn test_reserve_exact() {
-//     // This is all the same as test_reserve
+#[test]
+fn test_reserve_exact() {
+    // This is all the same as test_reserve
 
-//     let mut v = Vec::new();
-//     assert_eq!(v.capacity(), 0);
+    let mut v = MiniVec::new();
+    assert_eq!(v.capacity(), 0);
 
-//     v.reserve_exact(2);
-//     assert!(v.capacity() >= 2);
+    v.reserve_exact(2);
+    assert!(v.capacity() >= 2);
 
-//     for i in 0..16 {
-//         v.push(i);
-//     }
+    for i in 0..16 {
+        v.push(i);
+    }
 
-//     assert!(v.capacity() >= 16);
-//     v.reserve_exact(16);
-//     assert!(v.capacity() >= 32);
+    assert!(v.capacity() >= 16);
+    v.reserve_exact(16);
+    assert!(v.capacity() >= 32);
 
-//     v.push(16);
+    v.push(16);
 
-//     v.reserve_exact(16);
-//     assert!(v.capacity() >= 33)
-// }
+    v.reserve_exact(16);
+    assert!(v.capacity() >= 33)
+}
 
 // #[test]
 // #[cfg_attr(miri, ignore)] // Miri does not support signalling OOM

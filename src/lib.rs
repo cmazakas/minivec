@@ -252,11 +252,17 @@ impl<T> MiniVec<T> {
             self.grow(new_capacity);
         }
     }
-}
 
-impl<T> Default for MiniVec<T> {
-    fn default() -> Self {
-        Self::new()
+    pub fn reserve_exact(&mut self, additional: usize) {
+        let capacity = self.capacity();
+        let len = self.len();
+
+        let total_required = len + additional;
+        if capacity >= total_required {
+            return;
+        }
+
+        self.grow(total_required);
     }
 }
 
@@ -271,6 +277,12 @@ impl<T> Drop for MiniVec<T> {
 
         let layout = make_layout::<T>(header.cap_);
         unsafe { alloc::dealloc(self.buf_, layout) };
+    }
+}
+
+impl<T> Default for MiniVec<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -256,15 +256,19 @@ impl<T> MiniVec<T> {
     }
 
     pub fn reserve(&mut self, additional: usize) {
-        loop {
-            let capacity = self.capacity();
-            let total_required = self.len() + additional;
-            if total_required <= capacity {
-                return;
-            }
+        let capacity = self.capacity();
+        let total_required = self.len() + additional;
 
-            self.grow(next_capacity::<T>(capacity));
+        if total_required <= capacity {
+            return;
         }
+
+        let mut new_capacity = next_capacity::<T>(capacity);
+        while new_capacity < total_required {
+            new_capacity = next_capacity::<T>(new_capacity);
+        }
+
+        self.grow(new_capacity);
     }
 
     pub fn reserve_exact(&mut self, additional: usize) {

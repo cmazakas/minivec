@@ -155,14 +155,14 @@ impl<T> MiniVec<T> {
     fn grow(&mut self, capacity: usize) {
         let new_capacity = capacity;
         let new_layout = make_layout::<T>(new_capacity);
-        let old_len = self.len();
+        let len = self.len();
 
         let new_buf = unsafe { alloc::alloc(new_layout) };
         if new_buf.is_null() {
             alloc::handle_alloc_error(new_layout);
         }
 
-        let data = unsafe {
+        let new_data = unsafe {
             new_buf.add(next_aligned(
                 mem::size_of::<Header<T>>(),
                 mem::align_of::<T>(),
@@ -170,8 +170,8 @@ impl<T> MiniVec<T> {
         };
 
         let header = Header::<T> {
-            data_: data,
-            len_: old_len,
+            data_: new_data,
+            len_: len,
             cap_: new_capacity,
         };
 
@@ -180,15 +180,14 @@ impl<T> MiniVec<T> {
             ptr::write(new_buf as *mut Header<T>, header)
         };
 
-        if old_len > 0 {
+        if !self.buf_.is_null() {
             #[allow(clippy::cast_ptr_alignment)]
             let old_header = unsafe { ptr::read(self.buf_ as *mut Header<T>) };
 
-            let old_capacity = old_header.cap_;
-            let old_layout = make_layout::<T>(old_capacity);
+            let old_layout = make_layout::<T>(old_header.cap_);
 
-            if old_header.len_ > 0 {
-                unsafe { ptr::copy_nonoverlapping(old_header.data_, data, old_header.len_) };
+            if len > 0 {
+                unsafe { ptr::copy_nonoverlapping(old_header.data_, new_data, len) };
             }
 
             unsafe {

@@ -2,8 +2,10 @@
 
 use std::alloc;
 use std::alloc::Layout;
+use std::fmt;
 use std::marker::PhantomData;
 use std::mem;
+use std::ops::{Deref, DerefMut};
 use std::ptr;
 
 struct Header<T> {
@@ -307,7 +309,7 @@ impl<T> Default for MiniVec<T> {
     }
 }
 
-impl<T> std::ops::Deref for MiniVec<T> {
+impl<T> Deref for MiniVec<T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -318,7 +320,7 @@ impl<T> std::ops::Deref for MiniVec<T> {
     }
 }
 
-impl<T> std::ops::DerefMut for MiniVec<T> {
+impl<T> DerefMut for MiniVec<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         let header = self.header();
         let data = header.data_;
@@ -354,8 +356,8 @@ where
     }
 }
 
-impl<T: std::fmt::Debug> std::fmt::Debug for MiniVec<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<T: fmt::Debug> fmt::Debug for MiniVec<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         (&&*self).fmt(f)
     }
 }

@@ -153,13 +153,9 @@ impl<T> MiniVec<T> {
     }
 
     fn grow(&mut self, capacity: usize) {
-        #[allow(clippy::cast_ptr_alignment)]
-        let old_header = unsafe { ptr::read(self.buf_ as *mut Header<T>) };
-        let old_capacity = old_header.cap_;
-        let old_layout = make_layout::<T>(old_capacity);
-
         let new_capacity = capacity;
         let new_layout = make_layout::<T>(new_capacity);
+        let old_len = self.len();
 
         let new_buf = unsafe { alloc::alloc(new_layout) };
         if new_buf.is_null() {
@@ -175,7 +171,7 @@ impl<T> MiniVec<T> {
 
         let header = Header::<T> {
             data_: data,
-            len_: old_header.len_,
+            len_: old_len,
             cap_: new_capacity,
         };
 
@@ -184,19 +180,31 @@ impl<T> MiniVec<T> {
             ptr::write(new_buf as *mut Header<T>, header)
         };
 
-        if old_header.len_ > 0 {
-            unsafe { ptr::copy_nonoverlapping(old_header.data_, data, old_header.len_) };
-        }
+        if old_len > 0 {
+            #[allow(clippy::cast_ptr_alignment)]
+            let old_header = unsafe { ptr::read(self.buf_ as *mut Header<T>) };
 
-        unsafe {
-            alloc::dealloc(self.buf_, old_layout);
-        };
+            let old_capacity = old_header.cap_;
+            let old_layout = make_layout::<T>(old_capacity);
+
+            if old_header.len_ > 0 {
+                unsafe { ptr::copy_nonoverlapping(old_header.data_, data, old_header.len_) };
+            }
+
+            unsafe {
+                alloc::dealloc(self.buf_, old_layout);
+            };
+        }
 
         self.buf_ = new_buf;
     }
 
     pub fn len(&self) -> usize {
-        self.header().len_
+        if self.buf_.is_null() {
+            0
+        } else {
+            self.header().len_
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -204,34 +212,18 @@ impl<T> MiniVec<T> {
     }
 
     pub fn capacity(&self) -> usize {
-        self.header().cap_
+        if self.buf_.is_null() {
+            0
+        } else {
+            self.header().cap_
+        }
     }
 
     pub fn new() -> MiniVec<T> {
         assert!(mem::size_of::<T>() > 0, "ZSTs currently not supported");
 
-        let layout = make_layout::<T>(0);
-
-        let p = unsafe { alloc::alloc(layout) };
-        if p.is_null() {
-            alloc::handle_alloc_error(layout);
-        }
-
-        let header = Header::<T> {
-            data_: ptr::null_mut::<T>(),
-            len_: 0,
-            cap_: 0,
-        };
-
-        debug_assert_eq!(p.align_offset(mem::align_of::<Header<T>>()), 0);
-
-        #[allow(clippy::cast_ptr_alignment)]
-        unsafe {
-            ptr::write(p as *mut Header<T>, header)
-        };
-
         MiniVec {
-            buf_: p,
+            buf_: ptr::null_mut(),
             phantom_: std::marker::PhantomData,
         }
     }
@@ -295,6 +287,10 @@ impl<T> MiniVec<T> {
 
 impl<T> Drop for MiniVec<T> {
     fn drop(&mut self) {
+        if self.buf_.is_null() {
+            return;
+        }
+
         #[allow(clippy::cast_ptr_alignment)]
         let header = unsafe { ptr::read(self.buf_ as *const Header<T>) };
 
@@ -302,8 +298,7 @@ impl<T> Drop for MiniVec<T> {
             unsafe { ptr::read(header.data_.add(i)) };
         }
 
-        let layout = make_layout::<T>(header.cap_);
-        unsafe { alloc::dealloc(self.buf_, layout) };
+        unsafe { alloc::dealloc(self.buf_, make_layout::<T>(header.cap_)) };
     }
 }
 
@@ -317,6 +312,10 @@ impl<T> Deref for MiniVec<T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
+        if self.buf_.is_null() {
+            return &[];
+        }
+
         let header = self.header();
         let data = header.data_;
         let len = header.len_;
@@ -326,6 +325,10 @@ impl<T> Deref for MiniVec<T> {
 
 impl<T> DerefMut for MiniVec<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
+        if self.buf_.is_null() {
+            return &mut [];
+        }
+
         let header = self.header();
         let data = header.data_;
         let len = header.len_;
@@ -335,6 +338,10 @@ impl<T> DerefMut for MiniVec<T> {
 
 impl<T: Clone> Clone for MiniVec<T> {
     fn clone(&self) -> Self {
+        if self.buf_.is_null() {
+            return MiniVec::new();
+        }
+
         let mut copy = MiniVec::<T>::new();
 
         copy.reserve(self.len());

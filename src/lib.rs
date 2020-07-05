@@ -6,6 +6,12 @@ use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
 
+struct Header<T> {
+    data_: *mut T,
+    len_: usize,
+    cap_: usize,
+}
+
 fn next_aligned(num_bytes: usize, alignment: usize) -> usize {
     let remaining = num_bytes % alignment;
     if remaining == 0 {
@@ -29,10 +35,23 @@ fn next_capacity<T>(capacity: usize) -> usize {
     2 * capacity
 }
 
-struct Header<T> {
-    data_: *mut T,
-    len_: usize,
-    cap_: usize,
+fn max_align<T>() -> usize {
+    let align_t = mem::align_of::<T>();
+    let header_align = mem::align_of::<Header<T>>();
+    std::cmp::max(align_t, header_align)
+}
+
+fn make_layout<T>(cap: usize) -> Layout {
+    let alignment = max_align::<T>();
+
+    let header_size = mem::size_of::<Header<T>>();
+    let num_bytes = if cap == 0 {
+        header_size
+    } else {
+        next_aligned(header_size, mem::align_of::<T>()) + cap * mem::size_of::<T>()
+    };
+
+    Layout::from_size_align(num_bytes, alignment).unwrap()
 }
 
 #[cfg(test)]
@@ -111,25 +130,6 @@ mod tests {
     }
 }
 
-fn max_align<T>() -> usize {
-    let align_t = mem::align_of::<T>();
-    let header_align = mem::align_of::<Header<T>>();
-    std::cmp::max(align_t, header_align)
-}
-
-fn make_layout<T>(cap: usize) -> Layout {
-    let alignment = max_align::<T>();
-
-    let header_size = mem::size_of::<Header<T>>();
-    let num_bytes = if cap == 0 {
-        header_size
-    } else {
-        next_aligned(header_size, mem::align_of::<T>()) + cap * mem::size_of::<T>()
-    };
-
-    Layout::from_size_align(num_bytes, alignment).unwrap()
-}
-
 pub struct MiniVec<T> {
     buf_: *mut u8,
     phantom_: PhantomData<T>,
@@ -147,47 +147,6 @@ impl<T> MiniVec<T> {
         #[allow(clippy::cast_ptr_alignment)]
         unsafe {
             &mut *(self.buf_ as *mut Header<T>)
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        self.header().len_
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    pub fn capacity(&self) -> usize {
-        self.header().cap_
-    }
-
-    pub fn new() -> MiniVec<T> {
-        assert!(mem::size_of::<T>() > 0, "ZSTs currently not supported");
-
-        let layout = make_layout::<T>(0);
-
-        let p = unsafe { alloc::alloc(layout) };
-        if p.is_null() {
-            alloc::handle_alloc_error(layout);
-        }
-
-        let header = Header::<T> {
-            data_: ptr::null_mut::<T>(),
-            len_: 0,
-            cap_: 0,
-        };
-
-        debug_assert_eq!(p.align_offset(mem::align_of::<Header<T>>()), 0);
-
-        #[allow(clippy::cast_ptr_alignment)]
-        unsafe {
-            ptr::write(p as *mut Header<T>, header)
-        };
-
-        MiniVec {
-            buf_: p,
-            phantom_: std::marker::PhantomData,
         }
     }
 
@@ -232,6 +191,47 @@ impl<T> MiniVec<T> {
         };
 
         self.buf_ = new_buf;
+    }
+
+    pub fn len(&self) -> usize {
+        self.header().len_
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.header().cap_
+    }
+
+    pub fn new() -> MiniVec<T> {
+        assert!(mem::size_of::<T>() > 0, "ZSTs currently not supported");
+
+        let layout = make_layout::<T>(0);
+
+        let p = unsafe { alloc::alloc(layout) };
+        if p.is_null() {
+            alloc::handle_alloc_error(layout);
+        }
+
+        let header = Header::<T> {
+            data_: ptr::null_mut::<T>(),
+            len_: 0,
+            cap_: 0,
+        };
+
+        debug_assert_eq!(p.align_offset(mem::align_of::<Header<T>>()), 0);
+
+        #[allow(clippy::cast_ptr_alignment)]
+        unsafe {
+            ptr::write(p as *mut Header<T>, header)
+        };
+
+        MiniVec {
+            buf_: p,
+            phantom_: std::marker::PhantomData,
+        }
     }
 
     pub fn push(&mut self, value: T) {

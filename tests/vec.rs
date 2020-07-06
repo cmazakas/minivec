@@ -10,7 +10,7 @@ use minivec::MiniVec;
 //
 // ^ official source for `Vec` test file
 //
-// Code modifications: mostly rename Vec to MiniVec
+// Code modifications: mostly rename Vec to MiniVec and vec! to minivec::mini_vec!
 //
 
 // use std::borrow::Cow;

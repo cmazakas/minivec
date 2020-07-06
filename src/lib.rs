@@ -222,12 +222,28 @@ impl<T> MiniVec<T> {
         self.header_mut().data_
     }
 
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        self
+    }
+
     pub fn as_ptr(&self) -> *const T {
         if self.buf_.is_null() {
             return ptr::null();
         }
 
         self.header().data_
+    }
+
+    pub fn as_slice(&self) -> &[T] {
+        self
+    }
+
+    pub fn capacity(&self) -> usize {
+        if self.buf_.is_null() {
+            0
+        } else {
+            self.header().cap_
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -240,14 +256,6 @@ impl<T> MiniVec<T> {
 
     pub fn is_empty(&self) -> bool {
         self.len() == 0
-    }
-
-    pub fn capacity(&self) -> usize {
-        if self.buf_.is_null() {
-            0
-        } else {
-            self.header().cap_
-        }
     }
 
     pub fn new() -> MiniVec<T> {

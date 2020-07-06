@@ -11,7 +11,7 @@ use minivec::MiniVec;
 //
 // ^ official source for `Vec` test file
 //
-// Code modifications: mostly rename Vec to MiniVec and vec! to minivec::mini_vec!
+// Code modifications: mostly rename Vec to MiniVec and vec! to mini_vec!
 //
 
 // use std::borrow::Cow;
@@ -163,7 +163,7 @@ fn test_reserve() {
 
 #[test]
 fn test_slice_from_mut() {
-    let mut values = minivec::mini_vec![1, 2, 3, 4, 5];
+    let mut values = mini_vec![1, 2, 3, 4, 5];
     {
         let slice = &mut values[2..];
         assert!(slice == [3, 4, 5]);
@@ -177,7 +177,7 @@ fn test_slice_from_mut() {
 
 #[test]
 fn test_slice_to_mut() {
-    let mut values = minivec::mini_vec![1, 2, 3, 4, 5];
+    let mut values = mini_vec![1, 2, 3, 4, 5];
     {
         let slice = &mut values[..2];
         assert!(slice == [1, 2]);
@@ -216,8 +216,8 @@ fn test_slice_to_mut() {
 
 #[test]
 fn test_clone() {
-    let v: MiniVec<i32> = minivec::mini_vec![];
-    let w = minivec::mini_vec![1, 2, 3];
+    let v: MiniVec<i32> = mini_vec![];
+    let w = mini_vec![1, 2, 3];
 
     assert_eq!(v, v.clone());
 
@@ -229,9 +229,9 @@ fn test_clone() {
 
 #[test]
 fn test_clone_from() {
-    let mut v = minivec::mini_vec![];
-    let three: MiniVec<Box<_>> = minivec::mini_vec![Box::new(1), Box::new(2), Box::new(3)];
-    let two: MiniVec<Box<_>> = minivec::mini_vec![Box::new(4), Box::new(5)];
+    let mut v = mini_vec![];
+    let three: MiniVec<Box<_>> = mini_vec![Box::new(1), Box::new(2), Box::new(3)];
+    let two: MiniVec<Box<_>> = mini_vec![Box::new(4), Box::new(5)];
     // zero, long
     v.clone_from(&three);
     assert_eq!(v, three);
@@ -411,49 +411,49 @@ fn test_clone_from() {
 
 #[test]
 fn test_index() {
-    let vec = minivec::mini_vec![1, 2, 3];
+    let vec = mini_vec![1, 2, 3];
     assert!(vec[1] == 2);
 }
 
 #[test]
 #[should_panic]
 fn test_index_out_of_bounds() {
-    let vec = minivec::mini_vec![1, 2, 3];
+    let vec = mini_vec![1, 2, 3];
     let _ = vec[3];
 }
 
 #[test]
 #[should_panic]
 fn test_slice_out_of_bounds_1() {
-    let x = minivec::mini_vec![1, 2, 3, 4, 5];
+    let x = mini_vec![1, 2, 3, 4, 5];
     &x[!0..];
 }
 
 #[test]
 #[should_panic]
 fn test_slice_out_of_bounds_2() {
-    let x = minivec::mini_vec![1, 2, 3, 4, 5];
+    let x = mini_vec![1, 2, 3, 4, 5];
     &x[..6];
 }
 
 #[test]
 #[should_panic]
 fn test_slice_out_of_bounds_3() {
-    let x = minivec::mini_vec![1, 2, 3, 4, 5];
+    let x = mini_vec![1, 2, 3, 4, 5];
     &x[!0..4];
 }
 
 #[test]
 #[should_panic]
 fn test_slice_out_of_bounds_4() {
-    let x = minivec::mini_vec![1, 2, 3, 4, 5];
+    let x = mini_vec![1, 2, 3, 4, 5];
     &x[1..6];
 }
 
 #[test]
 #[should_panic]
 fn test_slice_out_of_bounds_5() {
-    let x = minivec::mini_vec![1, 2, 3, 4, 5];
+    let x = mini_vec![1, 2, 3, 4, 5];
     &x[3..2];
 }
 
@@ -852,7 +852,7 @@ fn test_append() {
 fn overaligned_allocations() {
     #[repr(align(256))]
     struct Foo(usize);
-    let mut v = minivec::mini_vec![Foo(273)];
+    let mut v = mini_vec![Foo(273)];
     for i in 0..0x1000 {
         v.reserve_exact(i);
         assert!(v[0].0 == 273);
@@ -1495,7 +1495,7 @@ fn test_reserve_exact() {
 fn test_push_growth_strategy() {
     // If the element size is 1, we jump from 0 to 8, then double.
     {
-        let mut v1: MiniVec<u8> = minivec::mini_vec![];
+        let mut v1: MiniVec<u8> = mini_vec![];
         assert_eq!(v1.capacity(), 0);
 
         for _ in 0..8 {
@@ -1521,8 +1521,8 @@ fn test_push_growth_strategy() {
 
     // If the element size is 2..=1024, we jump from 0 to 4, then double.
     {
-        let mut v2: MiniVec<u16> = minivec::mini_vec![];
-        let mut v1024: MiniVec<[u8; 1024]> = minivec::mini_vec![];
+        let mut v2: MiniVec<u16> = mini_vec![];
+        let mut v1024: MiniVec<[u8; 1024]> = mini_vec![];
         assert_eq!(v2.capacity(), 0);
         assert_eq!(v1024.capacity(), 0);
 
@@ -1564,7 +1564,7 @@ fn test_push_growth_strategy() {
 
     // If the element size is > 1024, we jump from 0 to 1, then double.
     {
-        let mut v1025: MiniVec<[u8; 1025]> = minivec::mini_vec![];
+        let mut v1025: MiniVec<[u8; 1025]> = mini_vec![];
         assert_eq!(v1025.capacity(), 0);
 
         for _ in 0..1 {

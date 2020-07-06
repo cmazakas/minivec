@@ -367,7 +367,9 @@ where
 
 impl<T: fmt::Debug> fmt::Debug for MiniVec<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        (&&*self).fmt(f)
+        let this: &[T] = &*self;
+
+        this.fmt(f)
     }
 }
 

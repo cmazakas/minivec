@@ -198,6 +198,38 @@ impl<T> MiniVec<T> {
         self.buf_ = new_buf;
     }
 
+    pub fn append(&mut self, other: &mut MiniVec<T>) {
+        if other.is_empty() {
+            return;
+        }
+
+        let other_len = other.len();
+        self.reserve(other_len);
+
+        unsafe {
+            ptr::copy_nonoverlapping(other.as_ptr(), self.as_mut_ptr().add(self.len()), other_len);
+        };
+
+        other.header_mut().len_ = 0;
+        self.header_mut().len_ += other_len;
+    }
+
+    pub fn as_mut_ptr(&mut self) -> *mut T {
+        if self.buf_.is_null() {
+            return ptr::null_mut();
+        }
+
+        self.header_mut().data_
+    }
+
+    pub fn as_ptr(&self) -> *const T {
+        if self.buf_.is_null() {
+            return ptr::null();
+        }
+
+        self.header().data_
+    }
+
     pub fn len(&self) -> usize {
         if self.buf_.is_null() {
             0

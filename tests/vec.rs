@@ -1,5 +1,6 @@
 extern crate minivec;
 
+use minivec::mini_vec;
 use minivec::MiniVec;
 
 // This code is largely a copy-paste of the official Rust test file for `std::vec::Vec` which is
@@ -707,14 +708,14 @@ fn test_slice_out_of_bounds_5() {
 //     assert_eq!(&*ys, [1, 2, 3]);
 // }
 
-// #[test]
-// fn test_append() {
-//     let mut vec = vec![1, 2, 3];
-//     let mut vec2 = vec![4, 5, 6];
-//     vec.append(&mut vec2);
-//     assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
-//     assert_eq!(vec2, []);
-// }
+#[test]
+fn test_append() {
+    let mut vec = mini_vec![1, 2, 3];
+    let mut vec2 = mini_vec![4, 5, 6];
+    vec.append(&mut vec2);
+    assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
+    assert_eq!(vec2, []);
+}
 
 // #[test]
 // fn test_split_off() {

@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 use std::mem;
 use std::ops::{Deref, DerefMut};
 use std::ptr;
+use std::slice;
 
 struct Header<T> {
     data_: *mut T,
@@ -246,6 +247,10 @@ impl<T> MiniVec<T> {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.truncate(0);
+    }
+
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -330,13 +335,12 @@ impl<T> MiniVec<T> {
             return;
         }
 
-        let mut data = unsafe { self.header().data_.add(self_len - 1) };
-        for _i in 0..(self_len - len) {
-            unsafe { ptr::read(data) };
-            data = unsafe { data.sub(1) };
-        }
-
         self.header_mut().len_ = len;
+
+        let s =
+            unsafe { slice::from_raw_parts_mut(self.header_mut().data_.add(len), self_len - len) };
+
+        unsafe { ptr::drop_in_place(s) };
     }
 }
 

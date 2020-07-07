@@ -392,22 +392,22 @@ fn test_vec_truncate_drop() {
     assert_eq!(unsafe { DROPS }, 5);
 }
 
-// #[test]
-// #[should_panic]
-// fn test_vec_truncate_fail() {
-//     struct BadElem(i32);
-//     impl Drop for BadElem {
-//         fn drop(&mut self) {
-//             let BadElem(ref mut x) = *self;
-//             if *x == 0xbadbeef {
-//                 panic!("BadElem panic: 0xbadbeef")
-//             }
-//         }
-//     }
+#[test]
+#[should_panic]
+fn test_vec_truncate_fail() {
+    struct BadElem(i32);
+    impl Drop for BadElem {
+        fn drop(&mut self) {
+            let BadElem(ref mut x) = *self;
+            if *x == 0xbadbeef {
+                panic!("BadElem panic: 0xbadbeef")
+            }
+        }
+    }
 
-//     let mut v = vec![BadElem(1), BadElem(2), BadElem(0xbadbeef), BadElem(4)];
-//     v.truncate(0);
-// }
+    let mut v = mini_vec![BadElem(1), BadElem(2), BadElem(0xbadbeef), BadElem(4)];
+    v.truncate(0);
+}
 
 #[test]
 fn test_index() {

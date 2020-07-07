@@ -372,25 +372,25 @@ fn test_clone_from() {
 //     assert_eq!((3, 6), (left[2], right[2]));
 // }
 
-// #[test]
-// fn test_vec_truncate_drop() {
-//     static mut DROPS: u32 = 0;
-//     struct Elem(i32);
-//     impl Drop for Elem {
-//         fn drop(&mut self) {
-//             unsafe {
-//                 DROPS += 1;
-//             }
-//         }
-//     }
+#[test]
+fn test_vec_truncate_drop() {
+    static mut DROPS: u32 = 0;
+    struct Elem(i32);
+    impl Drop for Elem {
+        fn drop(&mut self) {
+            unsafe {
+                DROPS += 1;
+            }
+        }
+    }
 
-//     let mut v = vec![Elem(1), Elem(2), Elem(3), Elem(4), Elem(5)];
-//     assert_eq!(unsafe { DROPS }, 0);
-//     v.truncate(3);
-//     assert_eq!(unsafe { DROPS }, 2);
-//     v.truncate(0);
-//     assert_eq!(unsafe { DROPS }, 5);
-// }
+    let mut v = mini_vec![Elem(1), Elem(2), Elem(3), Elem(4), Elem(5)];
+    assert_eq!(unsafe { DROPS }, 0);
+    v.truncate(3);
+    assert_eq!(unsafe { DROPS }, 2);
+    v.truncate(0);
+    assert_eq!(unsafe { DROPS }, 5);
+}
 
 // #[test]
 // #[should_panic]

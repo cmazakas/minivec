@@ -246,16 +246,16 @@ impl<T> MiniVec<T> {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn len(&self) -> usize {
         if self.buf_.is_null() {
             0
         } else {
             self.header().len_
         }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 
     pub fn new() -> MiniVec<T> {
@@ -321,6 +321,22 @@ impl<T> MiniVec<T> {
         }
 
         self.grow(len);
+    }
+
+    pub fn truncate(&mut self, len: usize) {
+        let self_len = self.len();
+
+        if len >= self_len {
+            return;
+        }
+
+        let mut data = unsafe { self.header().data_.add(self_len - 1) };
+        for _i in 0..(self_len - len) {
+            unsafe { ptr::read(data) };
+            data = unsafe { data.sub(1) };
+        }
+
+        self.header_mut().len_ = len;
     }
 }
 

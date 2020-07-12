@@ -308,17 +308,22 @@ fn test_dedup_by() {
     assert_eq!(vec, [("foo", 3), ("bar", 12)]);
 }
 
-// #[test]
-// fn test_dedup_unique() {
-//     let mut v0: Vec<Box<_>> = vec![box 1, box 1, box 2, box 3];
-//     v0.dedup();
-//     let mut v1: Vec<Box<_>> = vec![box 1, box 2, box 2, box 3];
-//     v1.dedup();
-//     let mut v2: Vec<Box<_>> = vec![box 1, box 2, box 3, box 3];
-//     v2.dedup();
-//     // If the boxed pointers were leaked or otherwise misused, valgrind
-//     // and/or rt should raise errors.
-// }
+#[test]
+fn test_dedup_unique() {
+    // note: we have to change the source code here to eschew the `box` expression as that's still
+    // experimental
+    //
+    // we swap `box x` to `Box::new(x)`
+    //
+    let mut v0: MiniVec<Box<_>> = mini_vec![Box::new(1), Box::new(1), Box::new(2), Box::new(3)];
+    v0.dedup();
+    let mut v1: MiniVec<Box<_>> = mini_vec![Box::new(1), Box::new(2), Box::new(2), Box::new(3)];
+    v1.dedup();
+    let mut v2: MiniVec<Box<_>> = mini_vec![Box::new(1), Box::new(2), Box::new(3), Box::new(3)];
+    v2.dedup();
+    // If the boxed pointers were leaked or otherwise misused, valgrind
+    // and/or rt should raise errors.
+}
 
 // #[test]
 // fn zero_sized_values() {

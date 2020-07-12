@@ -273,22 +273,22 @@ fn test_dedup() {
     case(mini_vec![1, 1, 2, 2, 2, 3, 3], mini_vec![1, 2, 3]);
 }
 
-// #[test]
-// fn test_dedup_by_key() {
-//     fn case(a: Vec<i32>, b: Vec<i32>) {
-//         let mut v = a;
-//         v.dedup_by_key(|i| *i / 10);
-//         assert_eq!(v, b);
-//     }
-//     case(vec![], vec![]);
-//     case(vec![10], vec![10]);
-//     case(vec![10, 11], vec![10]);
-//     case(vec![10, 20, 30], vec![10, 20, 30]);
-//     case(vec![10, 11, 20, 30], vec![10, 20, 30]);
-//     case(vec![10, 20, 21, 30], vec![10, 20, 30]);
-//     case(vec![10, 20, 30, 31], vec![10, 20, 30]);
-//     case(vec![10, 11, 20, 21, 22, 30, 31], vec![10, 20, 30]);
-// }
+#[test]
+fn test_dedup_by_key() {
+    fn case(a: MiniVec<i32>, b: MiniVec<i32>) {
+        let mut v = a;
+        v.dedup_by_key(|i| *i / 10);
+        assert_eq!(v, b);
+    }
+    case(mini_vec![], mini_vec![]);
+    case(mini_vec![10], mini_vec![10]);
+    case(mini_vec![10, 11], mini_vec![10]);
+    case(mini_vec![10, 20, 30], mini_vec![10, 20, 30]);
+    case(mini_vec![10, 11, 20, 30], mini_vec![10, 20, 30]);
+    case(mini_vec![10, 20, 21, 30], mini_vec![10, 20, 30]);
+    case(mini_vec![10, 20, 30, 31], mini_vec![10, 20, 30]);
+    case(mini_vec![10, 11, 20, 21, 22, 30, 31], mini_vec![10, 20, 30]);
+}
 
 #[test]
 fn test_dedup_by() {

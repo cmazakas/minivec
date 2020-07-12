@@ -292,6 +292,14 @@ impl<T> MiniVec<T> {
         self.truncate((write as usize - data as usize) / mem::size_of::<T>());
     }
 
+    pub fn dedup_by_key<F, K>(&mut self, mut key: F)
+    where
+        F: FnMut(&mut T) -> K,
+        K: PartialEq<K>,
+    {
+        self.dedup_by(|a, b| key(a) == key(b));
+    }
+
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }

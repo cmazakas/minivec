@@ -53,7 +53,7 @@ fn minivec_push() {
 }
 
 #[test]
-fn deref_test() {
+fn minivec_deref_test() {
   let mut v: MiniVec<i32> = MiniVec::new();
   v.push(1);
   v.push(2);

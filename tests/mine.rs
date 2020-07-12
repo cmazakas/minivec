@@ -71,3 +71,11 @@ fn minivec_dedup_by_test() {
 
   assert_eq!(v, [1, 2, 1, 3, 4, 5, 4]);
 }
+
+#[test]
+fn minivec_dedup_needs_drop() {
+  let mut v: MiniVec<Box<_>> = mini_vec![Box::new(1), Box::new(1), Box::new(2), Box::new(3)];
+  v.dedup();
+
+  assert_eq!(v.len(), 3);
+}

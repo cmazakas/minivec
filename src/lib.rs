@@ -251,6 +251,13 @@ impl<T> MiniVec<T> {
         self.truncate(0);
     }
 
+    pub fn dedup(&mut self)
+    where
+        T: PartialEq,
+    {
+        self.dedup_by(|x, y| x == y);
+    }
+
     // basically just copy what's here:
     // https://github.com/llvm-mirror/libcxx/blob/a12cb9d211019d99b5875b6d8034617cbc24c2cc/include/algorithm#L2146
     //

@@ -256,22 +256,22 @@ fn test_clone_from() {
 //     assert_eq!(vec, [2, 4]);
 // }
 
-// #[test]
-// fn test_dedup() {
-//     fn case(a: Vec<i32>, b: Vec<i32>) {
-//         let mut v = a;
-//         v.dedup();
-//         assert_eq!(v, b);
-//     }
-//     case(vec![], vec![]);
-//     case(vec![1], vec![1]);
-//     case(vec![1, 1], vec![1]);
-//     case(vec![1, 2, 3], vec![1, 2, 3]);
-//     case(vec![1, 1, 2, 3], vec![1, 2, 3]);
-//     case(vec![1, 2, 2, 3], vec![1, 2, 3]);
-//     case(vec![1, 2, 3, 3], vec![1, 2, 3]);
-//     case(vec![1, 1, 2, 2, 2, 3, 3], vec![1, 2, 3]);
-// }
+#[test]
+fn test_dedup() {
+    fn case(a: MiniVec<i32>, b: MiniVec<i32>) {
+        let mut v = a;
+        v.dedup();
+        assert_eq!(v, b);
+    }
+    case(mini_vec![], mini_vec![]);
+    case(mini_vec![1], mini_vec![1]);
+    case(mini_vec![1, 1], mini_vec![1]);
+    case(mini_vec![1, 2, 3], mini_vec![1, 2, 3]);
+    case(mini_vec![1, 1, 2, 3], mini_vec![1, 2, 3]);
+    case(mini_vec![1, 2, 2, 3], mini_vec![1, 2, 3]);
+    case(mini_vec![1, 2, 3, 3], mini_vec![1, 2, 3]);
+    case(mini_vec![1, 1, 2, 2, 2, 3, 3], mini_vec![1, 2, 3]);
+}
 
 // #[test]
 // fn test_dedup_by_key() {

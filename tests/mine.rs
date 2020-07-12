@@ -63,3 +63,11 @@ fn minivec_deref_test() {
   assert_eq!(v[1], 2);
   assert_eq!(v[2], 3);
 }
+
+#[test]
+fn minivec_dedup_by_test() {
+  let mut v = mini_vec![1, 2, 1, 1, 3, 3, 3, 4, 5, 4];
+  v.dedup_by(|x, y| x == y);
+
+  assert_eq!(v, [1, 2, 1, 3, 4, 5, 4]);
+}

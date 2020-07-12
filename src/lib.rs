@@ -251,6 +251,40 @@ impl<T> MiniVec<T> {
         self.truncate(0);
     }
 
+    // basically just copy what's here:
+    // https://github.com/llvm-mirror/libcxx/blob/a12cb9d211019d99b5875b6d8034617cbc24c2cc/include/algorithm#L2146
+    //
+    pub fn dedup_by<F>(&mut self, mut pred: F)
+    where
+        F: FnMut(&mut T, &mut T) -> bool,
+    {
+        let len = self.len();
+        if len < 2 {
+            return;
+        }
+
+        let data = self.as_mut_ptr();
+
+        let mut read = unsafe { data.add(1) };
+        let mut write = read;
+
+        let last = unsafe { data.add(len) };
+
+        while read < last {
+            let matches = unsafe { pred(&mut *read, &mut *write.sub(1)) };
+            if !matches {
+                if read != write {
+                    unsafe { mem::swap(&mut *read, &mut *write) };
+                }
+                write = unsafe { write.add(1) };
+            }
+
+            read = unsafe { read.add(1) };
+        }
+
+        self.truncate((write as usize - data as usize) / mem::size_of::<T>());
+    }
+
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }

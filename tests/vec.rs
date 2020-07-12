@@ -290,23 +290,23 @@ fn test_clone_from() {
 //     case(vec![10, 11, 20, 21, 22, 30, 31], vec![10, 20, 30]);
 // }
 
-// #[test]
-// fn test_dedup_by() {
-//     let mut vec = vec!["foo", "bar", "Bar", "baz", "bar"];
-//     vec.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+#[test]
+fn test_dedup_by() {
+    let mut vec = mini_vec!["foo", "bar", "Bar", "baz", "bar"];
+    vec.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
 
-//     assert_eq!(vec, ["foo", "bar", "baz", "bar"]);
+    assert_eq!(vec, ["foo", "bar", "baz", "bar"]);
 
-//     let mut vec = vec![("foo", 1), ("foo", 2), ("bar", 3), ("bar", 4), ("bar", 5)];
-//     vec.dedup_by(|a, b| {
-//         a.0 == b.0 && {
-//             b.1 += a.1;
-//             true
-//         }
-//     });
+    let mut vec = mini_vec![("foo", 1), ("foo", 2), ("bar", 3), ("bar", 4), ("bar", 5)];
+    vec.dedup_by(|a, b| {
+        a.0 == b.0 && {
+            b.1 += a.1;
+            true
+        }
+    });
 
-//     assert_eq!(vec, [("foo", 3), ("bar", 12)]);
-// }
+    assert_eq!(vec, [("foo", 3), ("bar", 12)]);
+}
 
 // #[test]
 // fn test_dedup_unique() {

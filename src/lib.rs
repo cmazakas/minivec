@@ -259,7 +259,7 @@ impl<T> MiniVec<T> {
     }
 
     // basically just copy what's here:
-    // https://github.com/llvm-mirror/libcxx/blob/a12cb9d211019d99b5875b6d8034617cbc24c2cc/include/algorithm#L2146
+    // https://github.com/llvm/llvm-project/blob/032810f58986cd568980227c9531de91d8bcb1cd/libcxx/include/algorithm#L2174-L2191
     //
     pub fn dedup_by<F>(&mut self, mut pred: F)
     where

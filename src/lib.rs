@@ -166,10 +166,8 @@ impl<T> MiniVec<T> {
         }
 
         let new_data = unsafe {
-            new_buf.add(next_aligned(
-                mem::size_of::<Header<T>>(),
-                mem::align_of::<T>(),
-            )) as *mut T
+            let offset = next_aligned(mem::size_of::<Header<T>>(), mem::align_of::<T>());
+            new_buf.add(offset) as *mut T
         };
 
         let header = Header::<T> {

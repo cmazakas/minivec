@@ -154,6 +154,8 @@ impl<T> MiniVec<T> {
     }
 
     fn grow(&mut self, capacity: usize) {
+        debug_assert!(capacity >= self.len());
+
         let new_capacity = capacity;
         let new_layout = make_layout::<T>(new_capacity);
         let len = self.len();

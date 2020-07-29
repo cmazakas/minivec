@@ -1,0 +1,22 @@
+use crate::make_layout;
+use crate::Header;
+use crate::MiniVec;
+
+use std::{alloc, ptr};
+
+impl<T> Drop for MiniVec<T> {
+    fn drop(&mut self) {
+        if self.buf_.is_null() {
+            return;
+        }
+
+        #[allow(clippy::cast_ptr_alignment)]
+        let header = unsafe { ptr::read(self.buf_ as *const Header<T>) };
+
+        for i in 0..header.len_ {
+            unsafe { ptr::read(header.data_.add(i)) };
+        }
+
+        unsafe { alloc::dealloc(self.buf_, make_layout::<T>(header.cap_)) };
+    }
+}

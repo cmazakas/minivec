@@ -1,13 +1,6 @@
 #![allow(dead_code)]
 
-use std::alloc;
-use std::alloc::Layout;
-use std::fmt;
-use std::marker::PhantomData;
-use std::mem;
-use std::ops::{Deref, DerefMut};
-use std::ptr;
-use std::slice;
+use std::{alloc, alloc::Layout, marker::PhantomData, mem, ptr, slice};
 
 struct Header<T> {
     data_: *mut T,
@@ -393,101 +386,6 @@ impl<T> MiniVec<T> {
     }
 }
 
-impl<T> Drop for MiniVec<T> {
-    fn drop(&mut self) {
-        if self.buf_.is_null() {
-            return;
-        }
-
-        #[allow(clippy::cast_ptr_alignment)]
-        let header = unsafe { ptr::read(self.buf_ as *const Header<T>) };
-
-        for i in 0..header.len_ {
-            unsafe { ptr::read(header.data_.add(i)) };
-        }
-
-        unsafe { alloc::dealloc(self.buf_, make_layout::<T>(header.cap_)) };
-    }
-}
-
-impl<T> Default for MiniVec<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T> Deref for MiniVec<T> {
-    type Target = [T];
-
-    fn deref(&self) -> &Self::Target {
-        if self.buf_.is_null() {
-            return &[];
-        }
-
-        let header = self.header();
-        let data = header.data_;
-        let len = header.len_;
-        unsafe { std::slice::from_raw_parts(data, len) }
-    }
-}
-
-impl<T> DerefMut for MiniVec<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        if self.buf_.is_null() {
-            return &mut [];
-        }
-
-        let header = self.header();
-        let data = header.data_;
-        let len = header.len_;
-        unsafe { std::slice::from_raw_parts_mut(data, len) }
-    }
-}
-
-impl<T: Clone> Clone for MiniVec<T> {
-    fn clone(&self) -> Self {
-        if self.buf_.is_null() {
-            return MiniVec::new();
-        }
-
-        let mut copy = MiniVec::<T>::new();
-
-        copy.reserve(self.len());
-        for i in 0..self.len() {
-            copy.push(self[i].clone());
-        }
-
-        copy
-    }
-}
-
-impl<T, V> PartialEq<V> for MiniVec<T>
-where
-    V: AsRef<[T]>,
-    T: PartialEq,
-{
-    fn eq(&self, other: &V) -> bool {
-        let lhs: &[T] = &*self;
-        let rhs: &[T] = other.as_ref();
-
-        lhs == rhs
-    }
-}
-
-impl<T: fmt::Debug> fmt::Debug for MiniVec<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let this: &[T] = &*self;
-
-        this.fmt(f)
-    }
-}
-
-impl<T> AsRef<[T]> for MiniVec<T> {
-    fn as_ref(&self) -> &[T] {
-        &*self
-    }
-}
-
 #[macro_export]
 macro_rules! mini_vec {
     () => (
@@ -503,3 +401,12 @@ macro_rules! mini_vec {
         }
     };
 }
+
+pub mod as_ref;
+pub mod clone;
+pub mod debug;
+pub mod default;
+pub mod deref;
+pub mod drain;
+pub mod drop;
+pub mod partial_eq;

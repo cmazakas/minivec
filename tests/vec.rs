@@ -17,7 +17,7 @@ use minivec::MiniVec;
 // use std::borrow::Cow;
 // use std::collections::TryReserveError::*;
 use std::mem::size_of;
-// use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{catch_unwind, AssertUnwindSafe};
 // use std::vec::{Drain, IntoIter};
 
 struct DropCounter<'a> {
@@ -499,16 +499,16 @@ fn test_slice_out_of_bounds_5() {
 //     assert_eq!(vec2, [(), (), ()]);
 // }
 
-// #[test]
-// fn test_drain_items() {
-//     let mut vec = vec![1, 2, 3];
-//     let mut vec2 = vec![];
-//     for i in vec.drain(..) {
-//         vec2.push(i);
-//     }
-//     assert_eq!(vec, []);
-//     assert_eq!(vec2, [1, 2, 3]);
-// }
+#[test]
+fn test_drain_items() {
+    let mut vec = mini_vec![1, 2, 3];
+    let mut vec2 = mini_vec![];
+    for i in vec.drain(..) {
+        vec2.push(i);
+    }
+    assert_eq!(vec, []);
+    assert_eq!(vec2, [1, 2, 3]);
+}
 
 // #[test]
 // fn test_drain_items_reverse() {
@@ -605,43 +605,43 @@ fn test_slice_out_of_bounds_5() {
 //     v.drain(5..=5);
 // }
 
-// #[test]
-// fn test_drain_leak() {
-//     static mut DROPS: i32 = 0;
+#[test]
+fn test_drain_leak() {
+    static mut DROPS: i32 = 0;
 
-//     #[derive(Debug, PartialEq)]
-//     struct D(u32, bool);
+    #[derive(Debug, PartialEq)]
+    struct D(u32, bool);
 
-//     impl Drop for D {
-//         fn drop(&mut self) {
-//             unsafe {
-//                 DROPS += 1;
-//             }
+    impl Drop for D {
+        fn drop(&mut self) {
+            unsafe {
+                DROPS += 1;
+            }
 
-//             if self.1 {
-//                 panic!("panic in `drop`");
-//             }
-//         }
-//     }
+            if self.1 {
+                panic!("panic in `drop`");
+            }
+        }
+    }
 
-//     let mut v = vec![
-//         D(0, false),
-//         D(1, false),
-//         D(2, false),
-//         D(3, false),
-//         D(4, true),
-//         D(5, false),
-//         D(6, false),
-//     ];
+    let mut v = mini_vec![
+        D(0, false),
+        D(1, false),
+        D(2, false),
+        D(3, false),
+        D(4, true),
+        D(5, false),
+        D(6, false),
+    ];
 
-//     catch_unwind(AssertUnwindSafe(|| {
-//         v.drain(2..=5);
-//     }))
-//     .ok();
+    catch_unwind(AssertUnwindSafe(|| {
+        v.drain(2..=5);
+    }))
+    .ok();
 
-//     assert_eq!(unsafe { DROPS }, 4);
-//     assert_eq!(v, vec![D(0, false), D(1, false), D(6, false),]);
-// }
+    assert_eq!(unsafe { DROPS }, 4);
+    assert_eq!(v, mini_vec![D(0, false), D(1, false), D(6, false),]);
+}
 
 // #[test]
 // fn test_splice() {

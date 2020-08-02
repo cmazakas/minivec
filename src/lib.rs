@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::{alloc, marker::PhantomData, mem, ptr, slice};
+use std::{alloc, marker::PhantomData, mem, ops::RangeBounds, ptr, slice};
 
 mod r#impl;
 
@@ -9,7 +9,6 @@ pub mod clone;
 pub mod debug;
 pub mod default;
 pub mod deref;
-pub mod drain;
 pub mod drop;
 pub mod partial_eq;
 
@@ -188,11 +187,36 @@ impl<T> MiniVec<T> {
         self.dedup_by(|a, b| key(a) == key(b));
     }
 
-    // pub fn drain<R>(&mut self, range: R) -> Drain<T>
-    // where
-    //     R: RangeBounds<usize>,
-    // {
-    // }
+    pub fn drain<R>(&mut self, range: R) -> Drain<T>
+    where
+        R: RangeBounds<usize>,
+    {
+        let len = self.len();
+
+        let start_idx = match range.start_bound() {
+            std::ops::Bound::Included(&n) => n,
+            std::ops::Bound::Excluded(&n) => n + 1,
+            std::ops::Bound::Unbounded => 0,
+        };
+
+        let end_idx = match range.end_bound() {
+            std::ops::Bound::Included(&n) => n + 1,
+            std::ops::Bound::Excluded(&n) => n,
+            std::ops::Bound::Unbounded => len,
+        };
+
+        let data = self.as_mut_ptr();
+
+        unsafe { self.set_len(start_idx) };
+
+        Drain {
+            vec_: ptr::NonNull::from(self),
+            drain_pos_: unsafe { ptr::NonNull::new_unchecked(data.add(start_idx)) },
+            drain_end_: unsafe { ptr::NonNull::new_unchecked(data.add(end_idx)) },
+            remaining_: len - end_idx,
+            marker_: std::marker::PhantomData,
+        }
+    }
 
     pub fn is_empty(&self) -> bool {
         self.len() == 0
@@ -262,6 +286,10 @@ impl<T> MiniVec<T> {
         self.grow(total_required);
     }
 
+    pub unsafe fn set_len(&mut self, len: usize) {
+        self.header_mut().len_ = len;
+    }
+
     pub fn shrink_to_fit(&mut self) {
         let (len, capacity) = (self.len(), self.capacity());
         if len == capacity {
@@ -301,4 +329,66 @@ macro_rules! mini_vec {
             tmp
         }
     };
+}
+
+pub struct Drain<'a, T: 'a> {
+    vec_: ptr::NonNull<MiniVec<T>>,
+    drain_pos_: ptr::NonNull<T>,
+    drain_end_: ptr::NonNull<T>,
+    remaining_: usize,
+    marker_: std::marker::PhantomData<&'a T>,
+}
+
+impl<T> Iterator for Drain<'_, T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.drain_pos_ >= self.drain_end_ {
+            return None;
+        }
+
+        let p = self.drain_pos_.as_ptr();
+        let tmp = unsafe { ptr::read(p) };
+        self.drain_pos_ = unsafe { ptr::NonNull::new_unchecked(p.add(1)) };
+        Some(tmp)
+    }
+}
+
+impl<T> Drop for Drain<'_, T> {
+    fn drop(&mut self) {
+        struct DropGuard<'b, 'a, T> {
+            drain: &'b mut Drain<'a, T>,
+        };
+
+        impl<'b, 'a, T> Drop for DropGuard<'b, 'a, T> {
+            fn drop(&mut self) {
+                while let Some(_) = self.drain.next() {}
+
+                if self.drain.remaining_ > 0 {
+                    let v = unsafe { self.drain.vec_.as_mut() };
+                    let v_len = v.len();
+
+                    let src = self.drain.drain_end_.as_ptr();
+                    let dst = unsafe { v.as_mut_ptr().add(v_len) };
+
+                    if src == dst {
+                        return;
+                    }
+
+                    unsafe {
+                        ptr::copy(src, dst, self.drain.remaining_);
+                        v.set_len(v_len + self.drain.remaining_);
+                    };
+                }
+            }
+        }
+
+        while let Some(item) = self.next() {
+            let guard = DropGuard { drain: self };
+            drop(item);
+            mem::forget(guard);
+        }
+
+        DropGuard { drain: self };
+    }
 }

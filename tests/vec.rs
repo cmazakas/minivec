@@ -598,12 +598,12 @@ fn test_drain_inclusive_range() {
 //     assert_eq!(v.len(), usize::MAX - 1);
 // }
 
-// #[test]
-// #[should_panic]
-// fn test_drain_inclusive_out_of_bounds() {
-//     let mut v = vec![1, 2, 3, 4, 5];
-//     v.drain(5..=5);
-// }
+#[test]
+#[should_panic]
+fn test_drain_inclusive_out_of_bounds() {
+    let mut v = mini_vec![1, 2, 3, 4, 5];
+    v.drain(5..=5);
+}
 
 #[test]
 fn test_drain_leak() {

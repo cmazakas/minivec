@@ -532,54 +532,54 @@ fn test_drain_items_reverse() {
 //     assert_eq!(vec2, [(), (), ()]);
 // }
 
-// #[test]
-// #[should_panic]
-// fn test_drain_out_of_bounds() {
-//     let mut v = vec![1, 2, 3, 4, 5];
-//     v.drain(5..6);
-// }
+#[test]
+#[should_panic]
+fn test_drain_out_of_bounds() {
+    let mut v = mini_vec![1, 2, 3, 4, 5];
+    v.drain(5..6);
+}
 
-// #[test]
-// fn test_drain_range() {
-//     let mut v = vec![1, 2, 3, 4, 5];
-//     for _ in v.drain(4..) {}
-//     assert_eq!(v, &[1, 2, 3, 4]);
+#[test]
+fn test_drain_range() {
+    let mut v = mini_vec![1, 2, 3, 4, 5];
+    for _ in v.drain(4..) {}
+    assert_eq!(v, &[1, 2, 3, 4]);
 
-//     let mut v: Vec<_> = (1..6).map(|x| x.to_string()).collect();
-//     for _ in v.drain(1..4) {}
-//     assert_eq!(v, &[1.to_string(), 5.to_string()]);
+    let mut v: MiniVec<_> = (1..6).map(|x| x.to_string()).collect();
+    for _ in v.drain(1..4) {}
+    assert_eq!(v, &[1.to_string(), 5.to_string()]);
 
-//     let mut v: Vec<_> = (1..6).map(|x| x.to_string()).collect();
-//     for _ in v.drain(1..4).rev() {}
-//     assert_eq!(v, &[1.to_string(), 5.to_string()]);
+    let mut v: MiniVec<_> = (1..6).map(|x| x.to_string()).collect();
+    for _ in v.drain(1..4).rev() {}
+    assert_eq!(v, &[1.to_string(), 5.to_string()]);
 
-//     let mut v: Vec<_> = vec![(); 5];
-//     for _ in v.drain(1..4).rev() {}
-//     assert_eq!(v, &[(), ()]);
-// }
+    // let mut v: MiniVec<_> = mini_vec![(); 5];
+    // for _ in v.drain(1..4).rev() {}
+    // assert_eq!(v, &[(), ()]);
+}
 
-// #[test]
-// fn test_drain_inclusive_range() {
-//     let mut v = vec!['a', 'b', 'c', 'd', 'e'];
-//     for _ in v.drain(1..=3) {}
-//     assert_eq!(v, &['a', 'e']);
+#[test]
+fn test_drain_inclusive_range() {
+    let mut v = mini_vec!['a', 'b', 'c', 'd', 'e'];
+    for _ in v.drain(1..=3) {}
+    assert_eq!(v, &['a', 'e']);
 
-//     let mut v: Vec<_> = (0..=5).map(|x| x.to_string()).collect();
-//     for _ in v.drain(1..=5) {}
-//     assert_eq!(v, &["0".to_string()]);
+    let mut v: MiniVec<_> = (0..=5).map(|x| x.to_string()).collect();
+    for _ in v.drain(1..=5) {}
+    assert_eq!(v, &["0".to_string()]);
 
-//     let mut v: Vec<String> = (0..=5).map(|x| x.to_string()).collect();
-//     for _ in v.drain(0..=5) {}
-//     assert_eq!(v, Vec::<String>::new());
+    let mut v: MiniVec<String> = (0..=5).map(|x| x.to_string()).collect();
+    for _ in v.drain(0..=5) {}
+    assert_eq!(v, Vec::<String>::new());
 
-//     let mut v: Vec<_> = (0..=5).map(|x| x.to_string()).collect();
-//     for _ in v.drain(0..=3) {}
-//     assert_eq!(v, &["4".to_string(), "5".to_string()]);
+    let mut v: MiniVec<_> = (0..=5).map(|x| x.to_string()).collect();
+    for _ in v.drain(0..=3) {}
+    assert_eq!(v, &["4".to_string(), "5".to_string()]);
 
-//     let mut v: Vec<_> = (0..=1).map(|x| x.to_string()).collect();
-//     for _ in v.drain(..=0) {}
-//     assert_eq!(v, &["1".to_string()]);
-// }
+    let mut v: MiniVec<_> = (0..=1).map(|x| x.to_string()).collect();
+    for _ in v.drain(..=0) {}
+    assert_eq!(v, &["1".to_string()]);
+}
 
 // #[test]
 // fn test_drain_max_vec_size() {

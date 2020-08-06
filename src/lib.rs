@@ -10,6 +10,7 @@ pub mod debug;
 pub mod default;
 pub mod deref;
 pub mod drop;
+pub mod from_iterator;
 pub mod partial_eq;
 
 use crate::r#impl::helpers::*;
@@ -204,6 +205,20 @@ impl<T> MiniVec<T> {
             std::ops::Bound::Excluded(&n) => n,
             std::ops::Bound::Unbounded => len,
         };
+
+        if start_idx > end_idx {
+            panic!(
+                "start drain index (is {}) should be <= end drain index (is {})",
+                start_idx, end_idx
+            );
+        }
+
+        if end_idx > len {
+            panic!(
+                "end drain index (is {}) should be <= len (is {})",
+                end_idx, len
+            );
+        }
 
         let data = self.as_mut_ptr();
 

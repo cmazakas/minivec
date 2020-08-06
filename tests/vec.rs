@@ -510,16 +510,16 @@ fn test_drain_items() {
     assert_eq!(vec2, [1, 2, 3]);
 }
 
-// #[test]
-// fn test_drain_items_reverse() {
-//     let mut vec = vec![1, 2, 3];
-//     let mut vec2 = vec![];
-//     for i in vec.drain(..).rev() {
-//         vec2.push(i);
-//     }
-//     assert_eq!(vec, []);
-//     assert_eq!(vec2, [3, 2, 1]);
-// }
+#[test]
+fn test_drain_items_reverse() {
+    let mut vec = mini_vec![1, 2, 3];
+    let mut vec2 = mini_vec![];
+    for i in vec.drain(..).rev() {
+        vec2.push(i);
+    }
+    assert_eq!(vec, []);
+    assert_eq!(vec2, [3, 2, 1]);
+}
 
 // #[test]
 // fn test_drain_items_zero_sized() {

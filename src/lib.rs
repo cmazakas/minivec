@@ -213,6 +213,7 @@ impl<T> MiniVec<T> {
             vec_: ptr::NonNull::from(self),
             drain_pos_: unsafe { ptr::NonNull::new_unchecked(data.add(start_idx)) },
             drain_end_: unsafe { ptr::NonNull::new_unchecked(data.add(end_idx)) },
+            remaining_pos_: unsafe { ptr::NonNull::new_unchecked(data.add(end_idx)) },
             remaining_: len - end_idx,
             marker_: std::marker::PhantomData,
         }
@@ -335,6 +336,7 @@ pub struct Drain<'a, T: 'a> {
     vec_: ptr::NonNull<MiniVec<T>>,
     drain_pos_: ptr::NonNull<T>,
     drain_end_: ptr::NonNull<T>,
+    remaining_pos_: ptr::NonNull<T>,
     remaining_: usize,
     marker_: std::marker::PhantomData<&'a T>,
 }
@@ -354,6 +356,19 @@ impl<T> Iterator for Drain<'_, T> {
     }
 }
 
+impl<T> DoubleEndedIterator for Drain<'_, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let pos = unsafe { self.drain_end_.as_ptr().sub(1) };
+        if pos < self.drain_pos_.as_ptr() {
+            return None;
+        }
+
+        let tmp = unsafe { ptr::read(pos) };
+        self.drain_end_ = unsafe { ptr::NonNull::new_unchecked(pos) };
+        Some(tmp)
+    }
+}
+
 impl<T> Drop for Drain<'_, T> {
     fn drop(&mut self) {
         struct DropGuard<'b, 'a, T> {
@@ -368,7 +383,7 @@ impl<T> Drop for Drain<'_, T> {
                     let v = unsafe { self.drain.vec_.as_mut() };
                     let v_len = v.len();
 
-                    let src = self.drain.drain_end_.as_ptr();
+                    let src = self.drain.remaining_pos_.as_ptr();
                     let dst = unsafe { v.as_mut_ptr().add(v_len) };
 
                     if src == dst {

@@ -95,3 +95,33 @@ fn minivec_with_capacity() {
   assert_eq!(v.len(), 3);
   assert_eq!(v.capacity(), size);
 }
+
+#[test]
+fn minivec_extend_from_slice() {
+  let a = [2, 3, 4, 5];
+  let mut v = mini_vec![1];
+  v.extend_from_slice(&a);
+
+  assert_eq!(v.len(), 5);
+
+  v.extend_from_slice(&[6, 7, 8]);
+  assert_eq!(v.len(), 8);
+
+  assert_eq!(a.len(), 4);
+  assert_eq!(a, [2, 3, 4, 5]);
+
+  let a: MiniVec<_> = [2, 3, 4, 5].iter().map(|x| x.to_string()).collect();
+  let mut v = mini_vec![String::from("1")];
+  v.extend_from_slice(&a);
+
+  assert_eq!(v.len(), 5);
+
+  v.extend_from_slice(&[6.to_string(), 7.to_string(), 8.to_string()]);
+  assert_eq!(v.len(), 8);
+
+  assert_eq!(a.len(), 4);
+  assert_eq!(
+    a,
+    [2.to_string(), 3.to_string(), 4.to_string(), 5.to_string()]
+  );
+}

@@ -337,6 +337,15 @@ impl<T> MiniVec<T> {
     }
 }
 
+impl<T: Clone> MiniVec<T> {
+    pub fn extend_from_slice(&mut self, elems: &[T]) {
+        self.reserve(elems.len());
+        for x in elems {
+            self.push((*x).clone());
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! mini_vec {
     () => (

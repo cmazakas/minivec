@@ -79,3 +79,19 @@ fn minivec_dedup_needs_drop() {
 
   assert_eq!(v.len(), 3);
 }
+
+#[test]
+fn minivec_with_capacity() {
+  let size = 128;
+  let mut v: MiniVec<i32> = MiniVec::with_capacity(size);
+
+  assert_eq!(v.len(), 0);
+  assert_eq!(v.capacity(), size);
+
+  v.push(1);
+  v.push(2);
+  v.push(3);
+
+  assert_eq!(v.len(), 3);
+  assert_eq!(v.capacity(), size);
+}

@@ -329,6 +329,12 @@ impl<T> MiniVec<T> {
 
         unsafe { ptr::drop_in_place(s) };
     }
+
+    pub fn with_capacity(capacity: usize) -> MiniVec<T> {
+        let mut v = MiniVec::new();
+        v.reserve_exact(capacity);
+        v
+    }
 }
 
 #[macro_export]

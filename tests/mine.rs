@@ -171,3 +171,34 @@ fn minivec_from_raw_parts() {
     assert_eq!(rebuilt.len(), len);
   }
 }
+
+#[test]
+fn minivec_insert() {
+  let mut vec = mini_vec![1, 2, 3];
+
+  vec.insert(1, 4);
+  assert_eq!(vec, [1, 4, 2, 3]);
+
+  vec.insert(4, 5);
+  assert_eq!(vec, [1, 4, 2, 3, 5]);
+
+  let mut vec: MiniVec<String> = mini_vec![1.to_string(), 2.to_string(), 3.to_string()];
+
+  vec.insert(1, 4.to_string());
+  assert_eq!(
+    vec,
+    [1.to_string(), 4.to_string(), 2.to_string(), 3.to_string()]
+  );
+
+  vec.insert(4, 5.to_string());
+  assert_eq!(
+    vec,
+    [
+      1.to_string(),
+      4.to_string(),
+      2.to_string(),
+      3.to_string(),
+      5.to_string()
+    ]
+  );
+}

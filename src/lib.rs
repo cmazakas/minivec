@@ -282,6 +282,28 @@ impl<T> MiniVec<T> {
         }
     }
 
+    pub fn insert(&mut self, index: usize, element: T) {
+        let len = self.len();
+
+        if index > len {
+            panic!(
+                "insertion index (is {}) should be <= len (is {})",
+                index, len
+            );
+        }
+
+        if len == self.capacity() {
+            self.reserve(1);
+        }
+
+        let p = unsafe { self.as_mut_ptr().add(index) };
+        unsafe {
+            ptr::copy(p, p.add(1), len - index);
+            ptr::write(p, element);
+            self.set_len(len + 1);
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }

@@ -125,3 +125,49 @@ fn minivec_extend_from_slice() {
     [2.to_string(), 3.to_string(), 4.to_string(), 5.to_string()]
   );
 }
+
+#[test]
+fn minivec_from_raw_part() {
+  use std::{mem, ptr};
+
+  let v = mini_vec![1, 2, 3];
+  let mut v = mem::ManuallyDrop::new(v);
+
+  let p = v.as_mut_ptr();
+  let len = v.len();
+  let cap = v.capacity();
+
+  unsafe {
+    for i in 0..len as isize {
+      ptr::write(p.offset(i), 4 + i);
+    }
+
+    let rebuilt = MiniVec::from_raw_part(p);
+    assert_eq!(rebuilt, [4, 5, 6]);
+    assert_eq!(rebuilt.capacity(), cap);
+    assert_eq!(rebuilt.len(), len);
+  }
+}
+
+#[test]
+fn minivec_from_raw_parts() {
+  use std::{mem, ptr};
+
+  let v = mini_vec![1, 2, 3];
+  let mut v = mem::ManuallyDrop::new(v);
+
+  let p = v.as_mut_ptr();
+  let len = v.len();
+  let cap = v.capacity();
+
+  unsafe {
+    for i in 0..len as isize {
+      ptr::write(p.offset(i), 4 + i);
+    }
+
+    let rebuilt = MiniVec::from_raw_parts(p, len, cap);
+    assert_eq!(rebuilt, [4, 5, 6]);
+    assert_eq!(rebuilt.capacity(), cap);
+    assert_eq!(rebuilt.len(), len);
+  }
+}

@@ -234,6 +234,54 @@ impl<T> MiniVec<T> {
         }
     }
 
+    /// # Safety
+    ///
+    /// from_raw_part is incredibly unsafe and can only be used with the value of `MiniVec::as_mut_ptr`
+    /// This function takes the previous result of a `MiniVec::as_mut_ptr` call and recreates a new `MiniVec` from it
+    ///
+    #[allow(clippy::cast_ptr_alignment)]
+    pub unsafe fn from_raw_part(ptr: *mut T) -> MiniVec<T> {
+        let header_size = mem::size_of::<Header<T>>();
+        let aligned = next_aligned(header_size, mem::align_of::<T>());
+
+        let p = ptr as *mut u8;
+        let buf = p.sub(aligned);
+
+        debug_assert!((*(buf as *mut Header<T>)).data_ == ptr);
+
+        MiniVec {
+            buf_: buf,
+            phantom_: PhantomData,
+        }
+    }
+
+    /// # Safety
+    ///
+    /// from_raw_parts is incredibly unsafe and can only be used with the value of `MiniVec::as_mut_ptr`
+    ///
+    /// The length and capacity parameters aren't explicitly needed for this function to work as our internal
+    /// implementation stores these in the same allocation we use for the actual [T]
+    /// They are used in debug mode to assert the correct parameters and are kept for API compatibility with the
+    /// existing Vec signature
+    ///
+    #[allow(clippy::cast_ptr_alignment)]
+    pub unsafe fn from_raw_parts(ptr: *mut T, length: usize, capacity: usize) -> MiniVec<T> {
+        let header_size = mem::size_of::<Header<T>>();
+        let aligned = next_aligned(header_size, mem::align_of::<T>());
+
+        let p = ptr as *mut u8;
+        let buf = p.sub(aligned);
+
+        debug_assert!((*(buf as *mut Header<T>)).len_ == length);
+        debug_assert!((*(buf as *mut Header<T>)).cap_ == capacity);
+        debug_assert!((*(buf as *mut Header<T>)).data_ == ptr);
+
+        MiniVec {
+            buf_: buf,
+            phantom_: PhantomData,
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }

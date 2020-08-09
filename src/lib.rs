@@ -302,6 +302,10 @@ impl<T> MiniVec<T> {
         self.grow(total_required);
     }
 
+    /// # Safety
+    ///
+    /// This function is unsafe in the sense that it will NOT call `.drop()` on the elements excluded from the new len
+    ///
     pub unsafe fn set_len(&mut self, len: usize) {
         self.header_mut().len_ = len;
     }

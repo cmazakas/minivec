@@ -316,6 +316,16 @@ impl<T> MiniVec<T> {
         }
     }
 
+    pub fn leak<'a>(vec: MiniVec<T>) -> &'a mut [T]
+    where
+        T: 'a,
+    {
+        let len = vec.len();
+        let mut vec = mem::ManuallyDrop::new(vec);
+        let vec: &mut MiniVec<T> = &mut *vec;
+        unsafe { slice::from_raw_parts_mut(vec.as_mut_ptr(), len) }
+    }
+
     pub fn new() -> MiniVec<T> {
         assert!(mem::size_of::<T>() > 0, "ZSTs currently not supported");
 

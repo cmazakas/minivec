@@ -202,3 +202,11 @@ fn minivec_insert() {
     ]
   );
 }
+
+#[test]
+fn minivec_leak() {
+  let x = mini_vec![1, 2, 3];
+  let static_ref: &'static mut [usize] = MiniVec::leak(x);
+  static_ref[0] += 1;
+  assert_eq!(static_ref, &[2, 2, 3]);
+}

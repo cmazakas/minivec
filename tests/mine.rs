@@ -210,3 +210,14 @@ fn minivec_leak() {
   static_ref[0] += 1;
   assert_eq!(static_ref, &[2, 2, 3]);
 }
+
+#[test]
+fn minivec_pop() {
+  let mut vec = mini_vec![1, 2, 3];
+  assert_eq!(vec.pop(), Some(3));
+  assert_eq!(vec, [1, 2]);
+
+  let mut vec = mini_vec![1.to_string(), 2.to_string(), 3.to_string()];
+  assert_eq!(vec.pop(), Some(String::from("3")));
+  assert_eq!(vec, [String::from("1"), String::from("2")]);
+}

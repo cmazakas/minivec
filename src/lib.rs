@@ -335,6 +335,18 @@ impl<T> MiniVec<T> {
         }
     }
 
+    pub fn pop(&mut self) -> Option<T> {
+        let len = self.len();
+
+        if len == 0 {
+            return None;
+        }
+
+        let v = unsafe { ptr::read(self.as_ptr().add(len - 1)) };
+        unsafe { self.set_len(len - 1) };
+        Some(v)
+    }
+
     pub fn push(&mut self, value: T) {
         let (len, capacity) = (self.len(), self.capacity());
         if len == capacity {

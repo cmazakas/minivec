@@ -308,14 +308,6 @@ impl<T> MiniVec<T> {
         self.len() == 0
     }
 
-    pub fn len(&self) -> usize {
-        if self.buf_.is_null() {
-            0
-        } else {
-            self.header().len_
-        }
-    }
-
     pub fn leak<'a>(vec: MiniVec<T>) -> &'a mut [T]
     where
         T: 'a,
@@ -324,6 +316,14 @@ impl<T> MiniVec<T> {
         let mut vec = mem::ManuallyDrop::new(vec);
         let vec: &mut MiniVec<T> = &mut *vec;
         unsafe { slice::from_raw_parts_mut(vec.as_mut_ptr(), len) }
+    }
+
+    pub fn len(&self) -> usize {
+        if self.buf_.is_null() {
+            0
+        } else {
+            self.header().len_
+        }
     }
 
     pub fn new() -> MiniVec<T> {

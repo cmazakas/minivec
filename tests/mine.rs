@@ -235,3 +235,12 @@ fn minivec_remove_panic() {
   let mut v = mini_vec![1, 2, 3];
   v.remove(v.len());
 }
+
+#[test]
+fn minivec_remove_item() {
+  let mut vec = mini_vec![1, 2, 3, 1];
+
+  vec.remove_item(&1);
+
+  assert_eq!(vec, mini_vec![2, 3, 1]);
+}

@@ -388,6 +388,19 @@ impl<T> MiniVec<T> {
         }
     }
 
+    pub fn remove_item<V>(&mut self, item: &V) -> Option<T>
+    where
+        T: PartialEq<V>,
+    {
+        let len = self.len();
+        for i in 0..len {
+            if self[i] == *item {
+                return Some(self.remove(i));
+            }
+        }
+        None
+    }
+
     pub fn reserve(&mut self, additional: usize) {
         let capacity = self.capacity();
         let total_required = self.len() + additional;

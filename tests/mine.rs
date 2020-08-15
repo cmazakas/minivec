@@ -221,3 +221,17 @@ fn minivec_pop() {
   assert_eq!(vec.pop(), Some(String::from("3")));
   assert_eq!(vec, [String::from("1"), String::from("2")]);
 }
+
+#[test]
+fn minivec_remove() {
+  let mut v = mini_vec![1, 2, 3];
+  assert_eq!(v.remove(1), 2);
+  assert_eq!(v, [1, 3]);
+}
+
+#[test]
+#[should_panic]
+fn minivec_remove_panic() {
+  let mut v = mini_vec![1, 2, 3];
+  v.remove(v.len());
+}

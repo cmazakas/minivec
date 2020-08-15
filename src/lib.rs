@@ -366,6 +366,28 @@ impl<T> MiniVec<T> {
         header.len_ += 1;
     }
 
+    pub fn remove(&mut self, index: usize) -> T {
+        let len = self.len();
+        if index >= len {
+            panic!("removal index (is {}) should be < len (is {})", index, len);
+        }
+
+        unsafe {
+            let p = self.as_mut_ptr().add(index);
+
+            let x = ptr::read(p);
+
+            let src = p.add(1);
+            let dst = p;
+            let count = len - index - 1;
+            ptr::copy(src, dst, count);
+
+            self.set_len(len - 1);
+
+            x
+        }
+    }
+
     pub fn reserve(&mut self, additional: usize) {
         let capacity = self.capacity();
         let total_required = self.len() + additional;

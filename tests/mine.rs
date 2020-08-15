@@ -259,3 +259,19 @@ fn minivec_test_resize() {
   vec.resize(vec.len(), -1);
   assert_eq!(vec, [1, 2, 3, 4]);
 }
+
+#[test]
+fn minivec_resize_with() {
+  let mut vec = mini_vec![1, 2, 3];
+  vec.resize_with(5, Default::default);
+  assert_eq!(vec, [1, 2, 3, 0, 0]);
+
+  let mut vec = mini_vec![];
+  let mut p = 1;
+  vec.resize_with(4, || {
+    p *= 2;
+    p
+  });
+
+  assert_eq!(vec, [2, 4, 8, 16]);
+}

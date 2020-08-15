@@ -1,6 +1,13 @@
 #![allow(dead_code)]
 
-use std::{alloc, marker::PhantomData, mem, ops::RangeBounds, ptr, slice};
+use std::{
+    alloc,
+    cmp::Ordering,
+    marker::PhantomData,
+    mem,
+    ops::{FnMut, RangeBounds},
+    ptr, slice,
+};
 
 mod r#impl;
 
@@ -433,8 +440,6 @@ impl<T> MiniVec<T> {
     where
         T: Clone,
     {
-        use std::cmp::Ordering;
-
         let len = self.len();
         match new_len.cmp(&len) {
             Ordering::Equal => {}
@@ -443,6 +448,26 @@ impl<T> MiniVec<T> {
                 self.reserve(num_elems);
                 for _i in 0..num_elems {
                     self.push(value.clone());
+                }
+            }
+            Ordering::Less => {
+                self.truncate(new_len);
+            }
+        }
+    }
+
+    pub fn resize_with<F>(&mut self, new_len: usize, mut f: F)
+    where
+        F: FnMut() -> T,
+    {
+        let len = self.len();
+        match new_len.cmp(&len) {
+            Ordering::Equal => {}
+            Ordering::Greater => {
+                let num_elems = new_len - len;
+                self.reserve(num_elems);
+                for _i in 0..num_elems {
+                    self.push(f());
                 }
             }
             Ordering::Less => {

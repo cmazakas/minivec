@@ -244,3 +244,18 @@ fn minivec_remove_item() {
 
   assert_eq!(vec, mini_vec![2, 3, 1]);
 }
+
+#[test]
+fn minivec_test_resize() {
+  let mut vec = mini_vec!["hello"];
+  vec.resize(3, "world");
+  assert_eq!(vec, ["hello", "world", "world"]);
+
+  let mut vec = mini_vec![1, 2, 3, 4];
+  vec.resize(2, 0);
+  assert_eq!(vec, [1, 2]);
+
+  let mut vec = mini_vec![1, 2, 3, 4];
+  vec.resize(vec.len(), -1);
+  assert_eq!(vec, [1, 2, 3, 4]);
+}

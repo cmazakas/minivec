@@ -429,6 +429,28 @@ impl<T> MiniVec<T> {
         self.grow(total_required);
     }
 
+    pub fn resize(&mut self, new_len: usize, value: T)
+    where
+        T: Clone,
+    {
+        use std::cmp::Ordering;
+
+        let len = self.len();
+        match new_len.cmp(&len) {
+            Ordering::Equal => {}
+            Ordering::Greater => {
+                let num_elems = new_len - len;
+                self.reserve(num_elems);
+                for _i in 0..num_elems {
+                    self.push(value.clone());
+                }
+            }
+            Ordering::Less => {
+                self.truncate(new_len);
+            }
+        }
+    }
+
     /// # Safety
     ///
     /// This function is unsafe in the sense that it will NOT call `.drop()` on the elements excluded from the new len

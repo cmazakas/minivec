@@ -476,6 +476,34 @@ impl<T> MiniVec<T> {
         }
     }
 
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&T) -> bool,
+    {
+        let len = self.len();
+
+        let data = self.as_mut_ptr();
+
+        let mut read = data;
+        let mut write = read;
+
+        let last = unsafe { data.add(len) };
+
+        while read < last {
+            let should_retain = unsafe { f(&mut *read) };
+            if should_retain {
+                if read != write {
+                    unsafe { mem::swap(&mut *read, &mut *write) };
+                }
+                write = unsafe { write.add(1) };
+            }
+
+            read = unsafe { read.add(1) };
+        }
+
+        self.truncate((write as usize - data as usize) / mem::size_of::<T>());
+    }
+
     /// # Safety
     ///
     /// This function is unsafe in the sense that it will NOT call `.drop()` on the elements excluded from the new len

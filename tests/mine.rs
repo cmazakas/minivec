@@ -275,3 +275,22 @@ fn minivec_resize_with() {
 
   assert_eq!(vec, [2, 4, 8, 16]);
 }
+
+#[test]
+fn minivec_retain() {
+  let mut vec = mini_vec![1, 2, 3, 4];
+  vec.retain(|&x| x % 2 == 0);
+  assert_eq!(vec, [2, 4]);
+
+  let mut vec = mini_vec![1, 2, 3, 4, 5];
+  let keep = [false, true, true, false, true];
+
+  let mut i = 0;
+  vec.retain(|_| {
+    let should_keep = keep[i];
+    i += 1;
+    should_keep
+  });
+
+  assert_eq!(vec, [2, 3, 5]);
+}

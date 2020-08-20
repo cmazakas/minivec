@@ -512,6 +512,25 @@ impl<T> MiniVec<T> {
         self.header_mut().len_ = len;
     }
 
+    pub fn shrink_to(&mut self, min_capacity: usize) {
+        let (len, capacity) = (self.len(), self.capacity());
+
+        if min_capacity < len {
+            self.shrink_to_fit();
+            return;
+        }
+
+        if capacity == min_capacity {
+            return;
+        }
+
+        if capacity < min_capacity {
+            panic!("Tried to shrink to a larger capacity");
+        }
+
+        self.grow(min_capacity);
+    }
+
     pub fn shrink_to_fit(&mut self) {
         let (len, capacity) = (self.len(), self.capacity());
         if len == capacity {

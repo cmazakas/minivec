@@ -294,3 +294,35 @@ fn minivec_retain() {
 
   assert_eq!(vec, [2, 3, 5]);
 }
+
+#[test]
+fn minivec_shrink_to() {
+  let mut vec = MiniVec::<i32>::with_capacity(10);
+  vec.push(1);
+  vec.push(2);
+  vec.push(3);
+
+  assert_eq!(vec.capacity(), 10);
+  assert_eq!(vec.len(), 3);
+
+  vec.shrink_to(4);
+  assert_eq!(vec.capacity(), 4);
+  assert_eq!(vec.len(), 3);
+
+  vec.shrink_to(0);
+  assert_eq!(vec.capacity(), 3);
+}
+
+#[test]
+#[should_panic]
+fn test_minivec_shrink_to_panic() {
+  let mut vec = MiniVec::<String>::with_capacity(10);
+
+  vec.push(String::from("1"));
+  vec.push(String::from("2"));
+  vec.push(String::from("3"));
+  vec.push(String::from("4"));
+  vec.push(String::from("5"));
+
+  vec.shrink_to(10000);
+}

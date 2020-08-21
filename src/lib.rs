@@ -13,6 +13,7 @@ mod r#impl;
 
 pub mod as_mut;
 pub mod as_ref;
+pub mod borrow;
 pub mod clone;
 pub mod debug;
 pub mod default;

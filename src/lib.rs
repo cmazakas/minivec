@@ -19,6 +19,7 @@ pub mod debug;
 pub mod default;
 pub mod deref;
 pub mod drop;
+pub mod eq;
 pub mod from_iterator;
 pub mod partial_eq;
 

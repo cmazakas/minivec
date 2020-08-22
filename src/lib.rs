@@ -20,6 +20,7 @@ pub mod default;
 pub mod deref;
 pub mod drop;
 pub mod eq;
+pub mod extend;
 pub mod from_iterator;
 pub mod partial_eq;
 

@@ -326,3 +326,30 @@ fn test_minivec_shrink_to_panic() {
 
   vec.shrink_to(10000);
 }
+
+#[test]
+fn test_minivec_extend() {
+  let mut v = mini_vec![1, 2, 3];
+  let other = mini_vec![4, 5, 6];
+
+  v.extend(other.iter());
+
+  assert_eq!(v, mini_vec![1, 2, 3, 4, 5, 6]);
+
+  let mut v = mini_vec![String::from("1"), String::from("2"), String::from("3")];
+  let other = vec![String::from("4"), String::from("5"), String::from("6")];
+
+  v.extend(other.into_iter());
+
+  assert_eq!(
+    v,
+    mini_vec![
+      String::from("1"),
+      String::from("2"),
+      String::from("3"),
+      String::from("4"),
+      String::from("5"),
+      String::from("6")
+    ]
+  );
+}

@@ -17,6 +17,18 @@ fn minivec_default_constructed() {
 }
 
 #[test]
+fn minivec_as_mut1() {
+    let mut v = mini_vec![1, 2, 3];
+    let x: &mut [i32] = v.as_mut();
+    assert_eq!(x, [1, 2, 3]);
+
+    let mut v = mini_vec![1, 2, 3];
+    let mut vv: &mut MiniVec<i32> = &mut v;
+    let x: &mut MiniVec<_> = std::convert::AsMut::<MiniVec<i32>>::as_mut(&mut vv);
+    assert_eq!(x, &mut [1, 2, 3].as_mut());
+}
+
+#[test]
 fn minivec_push() {
   let mut v: MiniVec<i32> = MiniVec::new();
 

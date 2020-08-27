@@ -367,3 +367,34 @@ fn test_minivec_extend() {
         ]
     );
 }
+
+#[test]
+fn test_minivec_from() {
+    // From<&'a [T]>
+    //
+    let data = [1, 2, 3];
+    let x: &[i32] = &data[..];
+    let v = MiniVec::<i32>::from(x);
+
+    assert_eq!(v, [1, 2, 3]);
+
+    // From<&'a mut [T]>
+    //
+    let mut data = [1, 2, 3];
+    let x: &mut [i32] = &mut data[..];
+    let v = MiniVec::<i32>::from(x);
+
+    assert_eq!(v, [1, 2, 3]);
+
+    // From<&'a str>
+    //
+    let data: &str = "Hello, world!\n";
+    let v = MiniVec::from(data);
+    assert_eq!(v, Vec::from(data));
+
+    // From<&'a MiniVec<T>> to Cow<'a, [T]>
+    //
+    let v = mini_vec![1, 2, 3];
+    let cow_v = std::borrow::Cow::from(&v);
+    assert_eq!(cow_v, &[1, 2, 3][..]);
+}

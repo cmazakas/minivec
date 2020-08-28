@@ -24,6 +24,7 @@ pub mod extend;
 pub mod from;
 pub mod from_iterator;
 pub mod hash;
+pub mod index;
 pub mod partial_eq;
 
 use crate::r#impl::helpers::*;

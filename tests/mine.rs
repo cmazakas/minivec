@@ -5,6 +5,7 @@ use std::{
     collections::hash_map::DefaultHasher,
     convert::From,
     hash::{Hash, Hasher},
+    ops::{Index, IndexMut},
 };
 
 #[test]
@@ -417,4 +418,30 @@ fn minivec_hash() {
     w.hash(&mut h);
 
     assert_eq!(hashed_mini_vec, h.finish());
+}
+
+#[test]
+fn minivec_index() {
+    let mut v = mini_vec![1, 2, 3, 4, 5, 6];
+
+    assert_eq!(*v.index(0), 1);
+    assert_eq!(*v.index(1), 2);
+    assert_eq!(*v.index(2), 3);
+    assert_eq!(*v.index(3), 4);
+    assert_eq!(*v.index(4), 5);
+    assert_eq!(*v.index(5), 6);
+
+    *v.index_mut(0) = 3;
+    *v.index_mut(1) = 2 * 3;
+    *v.index_mut(2) = 3 * 3;
+    *v.index_mut(3) = 4 * 3;
+    *v.index_mut(4) = 5 * 3;
+    *v.index_mut(5) = 6 * 3;
+
+    assert_eq!(*v.index(0), 3);
+    assert_eq!(*v.index(1), 2 * 3);
+    assert_eq!(*v.index(2), 3 * 3);
+    assert_eq!(*v.index(3), 4 * 3);
+    assert_eq!(*v.index(4), 5 * 3);
+    assert_eq!(*v.index(5), 6 * 3);
 }

@@ -1,9 +1,11 @@
 extern crate minivec;
 
-use minivec::mini_vec;
-use minivec::MiniVec;
-
-use std::convert::From;
+use minivec::{mini_vec, MiniVec};
+use std::{
+    collections::hash_map::DefaultHasher,
+    convert::From,
+    hash::{Hash, Hasher},
+};
 
 #[test]
 fn minivec_default_constructed() {
@@ -397,4 +399,22 @@ fn test_minivec_from() {
     let v = mini_vec![1, 2, 3];
     let cow_v = std::borrow::Cow::from(&v);
     assert_eq!(cow_v, &[1, 2, 3][..]);
+}
+
+#[test]
+fn minivec_hash() {
+    let v = mini_vec![1, 2, 3, 4, 5, 6];
+    let w = vec![1, 2, 3, 4, 5, 6];
+
+    let mut h = DefaultHasher::new();
+    v.hash(&mut h);
+
+    let hashed_mini_vec = h.finish();
+
+    assert_eq!(hashed_mini_vec, 4819070452177268435);
+
+    let mut h = DefaultHasher::new();
+    w.hash(&mut h);
+
+    assert_eq!(hashed_mini_vec, h.finish());
 }

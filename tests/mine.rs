@@ -445,3 +445,172 @@ fn minivec_index() {
     assert_eq!(*v.index(4), 5 * 3);
     assert_eq!(*v.index(5), 6 * 3);
 }
+
+#[test]
+fn minivec_into_iter() {
+    // test normal Iterator trait
+    //
+    let v = mini_vec![1, 2, 3, 4, 5];
+
+    let iter = v.into_iter();
+    assert_eq!(iter.size_hint(), (5, Some(5)));
+
+    for (idx, x) in iter.enumerate() {
+        assert_eq!(x, idx + 1);
+    }
+
+    let v = mini_vec![
+        1.to_string(),
+        2.to_string(),
+        3.to_string(),
+        4.to_string(),
+        5.to_string()
+    ];
+
+    let iter = v.into_iter();
+    for (idx, x) in iter.enumerate() {
+        assert_eq!(x, (idx + 1).to_string());
+    }
+
+    // test as_slice() + as_mut_slice()
+    //
+    let v = mini_vec![1, 2, 3, 4, 5];
+
+    let mut iter = v.into_iter();
+    iter.next();
+    iter.next();
+
+    assert_eq!(iter.as_slice(), &[3, 4, 5]);
+
+    let v = mini_vec![1, 2, 3, 4, 5];
+
+    let mut iter = v.into_iter();
+    iter.next();
+    iter.next();
+
+    assert_eq!(iter.as_mut_slice(), &[3, 4, 5]);
+
+    // test AsRef
+    //
+    let v = mini_vec![1, 2, 3, 4, 5];
+
+    let iter = v.into_iter();
+    let s: &[i32] = iter.as_ref();
+    assert_eq!(s, &[1, 2, 3, 4, 5]);
+
+    // test clone()
+    //
+    let v = mini_vec![1, 2, 3, 4, 5];
+
+    let mut iter = v.into_iter();
+
+    #[allow(clippy::redundant_clone)]
+    let w = iter.clone();
+
+    assert_eq!(w.as_slice(), &[1, 2, 3, 4, 5]);
+
+    iter.next();
+    iter.next();
+
+    #[allow(clippy::redundant_clone)]
+    let w = iter.clone();
+
+    assert_eq!(w.as_slice(), &[3, 4, 5]);
+
+    // test DoubleEndedIterator
+    //
+    let v = mini_vec![1, 2, 3, 4, 5];
+
+    let mut iter = v.into_iter();
+
+    assert_eq!(iter.next().unwrap(), 1);
+    assert_eq!(iter.next_back().unwrap(), 5);
+
+    assert_eq!(iter.next().unwrap(), 2);
+    assert_eq!(iter.next_back().unwrap(), 4);
+
+    assert_eq!(iter.next().unwrap(), 3);
+    assert_eq!(iter.next_back(), None);
+
+    // test automatic impl of Drop to make sure it frees owning objects
+    //
+    let v = mini_vec![
+        1.to_string(),
+        2.to_string(),
+        3.to_string(),
+        4.to_string(),
+        5.to_string()
+    ];
+
+    let mut iter = v.into_iter();
+
+    iter.next();
+    iter.next();
+
+    // ExactSizeIterator test
+    //
+    let v = mini_vec![1, 2, 3, 4, 5];
+
+    let mut iter = v.into_iter();
+
+    assert_eq!(iter.len(), 5);
+
+    iter.next();
+    assert_eq!(iter.len(), 4);
+
+    iter.next();
+    assert_eq!(iter.len(), 3);
+
+    iter.next();
+    assert_eq!(iter.len(), 2);
+
+    iter.next();
+    assert_eq!(iter.len(), 1);
+
+    iter.next();
+    assert_eq!(iter.len(), 0);
+
+    // FusedIterator test
+    //
+    let v = mini_vec![1];
+
+    let mut iter = v.into_iter();
+    assert_eq!(iter.next().unwrap(), 1);
+
+    assert_eq!(iter.next(), None);
+    assert_eq!(iter.next(), None);
+    assert_eq!(iter.next(), None);
+    assert_eq!(iter.next(), None);
+    assert_eq!(iter.next(), None);
+
+    // IntoIterator for &MiniVec<T>
+    //
+    let v = mini_vec![
+        1.to_string(),
+        2.to_string(),
+        3.to_string(),
+        4.to_string(),
+        5.to_string()
+    ];
+    let mut slice_iter = (&v).into_iter();
+
+    assert_eq!(slice_iter.next().unwrap(), &(1.to_string()));
+
+    // IntoIterator for &mut MiniVec<T>
+    //
+    let mut v = mini_vec![
+        1.to_string(),
+        2.to_string(),
+        3.to_string(),
+        4.to_string(),
+        5.to_string()
+    ];
+
+    let x: &mut MiniVec<_> = &mut v;
+
+    let slice_iter = x.into_iter();
+
+    for s in slice_iter {
+        *s = "4321".to_string();
+    }
+}

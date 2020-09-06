@@ -22,7 +22,7 @@ fn minivec_default_constructed() {
 }
 
 #[test]
-fn minivec_as_mut1() {
+fn minivec_as_mut() {
     let mut v = mini_vec![1, 2, 3];
     let x: &mut [i32] = v.as_mut();
     assert_eq!(x, [1, 2, 3]);
@@ -332,7 +332,7 @@ fn minivec_shrink_to() {
 
 #[test]
 #[should_panic]
-fn test_minivec_shrink_to_panic() {
+fn minivec_shrink_to_panic() {
     let mut vec = MiniVec::<String>::with_capacity(10);
 
     vec.push(String::from("1"));
@@ -345,7 +345,7 @@ fn test_minivec_shrink_to_panic() {
 }
 
 #[test]
-fn test_minivec_extend() {
+fn minivec_extend() {
     let mut v = mini_vec![1, 2, 3];
     let other = mini_vec![4, 5, 6];
 
@@ -372,7 +372,7 @@ fn test_minivec_extend() {
 }
 
 #[test]
-fn test_minivec_from() {
+fn minivec_from() {
     // From<&'a [T]>
     //
     let data = [1, 2, 3];

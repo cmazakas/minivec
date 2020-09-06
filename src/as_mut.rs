@@ -1,6 +1,8 @@
 use crate::MiniVec;
 
-use std::convert::AsMut;
+extern crate core;
+
+use core::convert::AsMut;
 
 impl<T> AsMut<[T]> for MiniVec<T> {
     fn as_mut(&mut self) -> &mut [T] {

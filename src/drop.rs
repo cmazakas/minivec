@@ -2,7 +2,10 @@ use crate::make_layout;
 use crate::Header;
 use crate::MiniVec;
 
-use std::{alloc, ptr};
+extern crate alloc;
+extern crate core;
+
+use core::ptr;
 
 impl<T> Drop for MiniVec<T> {
     fn drop(&mut self) {
@@ -17,6 +20,6 @@ impl<T> Drop for MiniVec<T> {
             unsafe { ptr::read(header.data_.add(i)) };
         }
 
-        unsafe { alloc::dealloc(self.buf_, make_layout::<T>(header.cap_)) };
+        unsafe { alloc::alloc::dealloc(self.buf_, make_layout::<T>(header.cap_)) };
     }
 }

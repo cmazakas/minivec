@@ -1,6 +1,8 @@
 use crate::MiniVec;
 
-use std::{
+extern crate core;
+
+use core::{
     ops::{Index, IndexMut},
     slice::SliceIndex,
 };

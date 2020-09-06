@@ -1,6 +1,8 @@
 use crate::MiniVec;
 
-use std::hash::{Hash, Hasher};
+extern crate core;
+
+use core::hash::{Hash, Hasher};
 
 impl<T> Hash for MiniVec<T>
 where

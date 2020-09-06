@@ -1,11 +1,14 @@
+#![no_std]
 #![allow(dead_code)]
 
-use std::{
-    alloc,
+extern crate alloc;
+extern crate core;
+
+use core::{
     cmp::Ordering,
     marker::PhantomData,
     mem,
-    ops::{FnMut, RangeBounds},
+    ops::{Bound, FnMut, RangeBounds},
     ptr, slice,
 };
 
@@ -62,9 +65,9 @@ impl<T> MiniVec<T> {
         let new_layout = make_layout::<T>(new_capacity);
         let len = self.len();
 
-        let new_buf = unsafe { alloc::alloc(new_layout) };
+        let new_buf = unsafe { alloc::alloc::alloc(new_layout) };
         if new_buf.is_null() {
-            alloc::handle_alloc_error(new_layout);
+            alloc::alloc::handle_alloc_error(new_layout);
         }
 
         let new_data = unsafe {
@@ -94,7 +97,7 @@ impl<T> MiniVec<T> {
             }
 
             unsafe {
-                alloc::dealloc(self.buf_, old_layout);
+                alloc::alloc::dealloc(self.buf_, old_layout);
             };
         }
 
@@ -209,15 +212,15 @@ impl<T> MiniVec<T> {
         let len = self.len();
 
         let start_idx = match range.start_bound() {
-            std::ops::Bound::Included(&n) => n,
-            std::ops::Bound::Excluded(&n) => n + 1,
-            std::ops::Bound::Unbounded => 0,
+            Bound::Included(&n) => n,
+            Bound::Excluded(&n) => n + 1,
+            Bound::Unbounded => 0,
         };
 
         let end_idx = match range.end_bound() {
-            std::ops::Bound::Included(&n) => n + 1,
-            std::ops::Bound::Excluded(&n) => n,
-            std::ops::Bound::Unbounded => len,
+            Bound::Included(&n) => n + 1,
+            Bound::Excluded(&n) => n,
+            Bound::Unbounded => len,
         };
 
         if start_idx > end_idx {
@@ -244,7 +247,7 @@ impl<T> MiniVec<T> {
             drain_end_: unsafe { ptr::NonNull::new_unchecked(data.add(end_idx)) },
             remaining_pos_: unsafe { ptr::NonNull::new_unchecked(data.add(end_idx)) },
             remaining_: len - end_idx,
-            marker_: std::marker::PhantomData,
+            marker_: PhantomData,
         }
     }
 
@@ -345,7 +348,7 @@ impl<T> MiniVec<T> {
 
         MiniVec {
             buf_: ptr::null_mut(),
-            phantom_: std::marker::PhantomData,
+            phantom_: PhantomData,
         }
     }
 
@@ -600,7 +603,7 @@ pub struct Drain<'a, T: 'a> {
     drain_end_: ptr::NonNull<T>,
     remaining_pos_: ptr::NonNull<T>,
     remaining_: usize,
-    marker_: std::marker::PhantomData<&'a T>,
+    marker_: PhantomData<&'a T>,
 }
 
 impl<T> Iterator for Drain<'_, T> {

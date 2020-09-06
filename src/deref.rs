@@ -1,6 +1,8 @@
 use crate::MiniVec;
 
-use std::{
+extern crate core;
+
+use core::{
     ops::{Deref, DerefMut},
     slice,
 };
@@ -29,6 +31,6 @@ impl<T> DerefMut for MiniVec<T> {
         let header = self.header();
         let data = header.data_;
         let len = header.len_;
-        unsafe { std::slice::from_raw_parts_mut(data, len) }
+        unsafe { slice::from_raw_parts_mut(data, len) }
     }
 }

@@ -1,6 +1,10 @@
 use crate::MiniVec;
 
-use std::{borrow::Cow, convert::From, ptr};
+extern crate alloc;
+extern crate core;
+
+use alloc::borrow::Cow;
+use core::{convert::From, ptr};
 
 impl<'a, T> From<&'a [T]> for MiniVec<T>
 where

@@ -1,6 +1,10 @@
 use crate::Header;
 
-use std::{alloc::Layout, mem};
+extern crate alloc;
+extern crate core;
+
+use alloc::alloc::Layout;
+use core::{cmp, mem};
 
 pub fn next_aligned(num_bytes: usize, alignment: usize) -> usize {
     let remaining = num_bytes % alignment;
@@ -28,7 +32,7 @@ pub fn next_capacity<T>(capacity: usize) -> usize {
 pub fn max_align<T>() -> usize {
     let align_t = mem::align_of::<T>();
     let header_align = mem::align_of::<Header<T>>();
-    std::cmp::max(align_t, header_align)
+    cmp::max(align_t, header_align)
 }
 
 pub fn make_layout<T>(cap: usize) -> Layout {

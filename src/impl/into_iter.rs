@@ -17,9 +17,6 @@ use core::{
 // making it a data member of the struct and then manually adjusting things in
 // the Header of the MiniVec
 //
-// to this end, we even get traits like Drop for free where the stdlib had to
-// manually implement the trait for its vec::IntoIter type
-//
 pub struct IntoIter<T> {
     v: MiniVec<T>,
 }

@@ -1,7 +1,5 @@
 use crate::MiniVec;
 
-extern crate core;
-
 use core::{
     ops::{Deref, DerefMut},
     slice,

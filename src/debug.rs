@@ -1,7 +1,5 @@
 use crate::MiniVec;
 
-extern crate core;
-
 use core::fmt::{Debug, Formatter, Result};
 
 impl<T: Debug> Debug for MiniVec<T> {

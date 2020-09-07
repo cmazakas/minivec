@@ -3,7 +3,6 @@ use crate::Header;
 use crate::MiniVec;
 
 extern crate alloc;
-extern crate core;
 
 use core::ptr;
 

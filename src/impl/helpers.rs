@@ -1,7 +1,6 @@
 use crate::Header;
 
 extern crate alloc;
-extern crate core;
 
 use alloc::alloc::Layout;
 use core::{cmp, mem};

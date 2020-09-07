@@ -1,7 +1,5 @@
 use crate::MiniVec;
 
-extern crate core;
-
 use core::{
     ops::{Index, IndexMut},
     slice::SliceIndex,

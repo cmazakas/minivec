@@ -1,7 +1,5 @@
 use crate::MiniVec;
 
-extern crate core;
-
 use core::borrow::{Borrow, BorrowMut};
 
 impl<T> Borrow<[T]> for MiniVec<T> {

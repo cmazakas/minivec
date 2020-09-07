@@ -1,7 +1,5 @@
 use crate::MiniVec;
 
-extern crate core;
-
 use core::hash::{Hash, Hasher};
 
 impl<T> Hash for MiniVec<T>

@@ -1,7 +1,5 @@
 use crate::MiniVec;
 
-extern crate core;
-
 use core::iter::FromIterator;
 
 impl<A> FromIterator<A> for MiniVec<A> {

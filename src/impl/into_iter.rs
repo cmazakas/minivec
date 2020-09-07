@@ -1,7 +1,6 @@
 use crate::MiniVec;
 
 extern crate alloc;
-extern crate core;
 
 use alloc::fmt;
 use core::{

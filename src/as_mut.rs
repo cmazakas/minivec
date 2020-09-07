@@ -1,7 +1,5 @@
 use crate::MiniVec;
 
-extern crate core;
-
 use core::convert::AsMut;
 
 impl<T> AsMut<[T]> for MiniVec<T> {

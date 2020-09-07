@@ -1,5 +1,10 @@
 use crate::MiniVec;
 
+use core::{
+    cmp::{Ordering, PartialEq, PartialOrd},
+    convert::AsRef,
+};
+
 impl<T, V> PartialEq<V> for MiniVec<T>
 where
     V: AsRef<[T]>,
@@ -10,5 +15,18 @@ where
         let rhs: &[T] = other.as_ref();
 
         lhs == rhs
+    }
+}
+
+impl<T, V> PartialOrd<V> for MiniVec<T>
+where
+    V: AsRef<[T]>,
+    T: PartialOrd,
+{
+    fn partial_cmp(&self, other: &V) -> Option<Ordering> {
+        let x: &[T] = &**self;
+        let y: &[T] = other.as_ref();
+
+        x.partial_cmp(&y)
     }
 }

@@ -6,9 +6,9 @@ use alloc::fmt;
 use core::{
     clone::Clone,
     convert::AsRef,
-    iter::{DoubleEndedIterator, ExactSizeIterator, FusedIterator, IntoIterator, Iterator},
+    iter::{DoubleEndedIterator, ExactSizeIterator, FusedIterator, Iterator},
     marker::{Send, Sync},
-    ptr, slice,
+    ptr,
 };
 
 // we diverge pretty heavily from the stdlib here
@@ -61,6 +61,10 @@ impl<T: fmt::Debug> fmt::Debug for IntoIter<T> {
 
 impl<T> DoubleEndedIterator for IntoIter<T> {
     fn next_back(&mut self) -> Option<Self::Item> {
+        if self.v.buf_.is_null() {
+            return None;
+        }
+
         let header = self.v.header_mut();
 
         let data = header.data_;
@@ -92,6 +96,10 @@ impl<T> Iterator for IntoIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.v.buf_.is_null() {
+            return None;
+        }
+
         let header = self.v.header_mut();
 
         let data = header.data_;

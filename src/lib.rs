@@ -32,6 +32,8 @@ pub mod partial_eq;
 
 use crate::r#impl::helpers::*;
 
+pub use crate::r#impl::IntoIter;
+
 struct Header<T> {
     data_: *mut T,
     len_: usize,

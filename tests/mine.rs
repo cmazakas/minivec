@@ -625,3 +625,21 @@ fn minivec_swap_remove() {
     assert_eq!(v.swap_remove(0), "foo");
     assert_eq!(v, ["baz", "qux"]);
 }
+
+#[test]
+fn minivec_split_off() {
+    let mut vec = mini_vec![1, 2, 3];
+    let vec2 = vec.split_off(1);
+    assert_eq!(vec, [1]);
+    assert_eq!(vec2, [2, 3]);
+
+    let mut vec = mini_vec![1, 2, 3];
+    let vec2 = vec.split_off(3);
+    assert_eq!(vec, [1, 2, 3]);
+    assert_eq!(vec2, []);
+
+    let mut vec = mini_vec![1, 2, 3];
+    let vec2 = vec.split_off(0);
+    assert_eq!(vec, []);
+    assert_eq!(vec2, [1, 2, 3]);
+}

@@ -551,6 +551,26 @@ impl<T> MiniVec<T> {
         self.grow(len);
     }
 
+    pub fn split_off(&mut self, at: usize) -> MiniVec<T> {
+        let len = self.len();
+        if at > len {
+            panic!("`at` split index (is {}) should be <= len (is {})", at, len);
+        }
+
+        let mut other = MiniVec::with_capacity(self.capacity());
+
+        unsafe { self.set_len(at) }
+        unsafe { other.set_len(len - at) }
+
+        let src = unsafe { self.as_ptr().add(at) };
+        let dst = other.as_mut_ptr();
+        let count = len - at;
+
+        unsafe { ptr::copy_nonoverlapping(src, dst, count) }
+
+        other
+    }
+
     pub fn swap_remove(&mut self, index: usize) -> T {
         let len = self.len();
         if index >= len {

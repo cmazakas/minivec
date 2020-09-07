@@ -99,67 +99,67 @@ fn test_reserve() {
 //     assert_eq!(Vec::<()>::new().capacity(), usize::MAX);
 // }
 
-// #[test]
-// fn test_extend() {
-//     let mut v = MiniVec::new();
-//     let mut w = MiniVec::new();
+#[test]
+fn test_extend() {
+    let mut v = MiniVec::new();
+    let mut w = MiniVec::new();
 
-//     v.extend(w.clone());
-//     assert_eq!(v, &[]);
+    v.extend(w.clone());
+    assert_eq!(v, &[]);
 
-//     v.extend(0..3);
-//     for i in 0..3 {
-//         w.push(i)
-//     }
+    v.extend(0..3);
+    for i in 0..3 {
+        w.push(i)
+    }
 
-//     assert_eq!(v, w);
+    assert_eq!(v, w);
 
-//     v.extend(3..10);
-//     for i in 3..10 {
-//         w.push(i)
-//     }
+    v.extend(3..10);
+    for i in 3..10 {
+        w.push(i)
+    }
 
-//     assert_eq!(v, w);
+    assert_eq!(v, w);
 
-//     v.extend(w.clone()); // specializes to `append`
-//     assert!(v.iter().eq(w.iter().chain(w.iter())));
+    v.extend(w.clone()); // specializes to `append`
+    assert!(v.iter().eq(w.iter().chain(w.iter())));
 
-//     Zero sized types
-//     #[derive(PartialEq, Debug)]
-//     struct Foo;
+    // // Zero sized types
+    // #[derive(PartialEq, Debug)]
+    // struct Foo;
 
-//     let mut a = Vec::new();
-//     let b = vec![Foo, Foo];
+    // let mut a = Vec::new();
+    // let b = vec![Foo, Foo];
 
-//     a.extend(b);
-//     assert_eq!(a, &[Foo, Foo]);
+    // a.extend(b);
+    // assert_eq!(a, &[Foo, Foo]);
 
-//     // Double drop
-//     let mut count_x = 0;
-//     {
-//         let mut x = Vec::new();
-//         let y = vec![DropCounter {
-//             count: &mut count_x,
-//         }];
-//         x.extend(y);
-//     }
-//     assert_eq!(count_x, 1);
-// }
+    // Double drop
+    let mut count_x = 0;
+    {
+        let mut x = MiniVec::new();
+        let y = mini_vec![DropCounter {
+            count: &mut count_x,
+        }];
+        x.extend(y);
+    }
+    assert_eq!(count_x, 1);
+}
 
-// #[test]
-// fn test_extend_ref() {
-//     let mut v = vec![1, 2];
-//     v.extend(&[3, 4, 5]);
+#[test]
+fn test_extend_ref() {
+    let mut v = mini_vec![1, 2];
+    v.extend(&[3, 4, 5]);
 
-//     assert_eq!(v.len(), 5);
-//     assert_eq!(v, [1, 2, 3, 4, 5]);
+    assert_eq!(v.len(), 5);
+    assert_eq!(v, [1, 2, 3, 4, 5]);
 
-//     let w = vec![6, 7];
-//     v.extend(&w);
+    let w = mini_vec![6, 7];
+    v.extend(&w);
 
-//     assert_eq!(v.len(), 7);
-//     assert_eq!(v, [1, 2, 3, 4, 5, 6, 7]);
-// }
+    assert_eq!(v.len(), 7);
+    assert_eq!(v, [1, 2, 3, 4, 5, 6, 7]);
+}
 
 #[test]
 fn test_slice_from_mut() {
@@ -249,12 +249,12 @@ fn test_clone_from() {
     assert_eq!(v, three)
 }
 
-// #[test]
-// fn test_retain() {
-//     let mut vec = vec![1, 2, 3, 4];
-//     vec.retain(|&x| x % 2 == 0);
-//     assert_eq!(vec, [2, 4]);
-// }
+#[test]
+fn test_retain() {
+    let mut vec = mini_vec![1, 2, 3, 4];
+    vec.retain(|&x| x % 2 == 0);
+    assert_eq!(vec, [2, 4]);
+}
 
 #[test]
 fn test_dedup() {
@@ -358,24 +358,39 @@ fn test_dedup_unique() {
 //     assert_eq!(v.iter_mut().count(), 0);
 // }
 
-// #[test]
-// fn test_partition() {
-//     assert_eq!(vec![].into_iter().partition(|x: &i32| *x < 3), (vec![], vec![]));
-//     assert_eq!(vec![1, 2, 3].into_iter().partition(|x| *x < 4), (vec![1, 2, 3], vec![]));
-//     assert_eq!(vec![1, 2, 3].into_iter().partition(|x| *x < 2), (vec![1], vec![2, 3]));
-//     assert_eq!(vec![1, 2, 3].into_iter().partition(|x| *x < 0), (vec![], vec![1, 2, 3]));
-// }
+#[test]
+fn test_partition() {
+    assert_eq!(
+        mini_vec![].into_iter().partition(|x: &i32| *x < 3),
+        (mini_vec![], mini_vec![])
+    );
 
-// #[test]
-// fn test_zip_unzip() {
-//     let z1 = vec![(1, 4), (2, 5), (3, 6)];
+    assert_eq!(
+        mini_vec![1, 2, 3].into_iter().partition(|x| *x < 4),
+        (mini_vec![1, 2, 3], mini_vec![])
+    );
 
-//     let (left, right): (Vec<_>, Vec<_>) = z1.iter().cloned().unzip();
+    assert_eq!(
+        mini_vec![1, 2, 3].into_iter().partition(|x| *x < 2),
+        (mini_vec![1], mini_vec![2, 3])
+    );
 
-//     assert_eq!((1, 4), (left[0], right[0]));
-//     assert_eq!((2, 5), (left[1], right[1]));
-//     assert_eq!((3, 6), (left[2], right[2]));
-// }
+    assert_eq!(
+        mini_vec![1, 2, 3].into_iter().partition(|x| *x < 0),
+        (mini_vec![], mini_vec![1, 2, 3])
+    );
+}
+
+#[test]
+fn test_zip_unzip() {
+    let z1 = mini_vec![(1, 4), (2, 5), (3, 6)];
+
+    let (left, right): (MiniVec<_>, MiniVec<_>) = z1.iter().cloned().unzip();
+
+    assert_eq!((1, 4), (left[0], right[0]));
+    assert_eq!((2, 5), (left[1], right[1]));
+    assert_eq!((3, 6), (left[2], right[2]));
+}
 
 #[test]
 fn test_vec_truncate_drop() {
@@ -469,25 +484,25 @@ fn test_slice_out_of_bounds_5() {
 //     vec.swap_remove(0);
 // }
 
-// #[test]
-// fn test_move_items() {
-//     let vec = vec![1, 2, 3];
-//     let mut vec2 = vec![];
-//     for i in vec {
-//         vec2.push(i);
-//     }
-//     assert_eq!(vec2, [1, 2, 3]);
-// }
+#[test]
+fn test_move_items() {
+    let vec = mini_vec![1, 2, 3];
+    let mut vec2 = mini_vec![];
+    for i in vec {
+        vec2.push(i);
+    }
+    assert_eq!(vec2, [1, 2, 3]);
+}
 
-// #[test]
-// fn test_move_items_reverse() {
-//     let vec = vec![1, 2, 3];
-//     let mut vec2 = vec![];
-//     for i in vec.into_iter().rev() {
-//         vec2.push(i);
-//     }
-//     assert_eq!(vec2, [3, 2, 1]);
-// }
+#[test]
+fn test_move_items_reverse() {
+    let vec = mini_vec![1, 2, 3];
+    let mut vec2 = mini_vec![];
+    for i in vec.into_iter().rev() {
+        vec2.push(i);
+    }
+    assert_eq!(vec2, [3, 2, 1]);
+}
 
 // #[test]
 // fn test_move_items_zero_sized() {
@@ -730,59 +745,59 @@ fn test_append() {
 //     assert_eq!(vec2, [5, 6]);
 // }
 
-// #[test]
-// fn test_into_iter_as_slice() {
-//     let vec = vec!['a', 'b', 'c'];
-//     let mut into_iter = vec.into_iter();
-//     assert_eq!(into_iter.as_slice(), &['a', 'b', 'c']);
-//     let _ = into_iter.next().unwrap();
-//     assert_eq!(into_iter.as_slice(), &['b', 'c']);
-//     let _ = into_iter.next().unwrap();
-//     let _ = into_iter.next().unwrap();
-//     assert_eq!(into_iter.as_slice(), &[]);
-// }
+#[test]
+fn test_into_iter_as_slice() {
+    let vec = mini_vec!['a', 'b', 'c'];
+    let mut into_iter = vec.into_iter();
+    assert_eq!(into_iter.as_slice(), &['a', 'b', 'c']);
+    let _ = into_iter.next().unwrap();
+    assert_eq!(into_iter.as_slice(), &['b', 'c']);
+    let _ = into_iter.next().unwrap();
+    let _ = into_iter.next().unwrap();
+    assert_eq!(into_iter.as_slice(), &[]);
+}
 
-// #[test]
-// fn test_into_iter_as_mut_slice() {
-//     let vec = vec!['a', 'b', 'c'];
-//     let mut into_iter = vec.into_iter();
-//     assert_eq!(into_iter.as_slice(), &['a', 'b', 'c']);
-//     into_iter.as_mut_slice()[0] = 'x';
-//     into_iter.as_mut_slice()[1] = 'y';
-//     assert_eq!(into_iter.next().unwrap(), 'x');
-//     assert_eq!(into_iter.as_slice(), &['y', 'c']);
-// }
+#[test]
+fn test_into_iter_as_mut_slice() {
+    let vec = mini_vec!['a', 'b', 'c'];
+    let mut into_iter = vec.into_iter();
+    assert_eq!(into_iter.as_slice(), &['a', 'b', 'c']);
+    into_iter.as_mut_slice()[0] = 'x';
+    into_iter.as_mut_slice()[1] = 'y';
+    assert_eq!(into_iter.next().unwrap(), 'x');
+    assert_eq!(into_iter.as_slice(), &['y', 'c']);
+}
 
-// #[test]
-// fn test_into_iter_debug() {
-//     let vec = vec!['a', 'b', 'c'];
-//     let into_iter = vec.into_iter();
-//     let debug = format!("{:?}", into_iter);
-//     assert_eq!(debug, "IntoIter(['a', 'b', 'c'])");
-// }
+#[test]
+fn test_into_iter_debug() {
+    let vec = mini_vec!['a', 'b', 'c'];
+    let into_iter = vec.into_iter();
+    let debug = format!("{:?}", into_iter);
+    assert_eq!(debug, "MiniVec::IntoIter(['a', 'b', 'c'])");
+}
 
-// #[test]
-// fn test_into_iter_count() {
-//     assert_eq!(vec![1, 2, 3].into_iter().count(), 3);
-// }
+#[test]
+fn test_into_iter_count() {
+    assert_eq!(mini_vec![1, 2, 3].into_iter().count(), 3);
+}
 
-// #[test]
-// fn test_into_iter_clone() {
-//     fn iter_equal<I: Iterator<Item = i32>>(it: I, slice: &[i32]) {
-//         let v: Vec<i32> = it.collect();
-//         assert_eq!(&v[..], slice);
-//     }
-//     let mut it = vec![1, 2, 3].into_iter();
-//     iter_equal(it.clone(), &[1, 2, 3]);
-//     assert_eq!(it.next(), Some(1));
-//     let mut it = it.rev();
-//     iter_equal(it.clone(), &[3, 2]);
-//     assert_eq!(it.next(), Some(3));
-//     iter_equal(it.clone(), &[2]);
-//     assert_eq!(it.next(), Some(2));
-//     iter_equal(it.clone(), &[]);
-//     assert_eq!(it.next(), None);
-// }
+#[test]
+fn test_into_iter_clone() {
+    fn iter_equal<I: Iterator<Item = i32>>(it: I, slice: &[i32]) {
+        let v: MiniVec<i32> = it.collect();
+        assert_eq!(&v[..], slice);
+    }
+    let mut it = mini_vec![1, 2, 3].into_iter();
+    iter_equal(it.clone(), &[1, 2, 3]);
+    assert_eq!(it.next(), Some(1));
+    let mut it = it.rev();
+    iter_equal(it.clone(), &[3, 2]);
+    assert_eq!(it.next(), Some(3));
+    iter_equal(it.clone(), &[2]);
+    assert_eq!(it.next(), Some(2));
+    iter_equal(it.clone(), &[]);
+    assert_eq!(it.next(), None);
+}
 
 // #[test]
 // fn test_into_iter_leak() {

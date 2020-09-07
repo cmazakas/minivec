@@ -61,7 +61,13 @@ impl<T> MiniVec<T> {
     fn grow(&mut self, capacity: usize) {
         debug_assert!(capacity >= self.len());
 
+        let old_capacity = self.capacity();
         let new_capacity = capacity;
+
+        if new_capacity == old_capacity {
+            return;
+        }
+
         let new_layout = make_layout::<T>(new_capacity);
 
         let len = self.len();
@@ -69,8 +75,7 @@ impl<T> MiniVec<T> {
         let new_buf = if self.buf_.is_null() {
             unsafe { alloc::alloc::alloc(new_layout) }
         } else {
-            let cap = self.capacity();
-            let old_layout = make_layout::<T>(cap);
+            let old_layout = make_layout::<T>(old_capacity);
 
             unsafe { alloc::alloc::realloc(self.buf_, old_layout, new_layout.size()) }
         };

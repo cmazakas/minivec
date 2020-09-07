@@ -80,6 +80,12 @@ impl<T> DoubleEndedIterator for IntoIter<T> {
     }
 }
 
+impl<T> Drop for IntoIter<T> {
+    fn drop(&mut self) {
+        for _ in self {}
+    }
+}
+
 impl<T> ExactSizeIterator for IntoIter<T> {
     fn len(&self) -> usize {
         self.v.len()

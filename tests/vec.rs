@@ -799,30 +799,30 @@ fn test_into_iter_clone() {
     assert_eq!(it.next(), None);
 }
 
-// #[test]
-// fn test_into_iter_leak() {
-//     static mut DROPS: i32 = 0;
+#[test]
+fn test_into_iter_leak() {
+    static mut DROPS: i32 = 0;
 
-//     struct D(bool);
+    struct D(bool);
 
-//     impl Drop for D {
-//         fn drop(&mut self) {
-//             unsafe {
-//                 DROPS += 1;
-//             }
+    impl Drop for D {
+        fn drop(&mut self) {
+            unsafe {
+                DROPS += 1;
+            }
 
-//             if self.0 {
-//                 panic!("panic in `drop`");
-//             }
-//         }
-//     }
+            if self.0 {
+                panic!("panic in `drop`");
+            }
+        }
+    }
 
-//     let v = vec![D(false), D(true), D(false)];
+    let v = mini_vec![D(false), D(true), D(false)];
 
-//     catch_unwind(move || drop(v.into_iter())).ok();
+    catch_unwind(move || drop(v.into_iter())).ok();
 
-//     assert_eq!(unsafe { DROPS }, 3);
-// }
+    assert_eq!(unsafe { DROPS }, 3);
+}
 
 // #[test]
 // fn test_cow_from() {

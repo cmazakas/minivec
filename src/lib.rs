@@ -551,6 +551,22 @@ impl<T> MiniVec<T> {
         self.grow(len);
     }
 
+    pub fn swap_remove(&mut self, index: usize) -> T {
+        let len = self.len();
+        if index >= len {
+            panic!(
+                "swap_remove index (is {}) should be < len (is {})",
+                index, len
+            );
+        }
+
+        let src = unsafe { ptr::read(self.as_ptr().add(len - 1)) };
+        self.header_mut().len_ -= 1;
+
+        let dst = unsafe { self.as_mut_ptr().add(index) };
+        unsafe { ptr::replace(dst, src) }
+    }
+
     pub fn truncate(&mut self, len: usize) {
         let self_len = self.len();
 

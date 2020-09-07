@@ -614,3 +614,14 @@ fn minivec_into_iter() {
         *s = "4321".to_string();
     }
 }
+
+#[test]
+fn minivec_swap_remove() {
+    let mut v = mini_vec!["foo", "bar", "baz", "qux"];
+
+    assert_eq!(v.swap_remove(1), "bar");
+    assert_eq!(v, ["foo", "qux", "baz"]);
+
+    assert_eq!(v.swap_remove(0), "foo");
+    assert_eq!(v, ["baz", "qux"]);
+}

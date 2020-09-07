@@ -63,9 +63,18 @@ impl<T> MiniVec<T> {
 
         let new_capacity = capacity;
         let new_layout = make_layout::<T>(new_capacity);
+
         let len = self.len();
 
-        let new_buf = unsafe { alloc::alloc::alloc(new_layout) };
+        let new_buf = if self.buf_.is_null() {
+            unsafe { alloc::alloc::alloc(new_layout) }
+        } else {
+            let cap = self.capacity();
+            let old_layout = make_layout::<T>(cap);
+
+            unsafe { alloc::alloc::realloc(self.buf_, old_layout, new_layout.size()) }
+        };
+
         if new_buf.is_null() {
             alloc::alloc::handle_alloc_error(new_layout);
         }
@@ -85,21 +94,6 @@ impl<T> MiniVec<T> {
         unsafe {
             ptr::write(new_buf as *mut Header<T>, header)
         };
-
-        if !self.buf_.is_null() {
-            #[allow(clippy::cast_ptr_alignment)]
-            let old_header = unsafe { ptr::read(self.buf_ as *mut Header<T>) };
-
-            let old_layout = make_layout::<T>(old_header.cap_);
-
-            if len > 0 {
-                unsafe { ptr::copy_nonoverlapping(old_header.data_, new_data, len) };
-            }
-
-            unsafe {
-                alloc::alloc::dealloc(self.buf_, old_layout);
-            };
-        }
 
         self.buf_ = new_buf;
     }

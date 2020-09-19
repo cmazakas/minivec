@@ -36,15 +36,15 @@ use crate::r#impl::helpers::*;
 
 pub use crate::r#impl::{Drain, IntoIter};
 
+pub struct MiniVec<T> {
+    buf_: *mut u8,
+    phantom_: PhantomData<T>,
+}
+
 struct Header<T> {
     data_: *mut T,
     len_: usize,
     cap_: usize,
-}
-
-pub struct MiniVec<T> {
-    buf_: *mut u8,
-    phantom_: PhantomData<T>,
 }
 
 impl<T> MiniVec<T> {

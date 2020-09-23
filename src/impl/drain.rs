@@ -53,6 +53,8 @@ impl<T> Iterator for Drain<'_, T> {
     }
 }
 
+impl<T> ExactSizeIterator for Drain<'_, T> {}
+
 impl<T> DoubleEndedIterator for Drain<'_, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let pos = unsafe { self.drain_end_.as_ptr().sub(1) };

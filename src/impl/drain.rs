@@ -43,6 +43,14 @@ impl<T> Iterator for Drain<'_, T> {
         self.drain_pos_ = unsafe { ptr::NonNull::new_unchecked(p.add(1)) };
         Some(tmp)
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = (self.drain_end_.as_ptr() as *const _ as usize
+            - self.drain_pos_.as_ptr() as *const _ as usize)
+            / mem::size_of::<T>();
+
+        (len, Some(len))
+    }
 }
 
 impl<T> DoubleEndedIterator for Drain<'_, T> {

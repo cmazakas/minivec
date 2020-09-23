@@ -98,6 +98,19 @@ fn minivec_dedup_needs_drop() {
 }
 
 #[test]
+fn minvec_drain() {
+    let mut vec = mini_vec![1, 2, 3];
+
+    let mut drain = vec.drain(..);
+
+    assert_eq!(drain.size_hint(), (3, Some(3)));
+
+    drain.next();
+
+    assert_eq!(drain.size_hint(), (2, Some(2)));
+}
+
+#[test]
 fn minivec_with_capacity() {
     let size = 128;
     let mut v: MiniVec<i32> = MiniVec::with_capacity(size);

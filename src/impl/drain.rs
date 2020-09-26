@@ -101,6 +101,15 @@ impl<T> Drop for Drain<'_, T> {
             }
         }
 
+        // Rust's borrow system can be a little lame at times
+        // we need the for-loop with the nested DropGuard because `DropGuard` mutably borrows
+        // and so does .next()
+        //
+        // By scoping the DropGuard inside the for-loop and then forgetting it before the next
+        // iterator, we get panic! safety
+        //
+        // We then use the final DropGuard for relocating the elements to where they should be
+        //
         while let Some(item) = self.next() {
             let guard = DropGuard { drain: self };
             drop(item);

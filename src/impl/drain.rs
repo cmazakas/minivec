@@ -2,7 +2,11 @@ use crate::MiniVec;
 
 extern crate alloc;
 
-use core::{marker::PhantomData, mem, ptr};
+use core::{
+    iter::{DoubleEndedIterator, ExactSizeIterator},
+    marker::PhantomData,
+    mem, ptr,
+};
 
 pub struct Drain<'a, T: 'a> {
     vec_: ptr::NonNull<MiniVec<T>>,

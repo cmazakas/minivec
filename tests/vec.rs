@@ -737,13 +737,13 @@ fn test_append() {
     assert_eq!(vec2, []);
 }
 
-// #[test]
-// fn test_split_off() {
-//     let mut vec = vec![1, 2, 3, 4, 5, 6];
-//     let vec2 = vec.split_off(4);
-//     assert_eq!(vec, [1, 2, 3, 4]);
-//     assert_eq!(vec2, [5, 6]);
-// }
+#[test]
+fn test_split_off() {
+    let mut vec = mini_vec![1, 2, 3, 4, 5, 6];
+    let vec2 = vec.split_off(4);
+    assert_eq!(vec, [1, 2, 3, 4]);
+    assert_eq!(vec2, [5, 6]);
+}
 
 #[test]
 fn test_into_iter_as_slice() {

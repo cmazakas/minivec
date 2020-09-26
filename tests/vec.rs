@@ -477,12 +477,12 @@ fn test_slice_out_of_bounds_5() {
     &x[3..2];
 }
 
-// #[test]
-// #[should_panic]
-// fn test_swap_remove_empty() {
-//     let mut vec = Vec::<i32>::new();
-//     vec.swap_remove(0);
-// }
+#[test]
+#[should_panic]
+fn test_swap_remove_empty() {
+    let mut vec = MiniVec::<i32>::new();
+    vec.swap_remove(0);
+}
 
 #[test]
 fn test_move_items() {

@@ -255,6 +255,8 @@ impl<T> MiniVec<T> {
     ///
     #[allow(clippy::cast_ptr_alignment)]
     pub unsafe fn from_raw_part(ptr: *mut T) -> MiniVec<T> {
+        debug_assert!(!ptr.is_null());
+
         let header_size = mem::size_of::<Header<T>>();
         let aligned = next_aligned(header_size, mem::align_of::<T>());
 
@@ -280,6 +282,8 @@ impl<T> MiniVec<T> {
     ///
     #[allow(clippy::cast_ptr_alignment)]
     pub unsafe fn from_raw_parts(ptr: *mut T, length: usize, capacity: usize) -> MiniVec<T> {
+        debug_assert!(!ptr.is_null());
+
         let header_size = mem::size_of::<Header<T>>();
         let aligned = next_aligned(header_size, mem::align_of::<T>());
 

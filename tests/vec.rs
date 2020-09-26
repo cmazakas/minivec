@@ -658,43 +658,43 @@ fn test_drain_leak() {
     assert_eq!(v, mini_vec![D(0, false), D(1, false), D(6, false),]);
 }
 
-// #[test]
-// fn test_splice() {
-//     let mut v = vec![1, 2, 3, 4, 5];
-//     let a = [10, 11, 12];
-//     v.splice(2..4, a.iter().cloned());
-//     assert_eq!(v, &[1, 2, 10, 11, 12, 5]);
-//     v.splice(1..3, Some(20));
-//     assert_eq!(v, &[1, 20, 11, 12, 5]);
-// }
+#[test]
+fn test_splice() {
+    let mut v = mini_vec![1, 2, 3, 4, 5];
+    let a = [10, 11, 12];
+    v.splice(2..4, a.iter().cloned());
+    assert_eq!(v, &[1, 2, 10, 11, 12, 5]);
+    v.splice(1..3, Some(20));
+    assert_eq!(v, &[1, 20, 11, 12, 5]);
+}
 
-// #[test]
-// fn test_splice_inclusive_range() {
-//     let mut v = vec![1, 2, 3, 4, 5];
-//     let a = [10, 11, 12];
-//     let t1: Vec<_> = v.splice(2..=3, a.iter().cloned()).collect();
-//     assert_eq!(v, &[1, 2, 10, 11, 12, 5]);
-//     assert_eq!(t1, &[3, 4]);
-//     let t2: Vec<_> = v.splice(1..=2, Some(20)).collect();
-//     assert_eq!(v, &[1, 20, 11, 12, 5]);
-//     assert_eq!(t2, &[2, 10]);
-// }
+#[test]
+fn test_splice_inclusive_range() {
+    let mut v = mini_vec![1, 2, 3, 4, 5];
+    let a = [10, 11, 12];
+    let t1: MiniVec<_> = v.splice(2..=3, a.iter().cloned()).collect();
+    assert_eq!(v, &[1, 2, 10, 11, 12, 5]);
+    assert_eq!(t1, &[3, 4]);
+    let t2: MiniVec<_> = v.splice(1..=2, Some(20)).collect();
+    assert_eq!(v, &[1, 20, 11, 12, 5]);
+    assert_eq!(t2, &[2, 10]);
+}
 
-// #[test]
-// #[should_panic]
-// fn test_splice_out_of_bounds() {
-//     let mut v = vec![1, 2, 3, 4, 5];
-//     let a = [10, 11, 12];
-//     v.splice(5..6, a.iter().cloned());
-// }
+#[test]
+#[should_panic]
+fn test_splice_out_of_bounds() {
+    let mut v = mini_vec![1, 2, 3, 4, 5];
+    let a = [10, 11, 12];
+    v.splice(5..6, a.iter().cloned());
+}
 
-// #[test]
-// #[should_panic]
-// fn test_splice_inclusive_out_of_bounds() {
-//     let mut v = vec![1, 2, 3, 4, 5];
-//     let a = [10, 11, 12];
-//     v.splice(5..=5, a.iter().cloned());
-// }
+#[test]
+#[should_panic]
+fn test_splice_inclusive_out_of_bounds() {
+    let mut v = mini_vec![1, 2, 3, 4, 5];
+    let a = [10, 11, 12];
+    v.splice(5..=5, a.iter().cloned());
+}
 
 // #[test]
 // fn test_splice_items_zero_sized() {
@@ -705,21 +705,21 @@ fn test_drain_leak() {
 //     assert_eq!(t, &[()]);
 // }
 
-// #[test]
-// fn test_splice_unbounded() {
-//     let mut vec = vec![1, 2, 3, 4, 5];
-//     let t: Vec<_> = vec.splice(.., None).collect();
-//     assert_eq!(vec, &[]);
-//     assert_eq!(t, &[1, 2, 3, 4, 5]);
-// }
+#[test]
+fn test_splice_unbounded() {
+    let mut vec = mini_vec![1, 2, 3, 4, 5];
+    let t: MiniVec<_> = vec.splice(.., None).collect();
+    assert_eq!(vec, &[]);
+    assert_eq!(t, &[1, 2, 3, 4, 5]);
+}
 
-// #[test]
-// fn test_splice_forget() {
-//     let mut v = vec![1, 2, 3, 4, 5];
-//     let a = [10, 11, 12];
-//     std::mem::forget(v.splice(2..4, a.iter().cloned()));
-//     assert_eq!(v, &[1, 2]);
-// }
+#[test]
+fn test_splice_forget() {
+    let mut v = mini_vec![1, 2, 3, 4, 5];
+    let a = [10, 11, 12];
+    std::mem::forget(v.splice(2..4, a.iter().cloned()));
+    assert_eq!(v, &[1, 2]);
+}
 
 // #[test]
 // fn test_into_boxed_slice() {

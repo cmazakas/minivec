@@ -670,6 +670,17 @@ macro_rules! mini_vec {
     () => (
         $crate::MiniVec::new()
     );
+    ($elem:expr; $n:expr) => {
+        {
+            let mut tmp = $crate::MiniVec::with_capacity($n);
+
+            for idx in 0..$n {
+                tmp.push($elem.clone());
+            }
+
+            tmp
+        }
+     };
     ($($x:expr),+ $(,)?) => {
         {
             let mut tmp = $crate::MiniVec::new();

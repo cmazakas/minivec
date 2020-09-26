@@ -647,6 +647,10 @@ impl<T> MiniVec<T> {
 
         self.header_mut().len_ = len;
 
+        if !mem::needs_drop::<T>() {
+            return;
+        }
+
         let s =
             unsafe { slice::from_raw_parts_mut(self.header_mut().data_.add(len), self_len - len) };
 

@@ -696,3 +696,118 @@ fn minivec_splice() {
     assert_eq!(v, &[7, 8, 9, 10, 11, 5, 6]);
     assert_eq!(u, &[1, 2]);
 }
+
+#[test]
+fn minivec_splice_raii() {
+    let mut v = mini_vec![1.to_string(), 2.to_string(), 3.to_string()];
+    let new = [7.to_string(), 8.to_string()];
+    let u: MiniVec<_> = v.splice(..2, new.iter().cloned()).collect();
+    assert_eq!(v, &[7.to_string(), 8.to_string(), 3.to_string()]);
+    assert_eq!(u, &[1.to_string(), 2.to_string()]);
+
+    let mut v = mini_vec![
+        1.to_string(),
+        2.to_string(),
+        3.to_string(),
+        4.to_string(),
+        5.to_string(),
+        6.to_string()
+    ];
+
+    let new = [7.to_string(), 8.to_string()];
+    let u: MiniVec<_> = v.splice(1..4, new.iter().cloned()).collect();
+
+    assert_eq!(
+        v,
+        &[
+            1.to_string(),
+            7.to_string(),
+            8.to_string(),
+            5.to_string(),
+            6.to_string()
+        ]
+    );
+
+    assert_eq!(u, &[2.to_string(), 3.to_string(), 4.to_string()]);
+
+    let mut v = mini_vec![1.to_string(), 2.to_string(), 3.to_string()];
+    let new = [
+        7.to_string(),
+        8.to_string(),
+        9.to_string(),
+        10.to_string(),
+        11.to_string(),
+    ];
+
+    let u: MiniVec<_> = v.splice(..2, new.iter().cloned()).collect();
+    assert_eq!(
+        v,
+        &[
+            7.to_string(),
+            8.to_string(),
+            9.to_string(),
+            10.to_string(),
+            11.to_string(),
+            3.to_string()
+        ]
+    );
+
+    assert_eq!(u, &[1.to_string(), 2.to_string()]);
+
+    let mut v = mini_vec![1.to_string(), 2.to_string(), 3.to_string()];
+    let new = [7.to_string(), 8.to_string()];
+    let u: MiniVec<_> = v.splice(2..2, new.iter().cloned()).collect();
+
+    assert_eq!(
+        v,
+        &[
+            1.to_string(),
+            2.to_string(),
+            7.to_string(),
+            8.to_string(),
+            3.to_string()
+        ]
+    );
+
+    assert_eq!(u, &[]);
+
+    let mut v = mini_vec![
+        1.to_string(),
+        2.to_string(),
+        3.to_string(),
+        4.to_string(),
+        5.to_string(),
+        6.to_string()
+    ];
+
+    let new = [
+        7.to_string(),
+        8.to_string(),
+        9.to_string(),
+        10.to_string(),
+        11.to_string(),
+    ];
+
+    let mut iter = v.splice(..4, new.iter().cloned());
+    let mut u = MiniVec::new();
+
+    u.push(iter.next().unwrap());
+    u.push(iter.next().unwrap());
+
+    std::mem::drop(iter);
+
+    assert_eq!(
+        v,
+        &[
+            7.to_string(),
+            8.to_string(),
+            9.to_string(),
+            10.to_string(),
+            11.to_string(),
+            5.to_string(),
+            6.to_string()
+        ]
+    );
+
+    assert_eq!(u, &[1.to_string(), 2.to_string()]);
+}

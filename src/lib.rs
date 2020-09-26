@@ -33,8 +33,9 @@ pub mod partial_eq;
 
 use crate::r#impl::drain::make_drain;
 use crate::r#impl::helpers::*;
+use crate::r#impl::splice::make_splice;
 
-pub use crate::r#impl::{Drain, IntoIter};
+pub use crate::r#impl::{Drain, IntoIter, Splice};
 
 pub struct MiniVec<T> {
     buf_: *mut u8,
@@ -544,6 +545,57 @@ impl<T> MiniVec<T> {
         }
 
         self.grow(len);
+    }
+
+    pub fn splice<R, I>(
+        &mut self,
+        range: R,
+        replace_with: I,
+    ) -> Splice<<I as IntoIterator>::IntoIter>
+    where
+        I: IntoIterator<Item = T>,
+        R: RangeBounds<usize>,
+    {
+        let len = self.len();
+
+        let start_idx = match range.start_bound() {
+            Bound::Included(&n) => n,
+            Bound::Excluded(&n) => n + 1,
+            Bound::Unbounded => 0,
+        };
+
+        let end_idx = match range.end_bound() {
+            Bound::Included(&n) => n + 1,
+            Bound::Excluded(&n) => n,
+            Bound::Unbounded => len,
+        };
+
+        if start_idx > end_idx {
+            panic!(
+                "start splice index (is {}) should be <= end splice index (is {})",
+                start_idx, end_idx
+            );
+        }
+
+        if end_idx > len {
+            panic!(
+                "end splice index (is {}) should be <= len (is {})",
+                end_idx, len
+            );
+        }
+
+        let data = self.as_mut_ptr();
+
+        unsafe { self.set_len(start_idx) };
+
+        make_splice(
+            self,
+            data,
+            len - end_idx,
+            start_idx,
+            end_idx,
+            replace_with.into_iter(),
+        )
     }
 
     pub fn split_off(&mut self, at: usize) -> MiniVec<T> {

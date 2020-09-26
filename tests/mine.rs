@@ -656,3 +656,43 @@ fn minivec_split_off() {
     assert_eq!(vec, []);
     assert_eq!(vec2, [1, 2, 3]);
 }
+
+#[test]
+fn minivec_splice() {
+    let mut v = mini_vec![1, 2, 3];
+    let new = [7, 8];
+    let u: MiniVec<_> = v.splice(..2, new.iter().cloned()).collect();
+    assert_eq!(v, &[7, 8, 3]);
+    assert_eq!(u, &[1, 2]);
+
+    let mut v = mini_vec![1, 2, 3, 4, 5, 6];
+    let new = [7, 8];
+    let u: MiniVec<_> = v.splice(1..4, new.iter().cloned()).collect();
+    assert_eq!(v, &[1, 7, 8, 5, 6]);
+    assert_eq!(u, &[2, 3, 4]);
+
+    let mut v = mini_vec![1, 2, 3];
+    let new = [7, 8, 9, 10, 11];
+    let u: MiniVec<_> = v.splice(..2, new.iter().cloned()).collect();
+    assert_eq!(v, &[7, 8, 9, 10, 11, 3]);
+    assert_eq!(u, &[1, 2]);
+
+    let mut v = mini_vec![1, 2, 3];
+    let new = [7, 8];
+    let u: MiniVec<_> = v.splice(2..2, new.iter().cloned()).collect();
+    assert_eq!(v, &[1, 2, 7, 8, 3]);
+    assert_eq!(u, &[]);
+
+    let mut v = mini_vec![1, 2, 3, 4, 5, 6];
+    let new = [7, 8, 9, 10, 11];
+    let mut iter = v.splice(..4, new.iter().cloned());
+    let mut u = MiniVec::new();
+
+    u.push(iter.next().unwrap());
+    u.push(iter.next().unwrap());
+
+    std::mem::drop(iter);
+
+    assert_eq!(v, &[7, 8, 9, 10, 11, 5, 6]);
+    assert_eq!(u, &[1, 2]);
+}

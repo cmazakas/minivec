@@ -1,6 +1,20 @@
 #![no_std]
 #![allow(dead_code)]
 
+//! A space-optimized version of `std::vec::Vec` that's only the size of a single pointer!
+//! Ideal for low-level APIs where ABI calling conventions will typically require most structs be
+//! spilled onto the stack and copied instead of being passed solely in registers
+//!
+//! For example, x64 msvc ABI:
+//! > There's a strict one-to-one correspondence between a function call's arguments and the
+//! > registers used for those arguments. Any argument that doesn't fit in 8 bytes, or isn't
+//! > 1, 2, 4, or 8 bytes, must be passed by reference. A single argument is never spread across
+//! > multiple registers.
+//!
+//! The interface largely matches that of `Vec` but unfortunately, the stdlib always has access to
+//! newer features, more unstable APIs so `MiniVec` will naturally be a bit more boring.
+//!
+
 extern crate alloc;
 
 use core::{
@@ -108,6 +122,18 @@ impl<T> MiniVec<T> {
         self.buf_ = new_buf;
     }
 
+    /// Moves every element from `other` to the back of `self`. `other.is_empty()` is `true` once
+    /// this operation completes.
+    ///
+    /// # Example
+    /// ```
+    /// let mut vec = mini_vec![1, 2, 3];
+    /// let mut vec2 = mini_vec![4, 5, 6];
+    /// vec.append(&mut vec2);
+    /// assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
+    /// assert_eq!(vec2, []);
+    /// ```
+    ///
     pub fn append(&mut self, other: &mut MiniVec<T>) {
         if other.is_empty() {
             return;
@@ -124,6 +150,24 @@ impl<T> MiniVec<T> {
         self.header_mut().len_ += other_len;
     }
 
+    /// Obtain a `*mut T` from the underlying allocation.
+    ///
+    /// * May return a null pointer.
+    /// * May be invalidated by calls to `reserve()`
+    /// * Can outlive its backing `MiniVec`
+    ///
+    /// # Example
+    /// ```
+    /// let mut vec = mini_vec![1, 2, 3, 4];
+    /// let mut p = vec.as_mut_ptr();
+    ///
+    /// for idx in 0..vec.len() {
+    ///     *p.add(idx) = *p.add(idx) + 3;
+    /// }
+    ///
+    /// assert_eq!(vec, [4, 5, 6, 7]);
+    /// ```
+    ///
     pub fn as_mut_ptr(&mut self) -> *mut T {
         if self.buf_.is_null() {
             return ptr::null_mut();

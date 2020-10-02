@@ -127,6 +127,7 @@ impl<T> MiniVec<T> {
     ///
     /// # Example
     /// ```
+    /// use minivec::mini_vec;
     /// let mut vec = mini_vec![1, 2, 3];
     /// let mut vec2 = mini_vec![4, 5, 6];
     /// vec.append(&mut vec2);
@@ -158,11 +159,14 @@ impl<T> MiniVec<T> {
     ///
     /// # Example
     /// ```
+    /// use minivec::mini_vec;
     /// let mut vec = mini_vec![1, 2, 3, 4];
     /// let mut p = vec.as_mut_ptr();
     ///
     /// for idx in 0..vec.len() {
-    ///     *p.add(idx) = *p.add(idx) + 3;
+    ///     unsafe {
+    ///         *p.add(idx) = *p.add(idx) + 3;
+    ///     }
     /// }
     ///
     /// assert_eq!(vec, [4, 5, 6, 7]);

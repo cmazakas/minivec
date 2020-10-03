@@ -637,6 +637,12 @@ fn minivec_swap_remove() {
 
     assert_eq!(v.swap_remove(0), "foo");
     assert_eq!(v, ["baz", "qux"]);
+
+    assert_eq!(v.swap_remove(0), "qux");
+    assert_eq!(v, ["baz"]);
+
+    assert_eq!(v.swap_remove(0), "baz");
+    assert_eq!(v, []);
 }
 
 #[test]

@@ -1,6 +1,6 @@
 use crate::MiniVec;
 
-use crate::r#impl::into_iter::*;
+use crate::r#impl::into_iter::IntoIter;
 
 use core::{iter::IntoIterator, slice};
 

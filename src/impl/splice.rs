@@ -21,7 +21,7 @@ where
     fill_: I,
 }
 
-pub fn make_splice<'a, I: 'a + Iterator>(
+pub fn make_splice_iterator<'a, I: 'a + Iterator>(
     vec: &mut MiniVec<I::Item>,
     data: *mut I::Item,
     remaining: usize,

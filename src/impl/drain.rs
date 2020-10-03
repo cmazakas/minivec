@@ -17,7 +17,7 @@ pub struct Drain<'a, T: 'a> {
     marker_: PhantomData<&'a T>,
 }
 
-pub fn make_drain<'a, T>(
+pub fn make_drain_iterator<'a, T>(
     vec: &mut MiniVec<T>,
     data: *mut T,
     remaining: usize,

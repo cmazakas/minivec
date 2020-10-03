@@ -1,4 +1,5 @@
 #![no_std]
+#![warn(clippy::pedantic)]
 #![doc(html_playground_url = "https://play.rust-lang.org/")]
 
 //! A space-optimized version of `std::vec::Vec` that's only the size of a single pointer!
@@ -45,9 +46,9 @@ mod into_iterator;
 mod ord;
 mod partial_eq;
 
-use crate::r#impl::drain::make_drain;
-use crate::r#impl::helpers::*;
-use crate::r#impl::splice::make_splice;
+use crate::r#impl::drain::make_drain_iterator;
+use crate::r#impl::helpers::{make_layout, next_aligned, next_capacity};
+use crate::r#impl::splice::make_splice_iterator;
 
 pub use crate::r#impl::{Drain, IntoIter, Splice};
 
@@ -221,6 +222,7 @@ impl<T> MiniVec<T> {
     /// assert_eq!(sum, 1 + 2 + 3 + 4);
     /// ```
     ///
+    #[must_use]
     pub fn as_ptr(&self) -> *const T {
         if self.buf_.is_null() {
             return ptr::null();
@@ -247,6 +249,7 @@ impl<T> MiniVec<T> {
     /// assert_eq!(sum, 1 + 2 + 3 + 4);
     /// ```
     ///
+    #[must_use]
     pub fn as_slice(&self) -> &[T] {
         self
     }
@@ -265,6 +268,7 @@ impl<T> MiniVec<T> {
     /// assert_eq!(vec.capacity(), 128);
     /// ```
     ///
+    #[must_use]
     pub fn capacity(&self) -> usize {
         if self.buf_.is_null() {
             0
@@ -273,7 +277,7 @@ impl<T> MiniVec<T> {
         }
     }
 
-    /// `clear` clears the current contents of the MiniVec. Afterwards, `len()` will return 0.
+    /// `clear` clears the current contents of the `MiniVec`. Afterwards, `len()` will return 0.
     /// `capacity()` is not effected.
     ///
     /// Logically equivalent to calling `minivec::MiniVec::truncate(0)`.
@@ -441,7 +445,7 @@ impl<T> MiniVec<T> {
 
         unsafe { self.set_len(start_idx) };
 
-        make_drain(self, data, len - end_idx, start_idx, end_idx)
+        make_drain_iterator(self, data, len - end_idx, start_idx, end_idx)
     }
 
     /// `from_raw_part` reconstructs a `MiniVec` from a previous call to `MiniVec::as_mut_ptr`.
@@ -582,6 +586,7 @@ impl<T> MiniVec<T> {
     /// assert!(vec.capacity() > 0);
     /// ```
     ///
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -601,6 +606,7 @@ impl<T> MiniVec<T> {
     /// assert_eq!(static_ref, &[2, 2, 3]);
     /// ```
     ///
+    #[must_use]
     pub fn leak<'a>(vec: MiniVec<T>) -> &'a mut [T]
     where
         T: 'a,
@@ -622,6 +628,7 @@ impl<T> MiniVec<T> {
     /// assert_eq!(vec.len(), 256);
     /// ```
     ///
+    #[must_use]
     pub fn len(&self) -> usize {
         if self.buf_.is_null() {
             0
@@ -644,6 +651,7 @@ impl<T> MiniVec<T> {
     /// assert_eq!(vec.capacity(), 0);
     /// ```
     ///
+    #[must_use]
     pub fn new() -> MiniVec<T> {
         assert!(mem::size_of::<T>() > 0, "ZSTs currently not supported");
 
@@ -1096,7 +1104,7 @@ impl<T> MiniVec<T> {
 
         unsafe { self.set_len(start_idx) };
 
-        make_splice(
+        make_splice_iterator(
             self,
             data,
             len - end_idx,
@@ -1222,6 +1230,7 @@ impl<T> MiniVec<T> {
     /// assert_eq!(vec.capacity(), 128);
     /// ```
     ///
+    #[must_use]
     pub fn with_capacity(capacity: usize) -> MiniVec<T> {
         let mut v = MiniVec::new();
         v.reserve_exact(capacity);

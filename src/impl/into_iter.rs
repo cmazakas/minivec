@@ -22,10 +22,12 @@ pub struct IntoIter<T> {
 }
 
 impl<T> IntoIter<T> {
+    #[must_use]
     pub fn new(w: MiniVec<T>) -> Self {
         Self { v: w }
     }
 
+    #[must_use]
     pub fn as_slice(&self) -> &[T] {
         self.v.as_slice()
     }

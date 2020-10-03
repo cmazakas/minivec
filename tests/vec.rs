@@ -1,3 +1,9 @@
+#![allow(clippy::unnecessary_operation)]
+#![allow(clippy::op_ref)]
+#![allow(clippy::verbose_bit_mask)]
+#![allow(clippy::reversed_empty_ranges)]
+#![allow(clippy::vtable_address_comparisons)]
+
 extern crate minivec;
 
 use minivec::mini_vec;

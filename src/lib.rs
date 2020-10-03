@@ -27,23 +27,23 @@ use core::{
 
 mod r#impl;
 
-pub mod as_mut;
-pub mod as_ref;
-pub mod borrow;
-pub mod clone;
-pub mod debug;
-pub mod default;
-pub mod deref;
-pub mod drop;
-pub mod eq;
-pub mod extend;
-pub mod from;
-pub mod from_iterator;
-pub mod hash;
-pub mod index;
-pub mod into_iterator;
-pub mod ord;
-pub mod partial_eq;
+mod as_mut;
+mod as_ref;
+mod borrow;
+mod clone;
+mod debug;
+mod default;
+mod deref;
+mod drop;
+mod eq;
+mod extend;
+mod from;
+mod from_iterator;
+mod hash;
+mod index;
+mod into_iterator;
+mod ord;
+mod partial_eq;
 
 use crate::r#impl::drain::make_drain;
 use crate::r#impl::helpers::*;

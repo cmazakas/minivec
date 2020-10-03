@@ -817,3 +817,19 @@ fn minivec_splice_raii() {
 
     assert_eq!(u, &[1.to_string(), 2.to_string()]);
 }
+
+#[test]
+fn minivec_truncate() {
+    let mut vec = mini_vec![1, 2, 3, 4];
+    vec.truncate(vec.len());
+
+    assert_eq!(vec, [1, 2, 3, 4]);
+}
+
+#[test]
+fn minivec_macro() {
+    let vec: MiniVec<i32> = mini_vec!();
+    assert_eq!(vec.as_ptr(), core::ptr::null());
+    assert_eq!(vec.len(), 0);
+    assert_eq!(vec.capacity(), 0);
+}

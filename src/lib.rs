@@ -1,5 +1,5 @@
 #![no_std]
-#![allow(dead_code)]
+#![doc(html_playground_url = "https://play.rust-lang.org/")]
 
 //! A space-optimized version of `std::vec::Vec` that's only the size of a single pointer!
 //! Ideal for low-level APIs where ABI calling conventions will typically require most structs be

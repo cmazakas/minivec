@@ -63,7 +63,7 @@ mod tests {
 
     #[repr(align(512))]
     struct OverAligned {
-        data: [u8; 512],
+        _data: [u8; 512],
     }
 
     #[test]

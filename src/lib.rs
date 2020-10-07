@@ -59,25 +59,29 @@ pub struct MiniVec<T> {
     phantom_: PhantomData<T>,
 }
 
-struct Header<T> {
-    data_: *mut T,
+struct Header {
     len_: usize,
     cap_: usize,
 }
 
 impl<T> MiniVec<T> {
-    fn header(&self) -> &Header<T> {
+    fn header(&self) -> &Header {
         #[allow(clippy::cast_ptr_alignment)]
         unsafe {
-            &*(self.buf_ as *const Header<T>)
+            &*(self.buf_ as *const Header)
         }
     }
 
-    fn header_mut(&mut self) -> &mut Header<T> {
+    fn header_mut(&mut self) -> &mut Header {
         #[allow(clippy::cast_ptr_alignment)]
         unsafe {
-            &mut *(self.buf_ as *mut Header<T>)
+            &mut *(self.buf_ as *mut Header)
         }
+    }
+
+    fn data(&self) -> *mut T {
+        let offset = next_aligned(mem::size_of::<Header>(), mem::align_of::<T>());
+        unsafe { self.buf_.add(offset) as *mut T }
     }
 
     fn grow(&mut self, capacity: usize) {
@@ -106,20 +110,14 @@ impl<T> MiniVec<T> {
             alloc::alloc::handle_alloc_error(new_layout);
         }
 
-        let new_data = unsafe {
-            let offset = next_aligned(mem::size_of::<Header<T>>(), mem::align_of::<T>());
-            new_buf.add(offset) as *mut T
-        };
-
-        let header = Header::<T> {
-            data_: new_data,
+        let header = Header {
             len_: len,
             cap_: new_capacity,
         };
 
         #[allow(clippy::cast_ptr_alignment)]
         unsafe {
-            ptr::write(new_buf as *mut Header<T>, header)
+            ptr::write(new_buf as *mut Header, header)
         };
 
         self.buf_ = new_buf;
@@ -181,7 +179,7 @@ impl<T> MiniVec<T> {
             return ptr::null_mut();
         }
 
-        self.header_mut().data_
+        self.data()
     }
 
     /// `as_mut_slice` obtains a mutable reference to a slice that's attached to the backing array.
@@ -230,7 +228,7 @@ impl<T> MiniVec<T> {
             return ptr::null();
         }
 
-        self.header().data_
+        self.data()
     }
 
     /// `as_slice` obtains a reference to the backing array as an immutable slice of `T`.
@@ -477,13 +475,13 @@ impl<T> MiniVec<T> {
     pub unsafe fn from_raw_part(ptr: *mut T) -> MiniVec<T> {
         debug_assert!(!ptr.is_null());
 
-        let header_size = mem::size_of::<Header<T>>();
+        let header_size = mem::size_of::<Header>();
         let aligned = next_aligned(header_size, mem::align_of::<T>());
 
         let p = ptr as *mut u8;
         let buf = p.sub(aligned);
 
-        debug_assert!((*(buf as *mut Header<T>)).data_ == ptr);
+        // debug_assert!((*(buf as *mut Header<T>)).data_ == ptr);
 
         MiniVec {
             buf_: buf,
@@ -522,15 +520,14 @@ impl<T> MiniVec<T> {
     pub unsafe fn from_raw_parts(ptr: *mut T, length: usize, capacity: usize) -> MiniVec<T> {
         debug_assert!(!ptr.is_null());
 
-        let header_size = mem::size_of::<Header<T>>();
+        let header_size = mem::size_of::<Header>();
         let aligned = next_aligned(header_size, mem::align_of::<T>());
 
         let p = ptr as *mut u8;
         let buf = p.sub(aligned);
 
-        debug_assert!((*(buf as *mut Header<T>)).len_ == length);
-        debug_assert!((*(buf as *mut Header<T>)).cap_ == capacity);
-        debug_assert!((*(buf as *mut Header<T>)).data_ == ptr);
+        debug_assert!((*(buf as *mut Header)).len_ == length);
+        debug_assert!((*(buf as *mut Header)).cap_ == capacity);
 
         MiniVec {
             buf_: buf,
@@ -710,15 +707,15 @@ impl<T> MiniVec<T> {
         }
 
         let len = self.len();
-        let mut header = self.header_mut();
+        let data = self.data();
 
-        let data = header.data_;
         let dst = unsafe { data.add(len) };
 
         unsafe {
             ptr::write(dst, value);
         };
 
+        let mut header = self.header_mut();
         header.len_ += 1;
     }
 
@@ -1211,8 +1208,7 @@ impl<T> MiniVec<T> {
             return;
         }
 
-        let s =
-            unsafe { slice::from_raw_parts_mut(self.header_mut().data_.add(len), self_len - len) };
+        let s = unsafe { slice::from_raw_parts_mut(self.data().add(len), self_len - len) };
 
         unsafe { ptr::drop_in_place(s) };
     }

@@ -14,7 +14,7 @@ pub const fn next_aligned(num_bytes: usize, alignment: usize) -> usize {
     }
 }
 
-pub fn next_capacity<T>(capacity: usize) -> usize {
+pub const fn next_capacity<T>(capacity: usize) -> usize {
     let elem_size = mem::size_of::<T>();
 
     if capacity == 0 {

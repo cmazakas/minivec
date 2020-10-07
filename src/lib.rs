@@ -64,6 +64,10 @@ struct Header {
     cap_: usize,
 }
 
+const fn get_offset<T>() -> usize {
+    next_aligned(mem::size_of::<Header>(), mem::align_of::<T>())
+}
+
 impl<T> MiniVec<T> {
     fn header(&self) -> &Header {
         #[allow(clippy::cast_ptr_alignment)]
@@ -80,8 +84,7 @@ impl<T> MiniVec<T> {
     }
 
     fn data(&self) -> *mut T {
-        let offset = next_aligned(mem::size_of::<Header>(), mem::align_of::<T>());
-        unsafe { self.buf_.add(offset) as *mut T }
+        unsafe { self.buf_.add(get_offset::<T>()) as *mut T }
     }
 
     fn grow(&mut self, capacity: usize) {

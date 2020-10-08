@@ -234,6 +234,8 @@ fn minivec_insert() {
 }
 
 #[test]
+// This is quite heavy-handed, but stops MIRI complaining about the leak.
+#[cfg_attr(miri, ignore)]
 fn minivec_leak() {
     let x = mini_vec![1, 2, 3];
     let static_ref: &'static mut [usize] = MiniVec::leak(x);

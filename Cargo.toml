@@ -7,6 +7,8 @@ license = "BSL-1.0"
 description = "A version of Vec that's only the size of a single pointer"
 repository = "https://github.com/LeonineKing1199/minivec"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
+# Enable with feature `serde`
+[dependencies.serde]
+version = "1"
+default-features = false
+optional = true

@@ -6,6 +6,8 @@ edition = "2018"
 license = "BSL-1.0"
 description = "A version of Vec that's only the size of a single pointer"
 repository = "https://github.com/LeonineKing1199/minivec"
+categories = ["data-structures"]
+keywords = ["vec", "vector"]
 
 # Enable with feature `serde`
 [dependencies.serde]

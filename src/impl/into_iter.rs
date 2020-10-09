@@ -19,23 +19,23 @@ use core::{
 //
 pub struct IntoIter<T> {
     v: MiniVec<T>,
-    pos: *mut T,
+    pos: ptr::NonNull<T>,
 }
 
 impl<T> IntoIter<T> {
     #[must_use]
     pub fn new(w: MiniVec<T>) -> Self {
-        let pos_cpy = w.data();
+        let pos_cpy = unsafe { ptr::NonNull::new_unchecked(w.data()) };
         Self { v: w, pos: pos_cpy }
     }
 
     #[must_use]
     pub fn as_slice(&self) -> &[T] {
-        unsafe { slice::from_raw_parts(self.pos, self.v.len()) }
+        unsafe { slice::from_raw_parts(self.pos.as_ptr(), self.v.len()) }
     }
 
     pub fn as_mut_slice(&mut self) -> &mut [T] {
-        unsafe { slice::from_raw_parts_mut(self.pos, self.v.len()) }
+        unsafe { slice::from_raw_parts_mut(self.pos.as_ptr(), self.v.len()) }
     }
 }
 
@@ -70,15 +70,15 @@ impl<T> DoubleEndedIterator for IntoIter<T> {
         let header = self.v.header_mut();
 
         let data = self.pos;
-        let end = unsafe { data.add(header.len_) };
+        let end = unsafe { data.as_ptr().add(header.len_) };
 
-        if data == end {
+        if data.as_ptr() == end {
             return None;
         };
 
         header.len_ -= 1;
 
-        Some(unsafe { ptr::read(data.add(header.len_)) })
+        Some(unsafe { ptr::read(data.as_ptr().add(header.len_)) })
     }
 }
 
@@ -111,16 +111,16 @@ impl<T> Iterator for IntoIter<T> {
         let header = self.v.header_mut();
 
         let data = self.pos;
-        let end = unsafe { data.add(header.len_) };
+        let end = unsafe { data.as_ptr().add(header.len_) };
 
-        if data == end {
+        if data.as_ptr() == end {
             return None;
         }
 
-        self.pos = unsafe { data.add(1) };
+        self.pos = unsafe { ptr::NonNull::new_unchecked(data.as_ptr().add(1)) };
         header.len_ -= 1;
 
-        Some(unsafe { ptr::read(data) })
+        Some(unsafe { ptr::read(data.as_ptr()) })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

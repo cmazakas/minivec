@@ -28,6 +28,8 @@ use core::{
 
 mod r#impl;
 
+#[cfg(feature = "serde")]
+mod serde;
 mod as_mut;
 mod as_ref;
 mod borrow;

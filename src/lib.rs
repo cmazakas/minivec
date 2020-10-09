@@ -484,8 +484,6 @@ impl<T> MiniVec<T> {
         let p = ptr as *mut u8;
         let buf = p.sub(aligned);
 
-        // debug_assert!((*(buf as *mut Header<T>)).data_ == ptr);
-
         MiniVec {
             buf_: buf,
             phantom_: PhantomData,

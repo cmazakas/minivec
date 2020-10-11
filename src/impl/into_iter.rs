@@ -8,7 +8,7 @@ use core::{
     convert::AsRef,
     iter::{DoubleEndedIterator, ExactSizeIterator, FusedIterator, Iterator},
     marker::{Send, Sync},
-    ptr,
+    ptr, slice,
 };
 
 // we diverge pretty heavily from the stdlib here
@@ -19,21 +19,23 @@ use core::{
 //
 pub struct IntoIter<T> {
     v: MiniVec<T>,
+    pos: ptr::NonNull<T>,
 }
 
 impl<T> IntoIter<T> {
     #[must_use]
     pub fn new(w: MiniVec<T>) -> Self {
-        Self { v: w }
+        let pos_cpy = unsafe { ptr::NonNull::new_unchecked(w.data()) };
+        Self { v: w, pos: pos_cpy }
     }
 
     #[must_use]
     pub fn as_slice(&self) -> &[T] {
-        self.v.as_slice()
+        unsafe { slice::from_raw_parts(self.pos.as_ptr(), self.v.len()) }
     }
 
     pub fn as_mut_slice(&mut self) -> &mut [T] {
-        self.v.as_mut_slice()
+        unsafe { slice::from_raw_parts_mut(self.pos.as_ptr(), self.v.len()) }
     }
 }
 
@@ -46,7 +48,8 @@ impl<T> AsRef<[T]> for IntoIter<T> {
 impl<T: Clone> Clone for IntoIter<T> {
     fn clone(&self) -> IntoIter<T> {
         let w = self.v.clone();
-        IntoIter { v: w }
+        let pos_cpy = self.pos;
+        IntoIter { v: w, pos: pos_cpy }
     }
 }
 
@@ -66,16 +69,16 @@ impl<T> DoubleEndedIterator for IntoIter<T> {
 
         let header = self.v.header_mut();
 
-        let data = header.data_;
-        let end = unsafe { data.add(header.len_) };
+        let data = self.pos;
+        let end = unsafe { data.as_ptr().add(header.len_) };
 
-        if data == end {
+        if data.as_ptr() == end {
             return None;
         };
 
         header.len_ -= 1;
 
-        Some(unsafe { ptr::read(data.add(header.len_)) })
+        Some(unsafe { ptr::read(data.as_ptr().add(header.len_)) })
     }
 }
 
@@ -107,17 +110,17 @@ impl<T> Iterator for IntoIter<T> {
 
         let header = self.v.header_mut();
 
-        let data = header.data_;
-        let end = unsafe { data.add(header.len_) };
+        let data = self.pos;
+        let end = unsafe { data.as_ptr().add(header.len_) };
 
-        if data == end {
+        if data.as_ptr() == end {
             return None;
         }
 
-        header.data_ = unsafe { data.add(1) };
+        self.pos = unsafe { ptr::NonNull::new_unchecked(data.as_ptr().add(1)) };
         header.len_ -= 1;
 
-        Some(unsafe { ptr::read(data) })
+        Some(unsafe { ptr::read(data.as_ptr()) })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

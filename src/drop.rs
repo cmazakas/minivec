@@ -13,10 +13,10 @@ impl<T> Drop for MiniVec<T> {
         }
 
         #[allow(clippy::cast_ptr_alignment)]
-        let header = unsafe { ptr::read(self.buf_ as *const Header<T>) };
+        let header = unsafe { ptr::read(self.buf_ as *const Header) };
 
         for i in 0..header.len_ {
-            unsafe { ptr::read(header.data_.add(i)) };
+            unsafe { ptr::read(self.data().add(i)) };
         }
 
         unsafe { alloc::alloc::dealloc(self.buf_, make_layout::<T>(header.cap_)) };

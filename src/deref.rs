@@ -14,7 +14,7 @@ impl<T> Deref for MiniVec<T> {
         }
 
         let header = self.header();
-        let data = header.data_;
+        let data = self.data();
         let len = header.len_;
         unsafe { slice::from_raw_parts(data, len) }
     }
@@ -27,7 +27,7 @@ impl<T> DerefMut for MiniVec<T> {
         }
 
         let header = self.header();
-        let data = header.data_;
+        let data = self.data();
         let len = header.len_;
         unsafe { slice::from_raw_parts_mut(data, len) }
     }

@@ -127,7 +127,7 @@ impl<T> MiniVec<T> {
     }
 
     /// `append` moves every element from `other` to the back of `self`. `other.is_empty()` is
-    /// `true` once this operation completes and its capacity is uneffected.
+    /// `true` once this operation completes and its capacity is unaffected.
     ///
     /// # Example
     ///
@@ -281,7 +281,7 @@ impl<T> MiniVec<T> {
     }
 
     /// `clear` clears the current contents of the `MiniVec`. Afterwards, `len()` will return 0.
-    /// `capacity()` is not effected.
+    /// `capacity()` is not affected.
     ///
     /// Logically equivalent to calling `minivec::MiniVec::truncate(0)`.
     ///

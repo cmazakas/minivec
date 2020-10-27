@@ -1266,6 +1266,9 @@ impl<T: Clone> MiniVec<T> {
     }
 }
 
+unsafe impl<T: core::marker::Send> core::marker::Send for MiniVec<T> {}
+unsafe impl<T: core::marker::Sync> core::marker::Sync for MiniVec<T> {}
+
 /// `mini_vec!` is a macro similar in spirit to the stdlib's `vec!`.
 ///
 /// It supports the creation of `MiniVec` with:

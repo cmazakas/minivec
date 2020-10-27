@@ -834,4 +834,8 @@ fn minivec_macro() {
     assert_eq!(vec.as_ptr(), core::ptr::null());
     assert_eq!(vec.len(), 0);
     assert_eq!(vec.capacity(), 0);
+
+    let vec: MiniVec<i32> = mini_vec![1337; 4096];
+    assert_eq!(vec.len(), 4096);
+    assert_eq!(vec[0], 1337);
 }

@@ -28,8 +28,6 @@ use core::{
 
 mod r#impl;
 
-#[cfg(feature = "serde")]
-mod serde;
 mod as_mut;
 mod as_ref;
 mod borrow;
@@ -47,6 +45,8 @@ mod index;
 mod into_iterator;
 mod ord;
 mod partial_eq;
+#[cfg(feature = "serde")]
+mod serde;
 
 use crate::r#impl::drain::make_drain_iterator;
 use crate::r#impl::helpers::{make_layout, next_aligned, next_capacity};
@@ -1235,6 +1235,11 @@ impl<T> MiniVec<T> {
         v.reserve_exact(capacity);
         v
     }
+
+    #[doc(hidden)]
+    pub unsafe fn unsafe_write(&mut self, idx: usize, elem: T) {
+        self.data().add(idx).write(elem);
+    }
 }
 
 impl<T: Clone> MiniVec<T> {
@@ -1278,8 +1283,10 @@ macro_rules! mini_vec {
             let mut tmp = $crate::MiniVec::with_capacity($n);
 
             for idx in 0..$n {
-                tmp.push($elem.clone());
+                unsafe { tmp.unsafe_write(idx, $elem.clone()) };
             }
+
+            unsafe { tmp.set_len($n) };
 
             tmp
         }

@@ -1032,12 +1032,44 @@ impl<T> MiniVec<T> {
     /// ```
     ///
     pub fn shrink_to_fit(&mut self) {
-        let (len, capacity) = (self.len(), self.capacity());
-        if len == capacity {
+        let len = self.len();
+        if len == self.capacity() {
             return;
         }
 
-        self.grow(len);
+        let capacity = len;
+        self.grow(capacity);
+    }
+
+    /// `spare_capacity_mut` returns a mutable slice to `MaybeUninit<T>`. This is a more
+    /// structured way of interacting with `MiniVec` as an unitialized allocation vs simply creating
+    /// a vector with capacity and then mutating its contents directly via `as_mut_ptr`.
+    ///
+    /// Once manipulation of the unitialized elements has been completed, a call to `set_len` is
+    /// required otherwise the contained elements cannot be accessed by `MiniVec`'s normal methods
+    /// nor will the elements be dropped.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut vec = minivec::MiniVec::<i32>::with_capacity(24);
+    /// let mut buf = vec.spare_capacity_mut();
+    ///
+    /// for idx in 0..4 {
+    ///     unsafe { buf[idx].as_mut_ptr().write(idx as i32) };
+    /// }
+    ///
+    /// unsafe { vec.set_len(4) };
+    ///
+    /// assert_eq!(vec, [0, 1, 2, 3]);
+    /// ```
+    ///
+    pub fn spare_capacity_mut(&mut self) -> &mut [core::mem::MaybeUninit<T>] {
+        let count = self.len();
+        let data = unsafe { self.data().add(count) as *mut core::mem::MaybeUninit<T> };
+        let len = self.capacity() - self.len();
+
+        unsafe { core::slice::from_raw_parts_mut(data, len) }
     }
 
     /// `splice` returns a `Splice` iterator. `Splice` is similar in spirit to `Drain` but instead

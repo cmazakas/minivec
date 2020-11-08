@@ -839,3 +839,28 @@ fn minivec_macro() {
     assert_eq!(vec.len(), 4096);
     assert_eq!(vec[0], 1337);
 }
+
+#[test]
+fn minivec_spare_capacity_mut() {
+    let capacity = 128;
+    let mut vec = MiniVec::<i32>::with_capacity(capacity);
+
+    assert!(vec.is_empty());
+    assert!(vec.capacity() >= capacity);
+
+    let buf = vec.spare_capacity_mut();
+    for idx in 0..capacity {
+        let val = idx as i32;
+        unsafe { buf[idx].as_mut_ptr().write(val) };
+    }
+
+    let len = capacity;
+    unsafe { vec.set_len(len) };
+
+    let first = Some(0);
+    let succ = |n: &i32| -> Option<i32> { Some(n + 1) };
+    let iter = core::iter::successors(first, succ).take(capacity);
+    let expected: MiniVec<i32> = core::iter::FromIterator::from_iter(iter);
+
+    assert_eq!(vec, expected);
+}

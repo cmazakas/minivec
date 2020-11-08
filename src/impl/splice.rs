@@ -8,39 +8,37 @@ use core::{
     mem, ptr,
 };
 
-pub struct Splice<'a, I>
+pub struct Splice<I>
 where
-    I: 'a + Iterator,
+    I: Iterator,
 {
     vec_: ptr::NonNull<MiniVec<I::Item>>,
     drain_pos_: ptr::NonNull<I::Item>,
     drain_end_: ptr::NonNull<I::Item>,
     remaining_pos_: ptr::NonNull<I::Item>,
     remaining_: usize,
-    marker_: PhantomData<&'a I::Item>,
     fill_: I,
 }
 
-pub fn make_splice_iterator<'a, I: 'a + Iterator>(
+pub fn make_splice_iterator<I: Iterator>(
     vec: &mut MiniVec<I::Item>,
     data: *mut I::Item,
     remaining: usize,
     start_idx: usize,
     end_idx: usize,
     fill: I,
-) -> Splice<'a, I> {
+) -> Splice<I> {
     Splice {
         vec_: ptr::NonNull::from(vec),
         drain_pos_: unsafe { ptr::NonNull::new_unchecked(data.add(start_idx)) },
         drain_end_: unsafe { ptr::NonNull::new_unchecked(data.add(end_idx)) },
         remaining_pos_: unsafe { ptr::NonNull::new_unchecked(data.add(end_idx)) },
         remaining_: remaining,
-        marker_: PhantomData,
         fill_: fill,
     }
 }
 
-impl<I> Iterator for Splice<'_, I>
+impl<I> Iterator for Splice<I>
 where
     I: Iterator,
 {
@@ -66,9 +64,9 @@ where
     }
 }
 
-impl<I: Iterator> ExactSizeIterator for Splice<'_, I> {}
+impl<I: Iterator> ExactSizeIterator for Splice<I> {}
 
-impl<I> DoubleEndedIterator for Splice<'_, I>
+impl<I> DoubleEndedIterator for Splice<I>
 where
     I: Iterator,
 {
@@ -84,16 +82,16 @@ where
     }
 }
 
-impl<I: Iterator> Drop for Splice<'_, I> {
+impl<I: Iterator> Drop for Splice<I> {
     fn drop(&mut self) {
-        struct DropGuard<'b, 'a, I>
+        struct DropGuard<'b, I>
         where
             I: Iterator,
         {
-            splice: &'b mut Splice<'a, I>,
+            splice: &'b mut Splice<I>,
         };
 
-        impl<'b, 'a, I> Drop for DropGuard<'b, 'a, I>
+        impl<'b, 'a, I> Drop for DropGuard<'b, I>
         where
             I: Iterator,
         {

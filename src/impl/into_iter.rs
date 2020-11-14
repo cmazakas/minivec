@@ -8,7 +8,7 @@ extern crate alloc;
 //
 pub struct IntoIter<T> {
     v: crate::MiniVec<T>,
-    pos: *mut T,
+    pos: *const T,
     marker: core::marker::PhantomData<T>,
 }
 
@@ -38,7 +38,7 @@ impl<T> IntoIter<T> {
         if self.v.buf_.is_null() {
             &mut []
         } else {
-            let data = self.pos;
+            let data: *mut T = self.pos as *mut T;
             unsafe { core::slice::from_raw_parts_mut(data, self.v.len()) }
         }
     }

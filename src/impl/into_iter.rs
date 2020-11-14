@@ -20,7 +20,7 @@ impl<T> IntoIter<T> {
         Self {
             v,
             pos,
-            marker: core::marker::PhantomData::<T> {},
+            marker: core::marker::PhantomData,
         }
     }
 
@@ -57,7 +57,7 @@ impl<T: Clone> Clone for IntoIter<T> {
         IntoIter {
             v: w,
             pos: pos_cpy,
-            marker: core::marker::PhantomData::<T> {},
+            marker: core::marker::PhantomData,
         }
     }
 }

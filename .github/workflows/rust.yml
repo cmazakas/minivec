@@ -24,10 +24,17 @@ jobs:
              echo ::add-path::$HOME/.cargo/bin
         fi
 
+    - name: Install Valgrind
+      run: |
+        sudo apt-get install -y valgrind
+
     - name: Rust version
       run: |
         cargo --version
         rustc --version
 
     - name: Test
-      run: cargo test --features serde
+      run: CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER="valgrind" cargo test --features serde
+
+    - name: Test (Optimized)
+      run: CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER="valgrind" cargo test --release --features serde

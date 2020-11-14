@@ -84,7 +84,12 @@ impl<T> MiniVec<T> {
     }
 
     fn data(&self) -> *mut T {
-        unsafe { self.buf_.add(get_offset::<T>()) as *mut T }
+        if self.buf_.is_null() {
+            core::ptr::null_mut()
+        } else {
+            let count = get_offset::<T>();
+            unsafe { self.buf_.add(count) as *mut T }
+        }
     }
 
     fn grow(&mut self, capacity: usize) {

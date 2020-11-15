@@ -858,6 +858,11 @@ fn assert_covariance() {
     }
 }
 
+// this test really only works because of the stdlib using trait specialization here
+// someday, we need to improve our FromIterator implementation to check for a TrustedLen iterator
+// which then checks if it can reuse the allocation the MiniVec had previously
+// if we can reuse the allocation then this will wind up passing
+//
 // #[test]
 // fn from_into_inner() {
 //     let vec = vec![1, 2, 3];

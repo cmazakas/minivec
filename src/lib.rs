@@ -84,12 +84,10 @@ impl<T> MiniVec<T> {
     }
 
     fn data(&self) -> *mut T {
-        if self.buf_.is_null() {
-            core::ptr::null_mut()
-        } else {
-            let count = get_offset::<T>();
-            unsafe { self.buf_.add(count) as *mut T }
-        }
+        debug_assert!(!self.buf_.is_null());
+
+        let count = get_offset::<T>();
+        unsafe { self.buf_.add(count) as *mut T }
     }
 
     fn grow(&mut self, capacity: usize) {
@@ -1071,6 +1069,10 @@ impl<T> MiniVec<T> {
     ///
     pub fn spare_capacity_mut(&mut self) -> &mut [core::mem::MaybeUninit<T>] {
         let count = self.len();
+        if count == 0 {
+            return &mut [];
+        }
+
         let data = unsafe { self.data().add(count) as *mut core::mem::MaybeUninit<T> };
         let len = self.capacity() - self.len();
 

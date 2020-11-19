@@ -1068,15 +1068,16 @@ impl<T> MiniVec<T> {
     /// ```
     ///
     pub fn spare_capacity_mut(&mut self) -> &mut [core::mem::MaybeUninit<T>] {
-        let count = self.len();
-        if count == 0 {
+        let capacity = self.capacity();
+        if capacity == 0 {
             return &mut [];
         }
 
-        let data = unsafe { self.data().add(count) as *mut core::mem::MaybeUninit<T> };
-        let len = self.capacity() - self.len();
+        let len = self.len();
+        let data = unsafe { self.data().add(len) as *mut core::mem::MaybeUninit<T> };
+        let spare_len = capacity - len;
 
-        unsafe { core::slice::from_raw_parts_mut(data, len) }
+        unsafe { core::slice::from_raw_parts_mut(data, spare_len) }
     }
 
     /// `splice` returns a `Splice` iterator. `Splice` is similar in spirit to `Drain` but instead

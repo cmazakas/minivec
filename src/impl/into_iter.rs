@@ -16,7 +16,12 @@ impl<T> IntoIter<T> {
     #[must_use]
     pub fn new(w: crate::MiniVec<T>) -> Self {
         let v = w;
-        let pos = v.data();
+        let pos = if v.buf_.is_null() {
+            core::ptr::null_mut()
+        } else {
+            v.data()
+        };
+
         Self {
             v,
             pos,

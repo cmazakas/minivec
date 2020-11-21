@@ -49,10 +49,11 @@ mod partial_eq;
 mod serde;
 
 use crate::r#impl::drain::make_drain_iterator;
+use crate::r#impl::drain_filter::make_drain_filter_iterator;
 use crate::r#impl::helpers::{make_layout, next_aligned, next_capacity};
 use crate::r#impl::splice::make_splice_iterator;
 
-pub use crate::r#impl::{Drain, IntoIter, Splice};
+pub use crate::r#impl::{Drain, DrainFilter, IntoIter, Splice};
 
 pub struct MiniVec<T> {
     buf_: *mut u8,
@@ -452,6 +453,40 @@ impl<T> MiniVec<T> {
         unsafe { self.set_len(start_idx) };
 
         make_drain_iterator(self, data, len - end_idx, start_idx, end_idx)
+    }
+
+    /// `drain_filter` creates a new `DrainFilter` iterator that when iterated will remove all
+    /// elements for which the supplied `pred` returns `true`.
+    ///
+    /// Removal of elements is done by transferring ownership of the element to the iterator.
+    ///
+    /// Note: if the supplied predicate panics then `DrainFilter` will stop all usage of it and then
+    /// backshift all untested elements and adjust the `MiniVec`'s length accordingly.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut vec = minivec::mini_vec![
+    ///     1, 2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36, 37,
+    ///     39,
+    /// ];
+    ///
+    /// let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<minivec::MiniVec<_>>();
+    /// assert_eq!(removed.len(), 10);
+    /// assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
+    ///
+    /// assert_eq!(vec.len(), 14);
+    /// assert_eq!(
+    ///     vec,
+    ///     vec![1, 7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]
+    /// );
+    /// ```
+    ///
+    pub fn drain_filter<F>(&mut self, pred: F) -> DrainFilter<'_, T, F>
+    where
+        F: core::ops::FnMut(&mut T) -> bool,
+    {
+        make_drain_filter_iterator(self, pred)
     }
 
     /// `from_raw_part` reconstructs a `MiniVec` from a previous call to `MiniVec::as_mut_ptr`.

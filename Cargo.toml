@@ -1,6 +1,6 @@
 [package]
 name = "minivec"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["LeonineKing1199 <christian.mazakas@gmail.com>"]
 edition = "2018"
 license = "BSL-1.0"

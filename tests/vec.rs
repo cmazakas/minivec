@@ -858,6 +858,11 @@ fn assert_covariance() {
     }
 }
 
+// this test really only works because of the stdlib using trait specialization here
+// someday, we need to improve our FromIterator implementation to check for a TrustedLen iterator
+// which then checks if it can reuse the allocation the MiniVec had previously
+// if we can reuse the allocation then this will wind up passing
+//
 // #[test]
 // fn from_into_inner() {
 //     let vec = vec![1, 2, 3];
@@ -889,21 +894,21 @@ fn overaligned_allocations() {
     }
 }
 
-// #[test]
-// fn drain_filter_empty() {
-//     let mut vec: Vec<i32> = vec![];
+#[test]
+fn drain_filter_empty() {
+    let mut vec: MiniVec<i32> = mini_vec![];
 
-//     {
-//         let mut iter = vec.drain_filter(|_| true);
-//         assert_eq!(iter.size_hint(), (0, Some(0)));
-//         assert_eq!(iter.next(), None);
-//         assert_eq!(iter.size_hint(), (0, Some(0)));
-//         assert_eq!(iter.next(), None);
-//         assert_eq!(iter.size_hint(), (0, Some(0)));
-//     }
-//     assert_eq!(vec.len(), 0);
-//     assert_eq!(vec, vec![]);
-// }
+    {
+        let mut iter = vec.drain_filter(|_| true);
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+    }
+    assert_eq!(vec.len(), 0);
+    assert_eq!(vec, mini_vec![]);
+}
 
 // #[test]
 // fn drain_filter_zst() {
@@ -927,230 +932,250 @@ fn overaligned_allocations() {
 //     assert_eq!(vec, vec![]);
 // }
 
-// #[test]
-// fn drain_filter_false() {
-//     let mut vec = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+#[test]
+fn drain_filter_false() {
+    let mut vec = mini_vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-//     let initial_len = vec.len();
-//     let mut count = 0;
-//     {
-//         let mut iter = vec.drain_filter(|_| false);
-//         assert_eq!(iter.size_hint(), (0, Some(initial_len)));
-//         for _ in iter.by_ref() {
-//             count += 1;
-//         }
-//         assert_eq!(iter.size_hint(), (0, Some(0)));
-//         assert_eq!(iter.next(), None);
-//         assert_eq!(iter.size_hint(), (0, Some(0)));
-//     }
+    let initial_len = vec.len();
+    let mut count = 0;
+    {
+        let mut iter = vec.drain_filter(|_| false);
+        assert_eq!(iter.size_hint(), (0, Some(initial_len)));
+        for _ in iter.by_ref() {
+            count += 1;
+        }
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+    }
 
-//     assert_eq!(count, 0);
-//     assert_eq!(vec.len(), initial_len);
-//     assert_eq!(vec, vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-// }
+    assert_eq!(count, 0);
+    assert_eq!(vec.len(), initial_len);
+    assert_eq!(vec, mini_vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+}
 
-// #[test]
-// fn drain_filter_true() {
-//     let mut vec = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+#[test]
+fn drain_filter_true() {
+    let mut vec = mini_vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-//     let initial_len = vec.len();
-//     let mut count = 0;
-//     {
-//         let mut iter = vec.drain_filter(|_| true);
-//         assert_eq!(iter.size_hint(), (0, Some(initial_len)));
-//         while let Some(_) = iter.next() {
-//             count += 1;
-//             assert_eq!(iter.size_hint(), (0, Some(initial_len - count)));
-//         }
-//         assert_eq!(iter.size_hint(), (0, Some(0)));
-//         assert_eq!(iter.next(), None);
-//         assert_eq!(iter.size_hint(), (0, Some(0)));
-//     }
+    let initial_len = vec.len();
+    let mut count = 0;
+    {
+        let mut iter = vec.drain_filter(|_| true);
+        assert_eq!(iter.size_hint(), (0, Some(initial_len)));
+        while let Some(_) = iter.next() {
+            count += 1;
+            assert_eq!(iter.size_hint(), (0, Some(initial_len - count)));
+        }
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+    }
 
-//     assert_eq!(count, initial_len);
-//     assert_eq!(vec.len(), 0);
-//     assert_eq!(vec, vec![]);
-// }
+    assert_eq!(count, initial_len);
+    assert_eq!(vec.len(), 0);
+    assert_eq!(vec, mini_vec![]);
+}
 
-// #[test]
-// fn drain_filter_complex() {
-//     {
-//         //                [+xxx++++++xxxxx++++x+x++]
-//         let mut vec = vec![
-//             1, 2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36, 37,
-//             39,
-//         ];
+#[test]
+fn drain_filter_complex() {
+    {
+        //                [+xxx++++++xxxxx++++x+x++]
+        let mut vec = mini_vec![
+            1, 2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36, 37,
+            39,
+        ];
 
-//         let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<Vec<_>>();
-//         assert_eq!(removed.len(), 10);
-//         assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
+        let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<MiniVec<_>>();
+        assert_eq!(removed.len(), 10);
+        assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
 
-//         assert_eq!(vec.len(), 14);
-//         assert_eq!(vec, vec![1, 7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]);
-//     }
+        assert_eq!(vec.len(), 14);
+        assert_eq!(
+            vec,
+            vec![1, 7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]
+        );
+    }
 
-//     {
-//         //                [xxx++++++xxxxx++++x+x++]
-//         let mut vec = vec![
-//             2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36, 37, 39,
-//         ];
+    {
+        //                [xxx++++++xxxxx++++x+x++]
+        let mut vec = mini_vec![
+            2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36, 37, 39,
+        ];
 
-//         let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<Vec<_>>();
-//         assert_eq!(removed.len(), 10);
-//         assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
+        let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<MiniVec<_>>();
+        assert_eq!(removed.len(), 10);
+        assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
 
-//         assert_eq!(vec.len(), 13);
-//         assert_eq!(vec, vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]);
-//     }
+        assert_eq!(vec.len(), 13);
+        assert_eq!(vec, vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]);
+    }
 
-//     {
-//         //                [xxx++++++xxxxx++++x+x]
-//         let mut vec =
-//             vec![2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36];
+    {
+        //                [xxx++++++xxxxx++++x+x]
+        let mut vec = mini_vec![
+            2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36,
+        ];
 
-//         let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<Vec<_>>();
-//         assert_eq!(removed.len(), 10);
-//         assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
+        let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<MiniVec<_>>();
+        assert_eq!(removed.len(), 10);
+        assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
 
-//         assert_eq!(vec.len(), 11);
-//         assert_eq!(vec, vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35]);
-//     }
+        assert_eq!(vec.len(), 11);
+        assert_eq!(vec, vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35]);
+    }
 
-//     {
-//         //                [xxxxxxxxxx+++++++++++]
-//         let mut vec = vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+    {
+        //                [xxxxxxxxxx+++++++++++]
+        let mut vec =
+            mini_vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19,];
 
-//         let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<Vec<_>>();
-//         assert_eq!(removed.len(), 10);
-//         assert_eq!(removed, vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
+        let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<MiniVec<_>>();
+        assert_eq!(removed.len(), 10);
+        assert_eq!(removed, vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
 
-//         assert_eq!(vec.len(), 10);
-//         assert_eq!(vec, vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
-//     }
+        assert_eq!(vec.len(), 10);
+        assert_eq!(vec, vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+    }
 
-//     {
-//         //                [+++++++++++xxxxxxxxxx]
-//         let mut vec = vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
+    {
+        //                [+++++++++++xxxxxxxxxx]
+        let mut vec =
+            mini_vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20,];
 
-//         let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<Vec<_>>();
-//         assert_eq!(removed.len(), 10);
-//         assert_eq!(removed, vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
+        let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<MiniVec<_>>();
+        assert_eq!(removed.len(), 10);
+        assert_eq!(removed, vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
 
-//         assert_eq!(vec.len(), 10);
-//         assert_eq!(vec, vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
-//     }
-// }
+        assert_eq!(vec.len(), 10);
+        assert_eq!(vec, vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+    }
+}
 
-// // FIXME: re-enable emscripten once it can unwind again
-// #[test]
-// #[cfg(not(target_os = "emscripten"))]
-// fn drain_filter_consumed_panic() {
-//     use std::rc::Rc;
-//     use std::sync::Mutex;
+// FIXME: re-enable emscripten once it can unwind again
+#[test]
+#[cfg(not(target_os = "emscripten"))]
+fn drain_filter_consumed_panic() {
+    use std::rc::Rc;
+    use std::sync::Mutex;
 
-//     struct Check {
-//         index: usize,
-//         drop_counts: Rc<Mutex<Vec<usize>>>,
-//     };
+    struct Check {
+        index: usize,
+        drop_counts: Rc<Mutex<MiniVec<usize>>>,
+    };
 
-//     impl Drop for Check {
-//         fn drop(&mut self) {
-//             self.drop_counts.lock().unwrap()[self.index] += 1;
-//             println!("drop: {}", self.index);
-//         }
-//     }
+    impl Drop for Check {
+        fn drop(&mut self) {
+            self.drop_counts.lock().unwrap()[self.index] += 1;
+            println!("drop: {}", self.index);
+        }
+    }
 
-//     let check_count = 10;
-//     let drop_counts = Rc::new(Mutex::new(vec![0_usize; check_count]));
-//     let mut data: Vec<Check> = (0..check_count)
-//         .map(|index| Check { index, drop_counts: Rc::clone(&drop_counts) })
-//         .collect();
+    let check_count = 10;
+    let drop_counts = Rc::new(Mutex::new(mini_vec![0_usize; check_count]));
+    let mut data: MiniVec<Check> = (0..check_count)
+        .map(|index| Check {
+            index,
+            drop_counts: Rc::clone(&drop_counts),
+        })
+        .collect();
 
-//     let _ = std::panic::catch_unwind(move || {
-//         let filter = |c: &mut Check| {
-//             if c.index == 2 {
-//                 panic!("panic at index: {}", c.index);
-//             }
-//             // Verify that if the filter could panic again on another element
-//             // that it would not cause a double panic and all elements of the
-//             // vec would still be dropped exactly once.
-//             if c.index == 4 {
-//                 panic!("panic at index: {}", c.index);
-//             }
-//             c.index < 6
-//         };
-//         let drain = data.drain_filter(filter);
+    let _ = std::panic::catch_unwind(move || {
+        let filter = |c: &mut Check| {
+            if c.index == 2 {
+                panic!("panic at index: {}", c.index);
+            }
+            // Verify that if the filter could panic again on another element
+            // that it would not cause a double panic and all elements of the
+            // vec would still be dropped exactly once.
+            if c.index == 4 {
+                panic!("panic at index: {}", c.index);
+            }
+            c.index < 6
+        };
+        let drain = data.drain_filter(filter);
 
-//         // NOTE: The DrainFilter is explicitly consumed
-//         drain.for_each(drop);
-//     });
+        // NOTE: The DrainFilter is explicitly consumed
+        drain.for_each(drop);
+    });
 
-//     let drop_counts = drop_counts.lock().unwrap();
-//     assert_eq!(check_count, drop_counts.len());
+    let drop_counts = drop_counts.lock().unwrap();
+    assert_eq!(check_count, drop_counts.len());
 
-//     for (index, count) in drop_counts.iter().cloned().enumerate() {
-//         assert_eq!(1, count, "unexpected drop count at index: {} (count: {})", index, count);
-//     }
-// }
+    for (index, count) in drop_counts.iter().cloned().enumerate() {
+        assert_eq!(
+            1, count,
+            "unexpected drop count at index: {} (count: {})",
+            index, count
+        );
+    }
+}
 
-// // FIXME: Re-enable emscripten once it can catch panics
-// #[test]
-// #[cfg(not(target_os = "emscripten"))]
-// fn drain_filter_unconsumed_panic() {
-//     use std::rc::Rc;
-//     use std::sync::Mutex;
+// FIXME: Re-enable emscripten once it can catch panics
+#[test]
+#[cfg(not(target_os = "emscripten"))]
+fn drain_filter_unconsumed_panic() {
+    use std::rc::Rc;
+    use std::sync::Mutex;
 
-//     struct Check {
-//         index: usize,
-//         drop_counts: Rc<Mutex<Vec<usize>>>,
-//     };
+    struct Check {
+        index: usize,
+        drop_counts: Rc<Mutex<MiniVec<usize>>>,
+    };
 
-//     impl Drop for Check {
-//         fn drop(&mut self) {
-//             self.drop_counts.lock().unwrap()[self.index] += 1;
-//             println!("drop: {}", self.index);
-//         }
-//     }
+    impl Drop for Check {
+        fn drop(&mut self) {
+            self.drop_counts.lock().unwrap()[self.index] += 1;
+            println!("drop: {}", self.index);
+        }
+    }
 
-//     let check_count = 10;
-//     let drop_counts = Rc::new(Mutex::new(vec![0_usize; check_count]));
-//     let mut data: Vec<Check> = (0..check_count)
-//         .map(|index| Check { index, drop_counts: Rc::clone(&drop_counts) })
-//         .collect();
+    let check_count = 10;
+    let drop_counts = Rc::new(Mutex::new(mini_vec![0_usize; check_count]));
+    let mut data: MiniVec<Check> = (0..check_count)
+        .map(|index| Check {
+            index,
+            drop_counts: Rc::clone(&drop_counts),
+        })
+        .collect();
 
-//     let _ = std::panic::catch_unwind(move || {
-//         let filter = |c: &mut Check| {
-//             if c.index == 2 {
-//                 panic!("panic at index: {}", c.index);
-//             }
-//             // Verify that if the filter could panic again on another element
-//             // that it would not cause a double panic and all elements of the
-//             // vec would still be dropped exactly once.
-//             if c.index == 4 {
-//                 panic!("panic at index: {}", c.index);
-//             }
-//             c.index < 6
-//         };
-//         let _drain = data.drain_filter(filter);
+    let _ = std::panic::catch_unwind(move || {
+        let filter = |c: &mut Check| {
+            if c.index == 2 {
+                panic!("panic at index: {}", c.index);
+            }
+            // Verify that if the filter could panic again on another element
+            // that it would not cause a double panic and all elements of the
+            // vec would still be dropped exactly once.
+            if c.index == 4 {
+                panic!("panic at index: {}", c.index);
+            }
+            c.index < 6
+        };
+        let _drain = data.drain_filter(filter);
 
-//         // NOTE: The DrainFilter is dropped without being consumed
-//     });
+        // NOTE: The DrainFilter is dropped without being consumed
+    });
 
-//     let drop_counts = drop_counts.lock().unwrap();
-//     assert_eq!(check_count, drop_counts.len());
+    let drop_counts = drop_counts.lock().unwrap();
+    assert_eq!(check_count, drop_counts.len());
 
-//     for (index, count) in drop_counts.iter().cloned().enumerate() {
-//         assert_eq!(1, count, "unexpected drop count at index: {} (count: {})", index, count);
-//     }
-// }
+    for (index, count) in drop_counts.iter().cloned().enumerate() {
+        assert_eq!(
+            1, count,
+            "unexpected drop count at index: {} (count: {})",
+            index, count
+        );
+    }
+}
 
-// #[test]
-// fn drain_filter_unconsumed() {
-//     let mut vec = vec![1, 2, 3, 4];
-//     let drain = vec.drain_filter(|&mut x| x % 2 != 0);
-//     drop(drain);
-//     assert_eq!(vec, [2, 4]);
-// }
+#[test]
+fn drain_filter_unconsumed() {
+    let mut vec = mini_vec![1, 2, 3, 4];
+    let drain = vec.drain_filter(|&mut x| x % 2 != 0);
+    drop(drain);
+    assert_eq!(vec, [2, 4]);
+}
 
 #[test]
 fn test_reserve_exact() {

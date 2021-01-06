@@ -93,9 +93,7 @@ impl<T> DoubleEndedIterator for IntoIter<T> {
 
         header.len_ -= 1;
 
-        let count = header.len_;
-        let src = unsafe { data.add(count) };
-        Some(unsafe { core::ptr::read(src) })
+        Some(unsafe { core::ptr::read(data.add(header.len_)) })
     }
 }
 
@@ -135,8 +133,7 @@ impl<T> Iterator for IntoIter<T> {
             return None;
         }
 
-        let count = 1;
-        self.pos = unsafe { data.add(count) };
+        self.pos = unsafe { data.add(1) };
         header.len_ -= 1;
 
         Some(unsafe { core::ptr::read(data) })

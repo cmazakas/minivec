@@ -849,10 +849,9 @@ fn minivec_spare_capacity_mut() {
     assert!(vec.capacity() >= capacity);
 
     let buf = vec.spare_capacity_mut();
-    for idx in 0..capacity {
-        let val = idx as i32;
-        unsafe { buf[idx].as_mut_ptr().write(val) };
-    }
+    buf.iter_mut().enumerate().for_each(|(idx, byte)| {
+        *byte = core::mem::MaybeUninit::<i32>::new(idx as i32);
+    });
 
     let len = capacity;
     unsafe { vec.set_len(len) };
@@ -860,7 +859,7 @@ fn minivec_spare_capacity_mut() {
     let first = Some(0);
     let succ = |n: &i32| -> Option<i32> { Some(n + 1) };
     let iter = core::iter::successors(first, succ).take(capacity);
-    let expected: MiniVec<i32> = core::iter::FromIterator::from_iter(iter);
+    let expected: MiniVec<i32> = iter.collect();
 
     assert_eq!(vec, expected);
 }

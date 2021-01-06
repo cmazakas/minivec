@@ -10,10 +10,10 @@ where
     panicked: bool,
 }
 
-pub fn make_drain_filter_iterator<'a, T, F>(
-    vec: &'a mut crate::MiniVec<T>,
+pub fn make_drain_filter_iterator<T, F>(
+    vec: &mut crate::MiniVec<T>,
     pred: F,
-) -> DrainFilter<'a, T, F>
+) -> DrainFilter<'_, T, F>
 where
     F: core::ops::FnMut(&mut T) -> bool,
 {

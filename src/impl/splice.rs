@@ -3,7 +3,7 @@ use crate::MiniVec;
 extern crate alloc;
 
 use core::{
-    iter::{DoubleEndedIterator, ExactSizeIterator, FromIterator, Iterator},
+    iter::{DoubleEndedIterator, ExactSizeIterator, Iterator},
     marker::PhantomData,
     mem, ptr,
 };
@@ -169,7 +169,7 @@ impl<I: Iterator> Drop for Splice<'_, I> {
                 // we need to handle the rest of the iterator's elements now
                 // pool them into a temporary vector for storage
                 //
-                let mut tmp = MiniVec::<I::Item>::from_iter(&mut self.splice.fill_);
+                let mut tmp: MiniVec<_> = (&mut self.splice.fill_).collect();
 
                 // reserve extra capacity if required
                 // note, this will invalidate all of our previously cached pointers in the Splice

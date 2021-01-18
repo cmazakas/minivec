@@ -56,13 +56,13 @@ use crate::r#impl::splice::make_splice_iterator;
 pub use crate::r#impl::{Drain, DrainFilter, IntoIter, Splice};
 
 pub struct MiniVec<T> {
-    buf_: *mut u8,
-    phantom_: PhantomData<T>,
+    buf: *mut u8,
+    phantom: PhantomData<T>,
 }
 
 struct Header {
-    len_: usize,
-    cap_: usize,
+    len: usize,
+    cap: usize,
 }
 
 const fn get_offset<T>() -> usize {
@@ -73,22 +73,22 @@ impl<T> MiniVec<T> {
     fn header(&self) -> &Header {
         #[allow(clippy::cast_ptr_alignment)]
         unsafe {
-            &*(self.buf_ as *const Header)
+            &*(self.buf as *const Header)
         }
     }
 
     fn header_mut(&mut self) -> &mut Header {
         #[allow(clippy::cast_ptr_alignment)]
         unsafe {
-            &mut *(self.buf_ as *mut Header)
+            &mut *(self.buf as *mut Header)
         }
     }
 
     fn data(&self) -> *mut T {
-        debug_assert!(!self.buf_.is_null());
+        debug_assert!(!self.buf.is_null());
 
         let count = get_offset::<T>();
-        unsafe { self.buf_.add(count) as *mut T }
+        unsafe { self.buf.add(count) as *mut T }
     }
 
     fn grow(&mut self, capacity: usize) {
@@ -105,12 +105,12 @@ impl<T> MiniVec<T> {
 
         let len = self.len();
 
-        let new_buf = if self.buf_.is_null() {
+        let new_buf = if self.buf.is_null() {
             unsafe { alloc::alloc::alloc(new_layout) }
         } else {
             let old_layout = make_layout::<T>(old_capacity);
 
-            unsafe { alloc::alloc::realloc(self.buf_, old_layout, new_layout.size()) }
+            unsafe { alloc::alloc::realloc(self.buf, old_layout, new_layout.size()) }
         };
 
         if new_buf.is_null() {
@@ -118,8 +118,8 @@ impl<T> MiniVec<T> {
         }
 
         let header = Header {
-            len_: len,
-            cap_: new_capacity,
+            len,
+            cap: new_capacity,
         };
 
         #[allow(clippy::cast_ptr_alignment)]
@@ -127,7 +127,7 @@ impl<T> MiniVec<T> {
             ptr::write(new_buf as *mut Header, header)
         };
 
-        self.buf_ = new_buf;
+        self.buf = new_buf;
     }
 
     /// `append` moves every element from `other` to the back of `self`. `other.is_empty()` is
@@ -156,8 +156,8 @@ impl<T> MiniVec<T> {
             ptr::copy_nonoverlapping(other.as_ptr(), self.as_mut_ptr().add(self.len()), other_len);
         };
 
-        other.header_mut().len_ = 0;
-        self.header_mut().len_ += other_len;
+        other.header_mut().len = 0;
+        self.header_mut().len += other_len;
     }
 
     /// `as_mut_ptr` returns a `*mut T` to the underlying array.
@@ -182,7 +182,7 @@ impl<T> MiniVec<T> {
     /// ```
     ///
     pub fn as_mut_ptr(&mut self) -> *mut T {
-        if self.buf_.is_null() {
+        if self.buf.is_null() {
             return ptr::null_mut();
         }
 
@@ -231,7 +231,7 @@ impl<T> MiniVec<T> {
     ///
     #[must_use]
     pub fn as_ptr(&self) -> *const T {
-        if self.buf_.is_null() {
+        if self.buf.is_null() {
             return ptr::null();
         }
 
@@ -277,10 +277,10 @@ impl<T> MiniVec<T> {
     ///
     #[must_use]
     pub fn capacity(&self) -> usize {
-        if self.buf_.is_null() {
+        if self.buf.is_null() {
             0
         } else {
-            self.header().cap_
+            self.header().cap
         }
     }
 
@@ -523,8 +523,8 @@ impl<T> MiniVec<T> {
         let buf = p.sub(aligned);
 
         MiniVec {
-            buf_: buf,
-            phantom_: PhantomData,
+            buf,
+            phantom: PhantomData,
         }
     }
 
@@ -565,12 +565,12 @@ impl<T> MiniVec<T> {
         let p = ptr as *mut u8;
         let buf = p.sub(aligned);
 
-        debug_assert!((*(buf as *mut Header)).len_ == length);
-        debug_assert!((*(buf as *mut Header)).cap_ == capacity);
+        debug_assert!((*(buf as *mut Header)).len == length);
+        debug_assert!((*(buf as *mut Header)).cap == capacity);
 
         MiniVec {
-            buf_: buf,
-            phantom_: PhantomData,
+            buf,
+            phantom: PhantomData,
         }
     }
 
@@ -668,10 +668,10 @@ impl<T> MiniVec<T> {
     ///
     #[must_use]
     pub fn len(&self) -> usize {
-        if self.buf_.is_null() {
+        if self.buf.is_null() {
             0
         } else {
-            self.header().len_
+            self.header().len
         }
     }
 
@@ -694,8 +694,8 @@ impl<T> MiniVec<T> {
         assert!(mem::size_of::<T>() > 0, "ZSTs currently not supported");
 
         MiniVec {
-            buf_: ptr::null_mut(),
-            phantom_: PhantomData,
+            buf: ptr::null_mut(),
+            phantom: PhantomData,
         }
     }
 
@@ -755,7 +755,7 @@ impl<T> MiniVec<T> {
         };
 
         let mut header = self.header_mut();
-        header.len_ += 1;
+        header.len += 1;
     }
 
     /// `remove` moves the element at the specified `index` and then returns it to the user. This
@@ -1008,7 +1008,7 @@ impl<T> MiniVec<T> {
     /// ```
     ///
     pub unsafe fn set_len(&mut self, len: usize) {
-        self.header_mut().len_ = len;
+        self.header_mut().len = len;
     }
 
     /// `shrink_to` will attempt to adjust the backing allocation such that it has space for at
@@ -1252,7 +1252,7 @@ impl<T> MiniVec<T> {
         }
 
         let src = unsafe { ptr::read(self.as_ptr().add(len - 1)) };
-        self.header_mut().len_ -= 1;
+        self.header_mut().len -= 1;
 
         let dst = unsafe { self.as_mut_ptr().add(index) };
         unsafe { ptr::replace(dst, src) }
@@ -1278,7 +1278,7 @@ impl<T> MiniVec<T> {
             return;
         }
 
-        self.header_mut().len_ = len;
+        self.header_mut().len = len;
 
         if !mem::needs_drop::<T>() {
             return;

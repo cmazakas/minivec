@@ -8,17 +8,17 @@ use core::ptr;
 
 impl<T> Drop for MiniVec<T> {
     fn drop(&mut self) {
-        if self.buf_.is_null() {
+        if self.buf.is_null() {
             return;
         }
 
         #[allow(clippy::cast_ptr_alignment)]
-        let header = unsafe { ptr::read(self.buf_ as *const Header) };
+        let header = unsafe { ptr::read(self.buf as *const Header) };
 
-        for i in 0..header.len_ {
+        for i in 0..header.len {
             unsafe { ptr::read(self.data().add(i)) };
         }
 
-        unsafe { alloc::alloc::dealloc(self.buf_, make_layout::<T>(header.cap_)) };
+        unsafe { alloc::alloc::dealloc(self.buf, make_layout::<T>(header.cap)) };
     }
 }

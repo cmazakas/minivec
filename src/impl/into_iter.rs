@@ -16,7 +16,7 @@ impl<T> IntoIter<T> {
     #[must_use]
     pub fn new(w: crate::MiniVec<T>) -> Self {
         let v = w;
-        let pos = if v.buf_.is_null() {
+        let pos = if v.buf.is_null() {
             core::ptr::null_mut()
         } else {
             v.data()
@@ -31,7 +31,7 @@ impl<T> IntoIter<T> {
 
     #[must_use]
     pub fn as_slice(&self) -> &[T] {
-        if self.v.buf_.is_null() {
+        if self.v.buf.is_null() {
             &[]
         } else {
             let data = self.pos;
@@ -40,7 +40,7 @@ impl<T> IntoIter<T> {
     }
 
     pub fn as_mut_slice(&mut self) -> &mut [T] {
-        if self.v.buf_.is_null() {
+        if self.v.buf.is_null() {
             &mut []
         } else {
             let data: *mut T = self.pos as *mut T;
@@ -77,23 +77,23 @@ impl<T: alloc::fmt::Debug> alloc::fmt::Debug for IntoIter<T> {
 
 impl<T> DoubleEndedIterator for IntoIter<T> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.v.buf_.is_null() {
+        if self.v.buf.is_null() {
             return None;
         }
 
         let header = self.v.header_mut();
 
         let data = self.pos;
-        let count = header.len_;
+        let count = header.len;
         let end = unsafe { data.add(count) };
 
         if data >= end {
             return None;
         };
 
-        header.len_ -= 1;
+        header.len -= 1;
 
-        Some(unsafe { core::ptr::read(data.add(header.len_)) })
+        Some(unsafe { core::ptr::read(data.add(header.len)) })
     }
 }
 
@@ -119,14 +119,14 @@ impl<T> Iterator for IntoIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.v.buf_.is_null() {
+        if self.v.buf.is_null() {
             return None;
         }
 
         let header = self.v.header_mut();
 
         let data = self.pos;
-        let count = header.len_;
+        let count = header.len;
         let end = unsafe { data.add(count) };
 
         if data >= end {
@@ -134,7 +134,7 @@ impl<T> Iterator for IntoIter<T> {
         }
 
         self.pos = unsafe { data.add(1) };
-        header.len_ -= 1;
+        header.len -= 1;
 
         Some(unsafe { core::ptr::read(data) })
     }

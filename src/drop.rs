@@ -19,6 +19,6 @@ impl<T> Drop for MiniVec<T> {
             unsafe { ptr::read(self.data().add(i)) };
         }
 
-        unsafe { alloc::alloc::dealloc(self.buf, make_layout::<T>(header.cap)) };
+        unsafe { alloc::alloc::dealloc(self.buf, make_layout::<T>(header.cap, header.alignment)) };
     }
 }

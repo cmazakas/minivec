@@ -186,7 +186,7 @@ impl<I: Iterator> Drop for Splice<'_, I> {
                 let total_elements = vec.len() + self.splice.remaining_ + tmp.len();
 
                 if total_elements > capacity {
-                    vec.grow(total_elements);
+                    vec.grow(total_elements, vec.alignment());
                 }
 
                 // let's first move the Drain tail over to the right

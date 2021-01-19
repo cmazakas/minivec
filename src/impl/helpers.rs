@@ -2,20 +2,17 @@ use crate::Header;
 
 extern crate alloc;
 
-use alloc::alloc::Layout;
-use core::{cmp, mem};
-
-pub const fn next_aligned(num_bytes: usize, alignment: usize) -> usize {
-    let remaining = num_bytes % alignment;
+pub const fn next_aligned(n: usize, alignment: usize) -> usize {
+    let remaining = n % alignment;
     if remaining == 0 {
-        num_bytes
+        n
     } else {
-        num_bytes + (alignment - remaining)
+        n + (alignment - remaining)
     }
 }
 
 pub const fn next_capacity<T>(capacity: usize) -> usize {
-    let elem_size = mem::size_of::<T>();
+    let elem_size = core::mem::size_of::<T>();
 
     if capacity == 0 {
         return match elem_size {
@@ -29,22 +26,21 @@ pub const fn next_capacity<T>(capacity: usize) -> usize {
 }
 
 pub fn max_align<T>() -> usize {
-    let align_t = mem::align_of::<T>();
-    let header_align = mem::align_of::<Header>();
-    cmp::max(align_t, header_align)
+    let align_t = core::mem::align_of::<T>();
+    let header_align = core::mem::align_of::<Header>();
+    core::cmp::max(align_t, header_align)
 }
 
-pub fn make_layout<T>(cap: usize) -> Layout {
-    let alignment = max_align::<T>();
-
-    let header_size = mem::size_of::<Header>();
-    let num_bytes = if cap == 0 {
-        header_size
+pub fn make_layout<T>(capacity: usize, alignment: usize) -> alloc::alloc::Layout {
+    let header_size = core::mem::size_of::<Header>();
+    let num_bytes = if capacity == 0 {
+        next_aligned(header_size, alignment)
     } else {
-        next_aligned(header_size, mem::align_of::<T>()) + cap * mem::size_of::<T>()
+        next_aligned(header_size, alignment)
+            + next_aligned(capacity * core::mem::size_of::<T>(), alignment)
     };
 
-    Layout::from_size_align(num_bytes, alignment).unwrap()
+    alloc::alloc::Layout::from_size_align(num_bytes, alignment).unwrap()
 }
 
 #[cfg(test)]
@@ -68,55 +64,72 @@ mod tests {
 
     #[test]
     fn max_align_test() {
-        let header_alignment = mem::align_of::<Header>();
+        let header_alignment = core::mem::align_of::<Header>();
 
-        assert!(mem::align_of::<i32>() <= mem::align_of::<Header>());
+        assert!(core::mem::align_of::<i32>() <= core::mem::align_of::<Header>());
         assert_eq!(max_align::<i32>(), header_alignment);
 
-        assert!(mem::align_of::<u8>() <= mem::align_of::<Header>());
+        assert!(core::mem::align_of::<u8>() <= core::mem::align_of::<Header>());
         assert_eq!(max_align::<u8>(), header_alignment);
 
-        assert!(mem::align_of::<OverAligned>() > mem::align_of::<Header>());
-        assert_eq!(max_align::<OverAligned>(), mem::align_of::<OverAligned>());
+        assert!(core::mem::align_of::<OverAligned>() > core::mem::align_of::<Header>());
+        assert_eq!(
+            max_align::<OverAligned>(),
+            core::mem::align_of::<OverAligned>()
+        );
     }
 
     #[test]
     fn make_layout_test() {
         // empty
         //
-        let layout = make_layout::<i32>(0);
+        let layout = make_layout::<i32>(0, max_align::<i32>());
 
-        assert_eq!(layout.align(), mem::align_of::<Header>());
-        assert_eq!(layout.size(), mem::size_of::<Header>());
+        assert_eq!(layout.align(), core::mem::align_of::<Header>());
+        assert_eq!(layout.size(), core::mem::size_of::<Header>());
 
         // non-empty, less than
         //
-        let layout = make_layout::<i32>(512);
-        assert!(mem::align_of::<i32>() < mem::align_of::<Header>());
-        assert_eq!(layout.align(), mem::align_of::<Header>());
+        let layout = make_layout::<i32>(512, max_align::<i32>());
+        assert!(core::mem::align_of::<i32>() < core::mem::align_of::<Header>());
+        assert_eq!(layout.align(), core::mem::align_of::<Header>());
         assert_eq!(
             layout.size(),
-            mem::size_of::<Header>() + 512 * mem::size_of::<i32>()
+            core::mem::size_of::<Header>() + 512 * core::mem::size_of::<i32>()
         );
 
         // non-empty, equal
         //
-        let layout = make_layout::<i64>(512);
-        assert_eq!(mem::align_of::<i64>(), mem::align_of::<Header>());
-        assert_eq!(layout.align(), mem::align_of::<Header>());
+        let layout = make_layout::<i64>(512, max_align::<i64>());
+        assert_eq!(
+            core::mem::align_of::<i64>(),
+            core::mem::align_of::<Header>()
+        );
+        assert_eq!(layout.align(), core::mem::align_of::<Header>());
         assert_eq!(
             layout.size(),
-            mem::size_of::<Header>() + 512 * mem::size_of::<i64>()
+            core::mem::size_of::<Header>() + 512 * core::mem::size_of::<i64>()
         );
 
         // non-empty, greater
-        let layout = make_layout::<OverAligned>(512);
-        assert!(mem::align_of::<OverAligned>() > mem::align_of::<Header>());
-        assert_eq!(layout.align(), mem::align_of::<OverAligned>());
+        let layout = make_layout::<OverAligned>(512, max_align::<OverAligned>());
+        assert!(core::mem::align_of::<OverAligned>() > core::mem::align_of::<Header>());
+        assert_eq!(layout.align(), core::mem::align_of::<OverAligned>());
         assert_eq!(
             layout.size(),
-            next_aligned(mem::size_of::<Header>(), mem::align_of::<OverAligned>())
-                + 512 * mem::size_of::<OverAligned>()
+            next_aligned(
+                core::mem::size_of::<Header>(),
+                core::mem::align_of::<OverAligned>()
+            ) + 512 * core::mem::size_of::<OverAligned>()
+        );
+
+        // non-empty, over-aligned
+        let layout = make_layout::<i32>(512, 32);
+        assert_eq!(layout.align(), 32);
+        assert_eq!(
+            layout.size(),
+            next_aligned(core::mem::size_of::<Header>(), 32)
+                + next_aligned(core::mem::size_of::<i32>() * 512, 32)
         );
     }
 }

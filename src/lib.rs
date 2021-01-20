@@ -17,14 +17,6 @@
 
 extern crate alloc;
 
-use core::{
-    cmp::Ordering,
-    marker::PhantomData,
-    mem,
-    ops::{Bound, FnMut, RangeBounds},
-    ptr, slice,
-};
-
 mod r#impl;
 
 mod as_mut;
@@ -62,7 +54,7 @@ pub enum LayoutErr {
 
 pub struct MiniVec<T> {
     buf: *mut u8,
-    phantom: PhantomData<T>,
+    phantom: core::marker::PhantomData<T>,
 }
 
 struct Header {
@@ -135,7 +127,7 @@ impl<T> MiniVec<T> {
 
         #[allow(clippy::cast_ptr_alignment)]
         unsafe {
-            ptr::write(new_buf as *mut Header, header)
+            core::ptr::write(new_buf as *mut Header, header)
         };
 
         self.buf = new_buf;
@@ -164,7 +156,11 @@ impl<T> MiniVec<T> {
         self.reserve(other_len);
 
         unsafe {
-            ptr::copy_nonoverlapping(other.as_ptr(), self.as_mut_ptr().add(self.len()), other_len);
+            core::ptr::copy_nonoverlapping(
+                other.as_ptr(),
+                self.as_mut_ptr().add(self.len()),
+                other_len,
+            );
         };
 
         other.header_mut().len = 0;
@@ -194,7 +190,7 @@ impl<T> MiniVec<T> {
     ///
     pub fn as_mut_ptr(&mut self) -> *mut T {
         if self.buf.is_null() {
-            return ptr::null_mut();
+            return core::ptr::null_mut();
         }
 
         self.data()
@@ -243,7 +239,7 @@ impl<T> MiniVec<T> {
     #[must_use]
     pub fn as_ptr(&self) -> *const T {
         if self.buf.is_null() {
-            return ptr::null();
+            return core::ptr::null();
         }
 
         self.data()
@@ -377,7 +373,7 @@ impl<T> MiniVec<T> {
             let matches = unsafe { pred(&mut *read, &mut *write.sub(1)) };
             if !matches {
                 if read != write {
-                    unsafe { mem::swap(&mut *read, &mut *write) };
+                    unsafe { core::mem::swap(&mut *read, &mut *write) };
                 }
                 write = unsafe { write.add(1) };
             }
@@ -385,7 +381,7 @@ impl<T> MiniVec<T> {
             read = unsafe { read.add(1) };
         }
 
-        self.truncate((write as usize - data as usize) / mem::size_of::<T>());
+        self.truncate((write as usize - data as usize) / core::mem::size_of::<T>());
     }
 
     /// `dedup_by_key` "de-duplicates" all adjacent elements where `key(elem1) == key(elem2)`.
@@ -429,20 +425,20 @@ impl<T> MiniVec<T> {
     ///
     pub fn drain<R>(&mut self, range: R) -> Drain<T>
     where
-        R: RangeBounds<usize>,
+        R: core::ops::RangeBounds<usize>,
     {
         let len = self.len();
 
         let start_idx = match range.start_bound() {
-            Bound::Included(&n) => n,
-            Bound::Excluded(&n) => n + 1,
-            Bound::Unbounded => 0,
+            core::ops::Bound::Included(&n) => n,
+            core::ops::Bound::Excluded(&n) => n + 1,
+            core::ops::Bound::Unbounded => 0,
         };
 
         let end_idx = match range.end_bound() {
-            Bound::Included(&n) => n + 1,
-            Bound::Excluded(&n) => n,
-            Bound::Unbounded => len,
+            core::ops::Bound::Included(&n) => n + 1,
+            core::ops::Bound::Excluded(&n) => n,
+            core::ops::Bound::Unbounded => len,
         };
 
         if start_idx > end_idx {
@@ -527,15 +523,15 @@ impl<T> MiniVec<T> {
     pub unsafe fn from_raw_part(ptr: *mut T) -> MiniVec<T> {
         debug_assert!(!ptr.is_null());
 
-        let header_size = mem::size_of::<Header>();
-        let aligned = next_aligned(header_size, mem::align_of::<T>());
+        let header_size = core::mem::size_of::<Header>();
+        let aligned = next_aligned(header_size, core::mem::align_of::<T>());
 
         let p = ptr as *mut u8;
         let buf = p.sub(aligned);
 
         MiniVec {
             buf,
-            phantom: PhantomData,
+            phantom: core::marker::PhantomData,
         }
     }
 
@@ -570,8 +566,8 @@ impl<T> MiniVec<T> {
     pub unsafe fn from_raw_parts(ptr: *mut T, length: usize, capacity: usize) -> MiniVec<T> {
         debug_assert!(!ptr.is_null());
 
-        let header_size = mem::size_of::<Header>();
-        let aligned = next_aligned(header_size, mem::align_of::<T>());
+        let header_size = core::mem::size_of::<Header>();
+        let aligned = next_aligned(header_size, core::mem::align_of::<T>());
 
         let p = ptr as *mut u8;
         let buf = p.sub(aligned);
@@ -581,7 +577,7 @@ impl<T> MiniVec<T> {
 
         MiniVec {
             buf,
-            phantom: PhantomData,
+            phantom: core::marker::PhantomData,
         }
     }
 
@@ -617,8 +613,8 @@ impl<T> MiniVec<T> {
 
         let p = unsafe { self.as_mut_ptr().add(index) };
         unsafe {
-            ptr::copy(p, p.add(1), len - index);
-            ptr::write(p, element);
+            core::ptr::copy(p, p.add(1), len - index);
+            core::ptr::write(p, element);
             self.set_len(len + 1);
         }
     }
@@ -661,9 +657,9 @@ impl<T> MiniVec<T> {
         T: 'a,
     {
         let len = vec.len();
-        let mut vec = mem::ManuallyDrop::new(vec);
+        let mut vec = core::mem::ManuallyDrop::new(vec);
         let vec: &mut MiniVec<T> = &mut *vec;
-        unsafe { slice::from_raw_parts_mut(vec.as_mut_ptr(), len) }
+        unsafe { core::slice::from_raw_parts_mut(vec.as_mut_ptr(), len) }
     }
 
     /// `len` returns the current lenght of the vector, i.e. the number of actual elements in it
@@ -702,11 +698,14 @@ impl<T> MiniVec<T> {
     ///
     #[must_use]
     pub fn new() -> MiniVec<T> {
-        assert!(mem::size_of::<T>() > 0, "ZSTs currently not supported");
+        assert!(
+            core::mem::size_of::<T>() > 0,
+            "ZSTs currently not supported"
+        );
 
         MiniVec {
-            buf: ptr::null_mut(),
-            phantom: PhantomData,
+            buf: core::ptr::null_mut(),
+            phantom: core::marker::PhantomData,
         }
     }
 
@@ -730,7 +729,7 @@ impl<T> MiniVec<T> {
             return None;
         }
 
-        let v = unsafe { ptr::read(self.as_ptr().add(len - 1)) };
+        let v = unsafe { core::ptr::read(self.as_ptr().add(len - 1)) };
         unsafe { self.set_len(len - 1) };
         Some(v)
     }
@@ -762,7 +761,7 @@ impl<T> MiniVec<T> {
         let dst = unsafe { data.add(len) };
 
         unsafe {
-            ptr::write(dst, value);
+            core::ptr::write(dst, value);
         };
 
         let mut header = self.header_mut();
@@ -793,12 +792,12 @@ impl<T> MiniVec<T> {
         unsafe {
             let p = self.as_mut_ptr().add(index);
 
-            let x = ptr::read(p);
+            let x = core::ptr::read(p);
 
             let src = p.add(1);
             let dst = p;
             let count = len - index - 1;
-            ptr::copy(src, dst, count);
+            core::ptr::copy(src, dst, count);
 
             self.set_len(len - 1);
 
@@ -913,15 +912,15 @@ impl<T> MiniVec<T> {
     {
         let len = self.len();
         match new_len.cmp(&len) {
-            Ordering::Equal => {}
-            Ordering::Greater => {
+            core::cmp::Ordering::Equal => {}
+            core::cmp::Ordering::Greater => {
                 let num_elems = new_len - len;
                 self.reserve(num_elems);
                 for _i in 0..num_elems {
                     self.push(value.clone());
                 }
             }
-            Ordering::Less => {
+            core::cmp::Ordering::Less => {
                 self.truncate(new_len);
             }
         }
@@ -947,15 +946,15 @@ impl<T> MiniVec<T> {
     {
         let len = self.len();
         match new_len.cmp(&len) {
-            Ordering::Equal => {}
-            Ordering::Greater => {
+            core::cmp::Ordering::Equal => {}
+            core::cmp::Ordering::Greater => {
                 let num_elems = new_len - len;
                 self.reserve(num_elems);
                 for _i in 0..num_elems {
                     self.push(f());
                 }
             }
-            Ordering::Less => {
+            core::cmp::Ordering::Less => {
                 self.truncate(new_len);
             }
         }
@@ -991,7 +990,7 @@ impl<T> MiniVec<T> {
             let should_retain = unsafe { f(&mut *read) };
             if should_retain {
                 if read != write {
-                    unsafe { mem::swap(&mut *read, &mut *write) };
+                    unsafe { core::mem::swap(&mut *read, &mut *write) };
                 }
                 write = unsafe { write.add(1) };
             }
@@ -999,7 +998,7 @@ impl<T> MiniVec<T> {
             read = unsafe { read.add(1) };
         }
 
-        self.truncate((write as usize - data as usize) / mem::size_of::<T>());
+        self.truncate((write as usize - data as usize) / core::mem::size_of::<T>());
     }
 
     /// `set_len` reassigns the internal `len_` data member to the user-supplied `len`.
@@ -1156,20 +1155,20 @@ impl<T> MiniVec<T> {
     ) -> Splice<<I as IntoIterator>::IntoIter>
     where
         I: IntoIterator<Item = T>,
-        R: RangeBounds<usize>,
+        R: core::ops::RangeBounds<usize>,
     {
         let len = self.len();
 
         let start_idx = match range.start_bound() {
-            Bound::Included(&n) => n,
-            Bound::Excluded(&n) => n + 1,
-            Bound::Unbounded => 0,
+            core::ops::Bound::Included(&n) => n,
+            core::ops::Bound::Excluded(&n) => n + 1,
+            core::ops::Bound::Unbounded => 0,
         };
 
         let end_idx = match range.end_bound() {
-            Bound::Included(&n) => n + 1,
-            Bound::Excluded(&n) => n,
-            Bound::Unbounded => len,
+            core::ops::Bound::Included(&n) => n + 1,
+            core::ops::Bound::Excluded(&n) => n,
+            core::ops::Bound::Unbounded => len,
         };
 
         if start_idx > end_idx {
@@ -1233,7 +1232,7 @@ impl<T> MiniVec<T> {
         let dst = other.as_mut_ptr();
         let count = len - at;
 
-        unsafe { ptr::copy_nonoverlapping(src, dst, count) }
+        unsafe { core::ptr::copy_nonoverlapping(src, dst, count) }
 
         other
     }
@@ -1262,11 +1261,11 @@ impl<T> MiniVec<T> {
             );
         }
 
-        let src = unsafe { ptr::read(self.as_ptr().add(len - 1)) };
+        let src = unsafe { core::ptr::read(self.as_ptr().add(len - 1)) };
         self.header_mut().len -= 1;
 
         let dst = unsafe { self.as_mut_ptr().add(index) };
-        unsafe { ptr::replace(dst, src) }
+        unsafe { core::ptr::replace(dst, src) }
     }
 
     /// `truncate` adjusts the length of the vector to be `len`. If `len` is greater than or equal
@@ -1291,13 +1290,13 @@ impl<T> MiniVec<T> {
 
         self.header_mut().len = len;
 
-        if !mem::needs_drop::<T>() {
+        if !core::mem::needs_drop::<T>() {
             return;
         }
 
-        let s = unsafe { slice::from_raw_parts_mut(self.data().add(len), self_len - len) };
+        let s = unsafe { core::slice::from_raw_parts_mut(self.data().add(len), self_len - len) };
 
-        unsafe { ptr::drop_in_place(s) };
+        unsafe { core::ptr::drop_in_place(s) };
     }
 
     /// `with_alignment` is similar to its counterpart `with_capacity` except it takes an additional

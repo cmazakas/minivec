@@ -619,6 +619,31 @@ impl<T> MiniVec<T> {
         }
     }
 
+    /// `into_raw_parts` will leak the underlying allocation and return a tuple containing a pointer
+    /// to the start of the backing array and its length and capacity.
+    ///
+    /// The results of this function are directly compatible with [`from_raw_parts`](MiniVec::from_raw_parts).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let vec = minivec::mini_vec![1, 2, 3, 4, 5];
+    /// let (old_len, old_cap) = (vec.len(), vec.capacity());
+    ///
+    /// let (ptr, len, cap) = vec.into_raw_parts();
+    /// assert_eq!(len, old_len);
+    /// assert_eq!(cap, old_cap);
+    ///
+    /// let vec = unsafe { minivec::MiniVec::from_raw_parts(ptr, len, cap) };
+    /// assert_eq!(vec, [1, 2, 3, 4, 5]);
+    /// ```
+    ///
+    #[must_use]
+    pub fn into_raw_parts(self) -> (*mut T, usize, usize) {
+        let mut v = core::mem::ManuallyDrop::new(self);
+        (v.as_mut_ptr(), v.len(), v.capacity())
+    }
+
     /// `is_empty()` returns whether or not the `MiniVec` has a length greater than 0.
     ///
     /// Logically equivalent to manually writing: `v.len() == 0`.

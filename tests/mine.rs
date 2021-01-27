@@ -914,3 +914,18 @@ fn minivec_with_alignment() {
         assert_eq!(vec[idx * 8 + 7], (idx * 8 + 7) as f32 + 8.0);
     }
 }
+
+#[test]
+fn minivec_into_raw_parts() {
+    let vec = minivec::mini_vec![1, 2, 3, 4, 5];
+
+    let (old_len, old_cap) = (vec.len(), vec.capacity());
+
+    let (ptr, len, cap) = vec.into_raw_parts();
+
+    assert_eq!(len, old_len);
+    assert_eq!(cap, old_cap);
+
+    let vec = unsafe { minivec::MiniVec::from_raw_parts(ptr, len, cap) };
+    assert_eq!(vec, [1, 2, 3, 4, 5]);
+}

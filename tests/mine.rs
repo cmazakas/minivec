@@ -929,3 +929,11 @@ fn minivec_into_raw_parts() {
     let vec = unsafe { minivec::MiniVec::from_raw_parts(ptr, len, cap) };
     assert_eq!(vec, [1, 2, 3, 4, 5]);
 }
+
+#[test]
+fn minivec_page_aligned() {
+    let capacity = 1024;
+    let alignment = 4096;
+    let mut vec = minivec::MiniVec::<i32>::with_alignment(capacity, alignment).unwrap();
+    assert_eq!(vec.as_mut_ptr() as usize % alignment, 0);
+}

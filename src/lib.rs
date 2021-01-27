@@ -1,18 +1,24 @@
 #![no_std]
 #![warn(clippy::pedantic)]
 
-//! A space-optimized version of `std::vec::Vec` that's only the size of a single pointer!
+//! A space-optimized version of `alloc::vec::Vec` that's only the size of a single pointer!
 //! Ideal for low-level APIs where ABI calling conventions will typically require most structs be
 //! spilled onto the stack and copied instead of being passed solely in registers
 //!
-//! For example, x64 msvc ABI:
+//! For example, in the [x64 msvc ABI](https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-160):
 //! > There's a strict one-to-one correspondence between a function call's arguments and the
 //! > registers used for those arguments. Any argument that doesn't fit in 8 bytes, or isn't
 //! > 1, 2, 4, or 8 bytes, must be passed by reference. A single argument is never spread across
 //! > multiple registers.
 //!
-//! The interface largely matches that of `Vec` but unfortunately, the stdlib always has access to
-//! newer features, more unstable APIs so `MiniVec` will naturally be a bit more boring.
+//! In addition, its single word size makes it ideal for use as a struct member where multiple
+//! inclusions of `Vec` as a field can balloon the size.
+//!
+//! ---
+//!
+//! In general, `MiniVec` aims to be API compatible with what's currently stable in the stdlib so
+//! Nightly features are not supported. `MiniVec` also supports myriad extensions, one such being
+//! support for alignment via the associated function [`with_alignment`](MiniVec::with_alignment).
 //!
 
 extern crate alloc;
@@ -139,9 +145,8 @@ impl<T> MiniVec<T> {
     /// # Example
     ///
     /// ```
-    /// use minivec::mini_vec;
-    /// let mut vec = mini_vec![1, 2, 3];
-    /// let mut vec2 = mini_vec![4, 5, 6];
+    /// let mut vec = minivec::mini_vec![1, 2, 3];
+    /// let mut vec2 = minivec::mini_vec![4, 5, 6];
     /// vec.append(&mut vec2);
     /// assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
     /// assert_eq!(vec2, []);
@@ -170,13 +175,12 @@ impl<T> MiniVec<T> {
     /// `as_mut_ptr` returns a `*mut T` to the underlying array.
     ///
     /// * May return a null pointer.
-    /// * May be invalidated by calls to `reserve()`
+    /// * May be invalidated by calls to [`reserve()`](MiniVec::reserve)
     /// * Can outlive its backing `MiniVec`
     ///
     /// # Example
     /// ```
-    /// use minivec::mini_vec;
-    /// let mut vec = mini_vec![1, 2, 3, 4];
+    /// let mut vec = minivec::mini_vec![1, 2, 3, 4];
     /// let mut p = vec.as_mut_ptr();
     ///
     /// for idx in 0..vec.len() {
@@ -200,9 +204,7 @@ impl<T> MiniVec<T> {
     ///
     /// # Example
     /// ```
-    /// use minivec::mini_vec;
-    ///
-    /// let mut vec = mini_vec![1, 2, 3];
+    /// let mut vec = minivec::mini_vec![1, 2, 3];
     /// {
     ///     let as_slice: &mut [_] = vec.as_mut_slice();
     ///     as_slice[0] = 1337;
@@ -222,8 +224,7 @@ impl<T> MiniVec<T> {
     ///
     /// # Example
     /// ```
-    /// use minivec::mini_vec;
-    /// let mut vec = mini_vec![1, 2, 3, 4];
+    /// let mut vec = minivec::mini_vec![1, 2, 3, 4];
     /// let mut p = vec.as_mut_ptr();
     ///
     /// let mut sum = 0;
@@ -249,9 +250,7 @@ impl<T> MiniVec<T> {
     ///
     /// # Example
     /// ```
-    /// use minivec::mini_vec;
-    ///
-    /// let vec = mini_vec![1, 2, 3, 4];
+    /// let vec = minivec::mini_vec![1, 2, 3, 4];
     /// let mut sum = 0;
     ///
     /// let as_slice : &[_] = vec.as_slice();
@@ -271,7 +270,7 @@ impl<T> MiniVec<T> {
     /// `capacity` obtains the number of elements that can be inserted into the `MiniVec` before a
     /// reallocation will be required.
     ///
-    /// Note: `MiniVec` aims to use the same reservation policy as `std::vec::Vec`.
+    /// Note: `MiniVec` aims to use the same reservation policy as `alloc::vec::Vec`.
     ///
     /// # Example
     ///
@@ -291,10 +290,10 @@ impl<T> MiniVec<T> {
         }
     }
 
-    /// `clear` clears the current contents of the `MiniVec`. Afterwards, `len()` will return 0.
-    /// `capacity()` is not affected.
+    /// `clear` clears the current contents of the `MiniVec`. Afterwards, [`len()`](MiniVec::len)
+    /// will return 0. [`capacity()`](MiniVec::capacity) is not affected.
     ///
-    /// Logically equivalent to calling `minivec::MiniVec::truncate(0)`.
+    /// Logically equivalent to calling [`minivec::MiniVec::truncate(0)`](MiniVec::truncate).
     ///
     /// Note: destruction order of the contained elements is not guaranteed.
     ///
@@ -319,7 +318,7 @@ impl<T> MiniVec<T> {
 
     /// `dedeup` "de-duplicates" all adjacent identical values in the vector.
     ///
-    /// Logically equivalent to calling `minivec::MiniVec::dedup_by(|x, y| x == y)`.
+    /// Logically equivalent to calling [`minivec::MiniVec::dedup_by(|x, y| x == y)`](MiniVec::dedup_by).
     ///
     /// # Example
     ///
@@ -404,7 +403,7 @@ impl<T> MiniVec<T> {
         self.dedup_by(|a, b| key(a) == key(b));
     }
 
-    /// `drain` returns a `minivec::Drain` iterator which lazily removes elements from the supplied
+    /// `drain` returns a [`minivec::Drain`](Drain) iterator which lazily removes elements from the supplied
     /// `range`.
     ///
     /// If the returned iterator is not iterated until exhaustion then the `Drop` implementation
@@ -462,8 +461,8 @@ impl<T> MiniVec<T> {
         make_drain_iterator(self, data, len - end_idx, start_idx, end_idx)
     }
 
-    /// `drain_filter` creates a new `DrainFilter` iterator that when iterated will remove all
-    /// elements for which the supplied `pred` returns `true`.
+    /// `drain_filter` creates a new [`DrainFilter`](DrainFilter) iterator that when iterated will
+    /// remove all elements for which the supplied `pred` returns `true`.
     ///
     /// Removal of elements is done by transferring ownership of the element to the iterator.
     ///
@@ -496,7 +495,8 @@ impl<T> MiniVec<T> {
         make_drain_filter_iterator(self, pred)
     }
 
-    /// `from_raw_part` reconstructs a `MiniVec` from a previous call to `MiniVec::as_mut_ptr`.
+    /// `from_raw_part` reconstructs a `MiniVec` from a previous call to [`MiniVec::as_mut_ptr`](MiniVec::as_mut_ptr)
+    /// or the pointer from [`into_raw_parts`](MiniVec::into_raw_parts).
     ///
     /// # Safety
     ///
@@ -535,12 +535,12 @@ impl<T> MiniVec<T> {
         }
     }
 
-    /// `from_raw_parts` is an API-compatible version of `std::vec::Vec::from_raw_parts`. Because of
-    /// `MiniVec`'s optimized layout, it's not strictly required for a user to pass the length and
-    /// capacity explicitly.
+    /// `from_raw_parts` is an API-compatible version of `alloc::vec::Vec::from_raw_parts`. Because
+    /// of `MiniVec`'s optimized layout, it's not strictly required for a user to pass the length
+    /// and capacity explicitly.
     ///
-    /// Like `MiniVec::from_raw_part`, this function is only safe to use with the result of a call
-    /// to `MiniVec::as_mut_ptr()`.
+    /// Like [`MiniVec::from_raw_part`](MiniVec::from_raw_part), this function is only safe to use
+    /// with the result of a call to [`MiniVec::as_mut_ptr()`](MiniVec::as_mut_ptr).
     ///
     /// # Safety
     ///
@@ -661,9 +661,9 @@ impl<T> MiniVec<T> {
         self.len() == 0
     }
 
-    /// `leak` "leaks" the supplied `MiniVec`, i.e. turn it into a `ManuallyDrop` instance and
-    /// return a reference to the backing array via `&'a [T]` where `'a` is a user-supplied
-    /// lifetime.
+    /// `leak` "leaks" the supplied `MiniVec`, i.e. turn it into a [`ManuallyDrop`](core::mem::ManuallyDrop)
+    /// instance and return a reference to the backing array via `&'a [T]` where `'a` is a
+    /// user-supplied lifetime.
     ///
     /// Most useful for turning an allocation with dynamic duration into one with static duration.
     ///
@@ -734,7 +734,7 @@ impl<T> MiniVec<T> {
         }
     }
 
-    /// `pop` removes the last element from the vector, should it exist, and returns an `Optional`
+    /// `pop` removes the last element from the vector, should it exist, and returns an [`Option`](core::option::Option)
     /// which owns the removed element.
     ///
     /// # Example
@@ -915,9 +915,9 @@ impl<T> MiniVec<T> {
     }
 
     /// `resize` will clone the supplied `value` as many times as required until `len()` becomes
-    /// `new_len`. If the current `len()` is greater than `new_len` then the vector is truncated
-    /// in a way that's identical to calling `vec.truncate(new_len)`. If the `len()` and `new_len`
-    /// match then no operation is performed.
+    /// `new_len`. If the current [`len()`](MiniVec::len) is greater than `new_len` then the vector
+    /// is truncated in a way that's identical to calling `vec.truncate(new_len)`. If the `len()`
+    /// and `new_len` match then no operation is performed.
     ///
     /// # Example
     ///
@@ -952,9 +952,9 @@ impl<T> MiniVec<T> {
     }
 
     /// `resize_with` will invoke the supplied callable `f` as many times as is required until
-    /// `len() == new_len` is true. If the `new_len` exceeds the current `len()` then the vector
-    /// will be resized via a call to `truncate(new_len)`. If the `new_len` and `len()` are equal
-    /// then no operation is performed.
+    /// `len() == new_len` is true. If the `new_len` exceeds the current [`len()`](MiniVec::len)
+    /// then the vector will be resized via a call to `truncate(new_len)`. If the `new_len` and
+    /// `len()` are equal then no operation is performed.
     ///
     /// # Example
     ///
@@ -1050,9 +1050,10 @@ impl<T> MiniVec<T> {
     /// least `min_capacity` elements.
     ///
     /// If the `min_capacity` is smaller than the current length of the vector then the capacity
-    /// will be shrunk down to `len()`.
+    /// will be shrunk down to [`len()`](MiniVec::len).
     ///
-    /// If the `capacity()` is identical to `min_capacity` then this function does nothing.
+    /// If the [`capacity()`](MiniVec::capacity) is identical to `min_capacity` then this function
+    /// does nothing.
     ///
     /// If the `min_capacity` is larger than the current capacity this function will panic.
     ///
@@ -1114,13 +1115,14 @@ impl<T> MiniVec<T> {
         self.grow(capacity, self.alignment());
     }
 
-    /// `spare_capacity_mut` returns a mutable slice to `MaybeUninit<T>`. This is a more
-    /// structured way of interacting with `MiniVec` as an unitialized allocation vs simply creating
-    /// a vector with capacity and then mutating its contents directly via `as_mut_ptr`.
+    /// `spare_capacity_mut` returns a mutable slice to [`MaybeUninit<T>`](core::mem::MaybeUninit).
+    /// This is a more structured way of interacting with `MiniVec` as an unitialized allocation vs
+    /// simply creating a vector with capacity and then mutating its contents directly via
+    /// [`as_mut_ptr`](MiniVec::as_mut_ptr).
     ///
-    /// Once manipulation of the unitialized elements has been completed, a call to `set_len` is
-    /// required otherwise the contained elements cannot be accessed by `MiniVec`'s normal methods
-    /// nor will the elements be dropped.
+    /// Once manipulation of the unitialized elements has been completed, a call to [`set_len`](MiniVec::set_len)
+    /// is required otherwise the contained elements cannot be accessed by `MiniVec`'s normal
+    /// methods nor will the elements be dropped.
     ///
     /// # Example
     ///
@@ -1150,9 +1152,9 @@ impl<T> MiniVec<T> {
         unsafe { core::slice::from_raw_parts_mut(data, spare_len) }
     }
 
-    /// `splice` returns a `Splice` iterator. `Splice` is similar in spirit to `Drain` but instead
-    /// of simply shifting the remaining elements from the vector after it's been drained, the range
-    /// is replaced with the `Iterator` specified by `replace_with`.
+    /// `splice` returns a [`Splice`](Splice) iterator. `Splice` is similar in spirit to [`Drain`](Drain)
+    /// but instead of simply shifting the remaining elements from the vector after it's been
+    /// drained, the range is replaced with the `Iterator` specified by `replace_with`.
     ///
     /// Much like `Drain`, if the `Splice` iterator is not iterated until exhaustion then the
     /// remaining elements will be removed when the iterator is dropped.
@@ -1229,7 +1231,7 @@ impl<T> MiniVec<T> {
     /// After this function call, `self` will have kept elements `[0, at)` while the new segment
     /// contains elements `[at, len)`.
     ///
-    /// Note: panics if `at` is greater than `len()`.
+    /// Note: panics if `at` is greater than [`len()`](MiniVec::len).
     ///
     /// # Example
     ///
@@ -1324,14 +1326,14 @@ impl<T> MiniVec<T> {
         unsafe { core::ptr::drop_in_place(s) };
     }
 
-    /// `with_alignment` is similar to its counterpart `with_capacity` except it takes an additional
-    /// argument: the alignment to use for the allocation.
+    /// `with_alignment` is similar to its counterpart [`with_capacity`](MiniVec::with_capacity)
+    /// except it takes an additional argument: the alignment to use for the allocation.
     ///
     /// The supplied alignment must be a number divisible by 2 and larger than or equal to the
     /// result of `core::mem::align_of::<*const ()>()`.
     ///
     /// The internal allocation used to store the header information for `MiniVec` is aligned to the
-    /// supplied value and then sufficient padding is inserted such that the result of `as_ptr()`
+    /// supplied value and then sufficient padding is inserted such that the result of [`as_ptr()`](MiniVec::as_ptr)
     /// will always be aligned as well.
     ///
     /// This is useful for creating over-aligned allocations for primitive types such as when using
@@ -1410,8 +1412,8 @@ impl<T> MiniVec<T> {
     /// `with_capacity` is a static factory function that returns a `MiniVec` that contains space
     /// for `capacity` elements.
     ///
-    /// This function is logically equivalent to calling `.reserve_exact()` on a vector with 0
-    /// capacity.
+    /// This function is logically equivalent to calling [`.reserve_exact()`](MiniVec::reserve_exact)
+    /// on a vector with `0` capacity.
     ///
     /// # Example
     ///

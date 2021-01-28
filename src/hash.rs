@@ -1,16 +1,14 @@
 use crate::MiniVec;
 
-use core::hash::{Hash, Hasher};
-
-impl<T> Hash for MiniVec<T>
+impl<T> core::hash::Hash for MiniVec<T>
 where
-    T: Hash,
+    T: core::hash::Hash,
 {
     fn hash<H>(&self, state: &mut H)
     where
-        H: Hasher,
+        H: core::hash::Hasher,
     {
         let this: &[T] = &**self;
-        Hash::hash(this, state);
+        core::hash::Hash::hash(this, state);
     }
 }

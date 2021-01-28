@@ -1,5 +1,3 @@
 use crate::MiniVec;
 
-use core::cmp::Eq;
-
-impl<T> Eq for MiniVec<T> where T: Eq {}
+impl<T> core::cmp::Eq for MiniVec<T> where T: core::cmp::Eq {}

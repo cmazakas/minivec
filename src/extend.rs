@@ -1,17 +1,12 @@
 use crate::MiniVec;
 
-use core::{
-    iter::{Extend, IntoIterator},
-    marker::Copy,
-};
-
-impl<'a, T> Extend<&'a T> for MiniVec<T>
+impl<'a, T> core::iter::Extend<&'a T> for MiniVec<T>
 where
-    T: 'a + Copy,
+    T: 'a + core::marker::Copy,
 {
     fn extend<I>(&mut self, iter: I)
     where
-        I: IntoIterator<Item = &'a T>,
+        I: core::iter::IntoIterator<Item = &'a T>,
     {
         for &x in iter {
             self.push(x);
@@ -19,10 +14,10 @@ where
     }
 }
 
-impl<T> Extend<T> for MiniVec<T> {
+impl<T> core::iter::Extend<T> for MiniVec<T> {
     fn extend<I>(&mut self, iter: I)
     where
-        I: IntoIterator<Item = T>,
+        I: core::iter::IntoIterator<Item = T>,
     {
         for x in iter {
             self.push(x);

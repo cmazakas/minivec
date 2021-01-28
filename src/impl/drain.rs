@@ -2,19 +2,13 @@ use crate::MiniVec;
 
 extern crate alloc;
 
-use core::{
-    iter::{DoubleEndedIterator, ExactSizeIterator},
-    marker::PhantomData,
-    mem, ptr,
-};
-
 pub struct Drain<'a, T: 'a> {
-    vec_: ptr::NonNull<MiniVec<T>>,
-    drain_pos_: ptr::NonNull<T>,
-    drain_end_: ptr::NonNull<T>,
-    remaining_pos_: ptr::NonNull<T>,
+    vec_: core::ptr::NonNull<MiniVec<T>>,
+    drain_pos_: core::ptr::NonNull<T>,
+    drain_end_: core::ptr::NonNull<T>,
+    remaining_pos_: core::ptr::NonNull<T>,
     remaining_: usize,
-    marker_: PhantomData<&'a T>,
+    marker_: core::marker::PhantomData<&'a T>,
 }
 
 pub fn make_drain_iterator<'a, T>(
@@ -25,12 +19,12 @@ pub fn make_drain_iterator<'a, T>(
     end_idx: usize,
 ) -> Drain<'a, T> {
     Drain {
-        vec_: ptr::NonNull::from(vec),
-        drain_pos_: unsafe { ptr::NonNull::new_unchecked(data.add(start_idx)) },
-        drain_end_: unsafe { ptr::NonNull::new_unchecked(data.add(end_idx)) },
-        remaining_pos_: unsafe { ptr::NonNull::new_unchecked(data.add(end_idx)) },
+        vec_: core::ptr::NonNull::from(vec),
+        drain_pos_: unsafe { core::ptr::NonNull::new_unchecked(data.add(start_idx)) },
+        drain_end_: unsafe { core::ptr::NonNull::new_unchecked(data.add(end_idx)) },
+        remaining_pos_: unsafe { core::ptr::NonNull::new_unchecked(data.add(end_idx)) },
         remaining_: remaining,
-        marker_: PhantomData,
+        marker_: core::marker::PhantomData,
     }
 }
 
@@ -43,15 +37,15 @@ impl<T> Iterator for Drain<'_, T> {
         }
 
         let p = self.drain_pos_.as_ptr();
-        let tmp = unsafe { ptr::read(p) };
-        self.drain_pos_ = unsafe { ptr::NonNull::new_unchecked(p.add(1)) };
+        let tmp = unsafe { core::ptr::read(p) };
+        self.drain_pos_ = unsafe { core::ptr::NonNull::new_unchecked(p.add(1)) };
         Some(tmp)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         let len = (self.drain_end_.as_ptr() as *const _ as usize
             - self.drain_pos_.as_ptr() as *const _ as usize)
-            / mem::size_of::<T>();
+            / core::mem::size_of::<T>();
 
         (len, Some(len))
     }
@@ -66,8 +60,8 @@ impl<T> DoubleEndedIterator for Drain<'_, T> {
             return None;
         }
 
-        let tmp = unsafe { ptr::read(pos) };
-        self.drain_end_ = unsafe { ptr::NonNull::new_unchecked(pos) };
+        let tmp = unsafe { core::ptr::read(pos) };
+        self.drain_end_ = unsafe { core::ptr::NonNull::new_unchecked(pos) };
         Some(tmp)
     }
 }
@@ -94,7 +88,7 @@ impl<T> Drop for Drain<'_, T> {
                     }
 
                     unsafe {
-                        ptr::copy(src, dst, self.drain.remaining_);
+                        core::ptr::copy(src, dst, self.drain.remaining_);
                         v.set_len(v_len + self.drain.remaining_);
                     };
                 }
@@ -113,7 +107,7 @@ impl<T> Drop for Drain<'_, T> {
         while let Some(item) = self.next() {
             let guard = DropGuard { drain: self };
             drop(item);
-            mem::forget(guard);
+            core::mem::forget(guard);
         }
 
         DropGuard { drain: self };

@@ -1,8 +1,6 @@
 use crate::MiniVec;
 
-use core::iter::FromIterator;
-
-impl<A> FromIterator<A> for MiniVec<A> {
+impl<A> core::iter::FromIterator<A> for MiniVec<A> {
     fn from_iter<T>(iter: T) -> Self
     where
         T: IntoIterator<Item = A>,

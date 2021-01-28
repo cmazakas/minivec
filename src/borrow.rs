@@ -1,14 +1,12 @@
 use crate::MiniVec;
 
-use core::borrow::{Borrow, BorrowMut};
-
-impl<T> Borrow<[T]> for MiniVec<T> {
+impl<T> core::borrow::Borrow<[T]> for MiniVec<T> {
     fn borrow(&self) -> &[T] {
         &(self[..])
     }
 }
 
-impl<T> BorrowMut<[T]> for MiniVec<T> {
+impl<T> core::borrow::BorrowMut<[T]> for MiniVec<T> {
     fn borrow_mut(&mut self) -> &mut [T] {
         &mut (self[..])
     }

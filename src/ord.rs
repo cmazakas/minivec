@@ -1,9 +1,7 @@
 use crate::MiniVec;
 
-use core::cmp::{Ord, Ordering};
-
-impl<T: Ord> Ord for MiniVec<T> {
-    fn cmp(&self, other: &Self) -> Ordering {
+impl<T: Ord> core::cmp::Ord for MiniVec<T> {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         let x: &[T] = &**self;
         let y: &[T] = &**other;
 

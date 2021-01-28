@@ -2,22 +2,16 @@ use crate::MiniVec;
 
 extern crate alloc;
 
-use core::{
-    iter::{DoubleEndedIterator, ExactSizeIterator, Iterator},
-    marker::PhantomData,
-    mem, ptr,
-};
-
 pub struct Splice<'a, I>
 where
     I: 'a + Iterator,
 {
-    vec_: ptr::NonNull<MiniVec<I::Item>>,
-    drain_pos_: ptr::NonNull<I::Item>,
-    drain_end_: ptr::NonNull<I::Item>,
-    remaining_pos_: ptr::NonNull<I::Item>,
+    vec_: core::ptr::NonNull<MiniVec<I::Item>>,
+    drain_pos_: core::ptr::NonNull<I::Item>,
+    drain_end_: core::ptr::NonNull<I::Item>,
+    remaining_pos_: core::ptr::NonNull<I::Item>,
     remaining_: usize,
-    marker_: PhantomData<&'a I::Item>,
+    marker_: core::marker::PhantomData<&'a I::Item>,
     fill_: I,
 }
 
@@ -30,12 +24,12 @@ pub fn make_splice_iterator<'a, I: 'a + Iterator>(
     fill: I,
 ) -> Splice<'a, I> {
     Splice {
-        vec_: ptr::NonNull::from(vec),
-        drain_pos_: unsafe { ptr::NonNull::new_unchecked(data.add(start_idx)) },
-        drain_end_: unsafe { ptr::NonNull::new_unchecked(data.add(end_idx)) },
-        remaining_pos_: unsafe { ptr::NonNull::new_unchecked(data.add(end_idx)) },
+        vec_: core::ptr::NonNull::from(vec),
+        drain_pos_: unsafe { core::ptr::NonNull::new_unchecked(data.add(start_idx)) },
+        drain_end_: unsafe { core::ptr::NonNull::new_unchecked(data.add(end_idx)) },
+        remaining_pos_: unsafe { core::ptr::NonNull::new_unchecked(data.add(end_idx)) },
         remaining_: remaining,
-        marker_: PhantomData,
+        marker_: core::marker::PhantomData,
         fill_: fill,
     }
 }
@@ -52,15 +46,15 @@ where
         }
 
         let p = self.drain_pos_.as_ptr();
-        let tmp = unsafe { ptr::read(p) };
-        self.drain_pos_ = unsafe { ptr::NonNull::new_unchecked(p.add(1)) };
+        let tmp = unsafe { core::ptr::read(p) };
+        self.drain_pos_ = unsafe { core::ptr::NonNull::new_unchecked(p.add(1)) };
         Some(tmp)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         let len = (self.drain_end_.as_ptr() as *const _ as usize
             - self.drain_pos_.as_ptr() as *const _ as usize)
-            / mem::size_of::<I::Item>();
+            / core::mem::size_of::<I::Item>();
 
         (len, Some(len))
     }
@@ -78,8 +72,8 @@ where
             return None;
         }
 
-        let tmp = unsafe { ptr::read(pos) };
-        self.drain_end_ = unsafe { ptr::NonNull::new_unchecked(pos) };
+        let tmp = unsafe { core::ptr::read(pos) };
+        self.drain_end_ = unsafe { core::ptr::NonNull::new_unchecked(pos) };
         Some(tmp)
     }
 }
@@ -114,7 +108,7 @@ impl<I: Iterator> Drop for Splice<'_, I> {
                 //
                 let num_drained = (self.splice.remaining_pos_.as_ptr() as usize
                     - drain_begin as usize)
-                    / mem::size_of::<I::Item>();
+                    / core::mem::size_of::<I::Item>();
 
                 // fill the drained sub-section using the iterator the user supplied
                 // if the iterator, for example, has more elements than the draiend region allows,
@@ -125,7 +119,7 @@ impl<I: Iterator> Drop for Splice<'_, I> {
                     for idx in 0..num_drained {
                         if let Some(val) = self.splice.fill_.next() {
                             unsafe {
-                                ptr::write(drain_begin.add(idx), val);
+                                core::ptr::write(drain_begin.add(idx), val);
                                 vec.set_len(vec.len() + 1);
                             };
                         } else {
@@ -153,13 +147,13 @@ impl<I: Iterator> Drop for Splice<'_, I> {
                     // we need to copy things down from Drain's "tail" to where our iterator left
                     // off in the drained range
                     // this basically downshifts the elements from right-to-left so it's safe to
-                    // call `ptr::copy`
+                    // call `core::ptr::copy`
                     //
                     let src = self.splice.remaining_pos_.as_ptr();
                     let dst = unsafe { vec.as_mut_ptr().add(vec.len()) };
                     let count = self.splice.remaining_;
                     unsafe {
-                        ptr::copy(src, dst, count);
+                        core::ptr::copy(src, dst, count);
                         vec.set_len(vec.len() + self.splice.remaining_);
                     };
 
@@ -178,7 +172,7 @@ impl<I: Iterator> Drop for Splice<'_, I> {
                 let capacity = vec.capacity();
                 let remaining_offset = (self.splice.remaining_pos_.as_ptr() as usize
                     - vec.as_ptr() as usize)
-                    / mem::size_of::<I::Item>();
+                    / core::mem::size_of::<I::Item>();
 
                 // if our vector's length + the remaining elements + the extra tmp length exceeds
                 // our capacity we need to reallocate
@@ -199,7 +193,7 @@ impl<I: Iterator> Drop for Splice<'_, I> {
                         let src = vec.as_ptr().add(remaining_offset);
                         let dst = vec.as_mut_ptr().add(vec.len() + tmp.len());
                         let count = self.splice.remaining_;
-                        ptr::copy(src, dst, count);
+                        core::ptr::copy(src, dst, count);
                     };
                 }
 
@@ -211,7 +205,7 @@ impl<I: Iterator> Drop for Splice<'_, I> {
                         let src = tmp.as_ptr();
                         let dst = vec.as_mut_ptr().add(vec.len());
                         let count = tmp.len();
-                        ptr::copy(src, dst, count);
+                        core::ptr::copy(src, dst, count);
                     };
                 }
 
@@ -227,7 +221,7 @@ impl<I: Iterator> Drop for Splice<'_, I> {
         while let Some(item) = self.next() {
             let guard = DropGuard { splice: self };
             drop(item);
-            mem::forget(guard);
+            core::mem::forget(guard);
         }
 
         DropGuard { splice: self };

@@ -3,7 +3,7 @@
 
 //! A space-optimized version of `alloc::vec::Vec` that's only the size of a single pointer!
 //! Ideal for low-level APIs where ABI calling conventions will typically require most structs be
-//! spilled onto the stack and copied instead of being passed solely in registers
+//! spilled onto the stack and copied instead of being passed solely in registers.
 //!
 //! For example, in the [x64 msvc ABI](https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-160):
 //! > There's a strict one-to-one correspondence between a function call's arguments and the
@@ -18,7 +18,7 @@
 //!
 //! In general, `MiniVec` aims to be API compatible with what's currently stable in the stdlib so
 //! Nightly features are not supported. `MiniVec` also supports myriad extensions, one such being
-//! support for alignment via the associated function [`with_alignment`](MiniVec::with_alignment).
+//! support for over-alignment via the associated function [`with_alignment`](MiniVec::with_alignment).
 //!
 
 extern crate alloc;

@@ -91,7 +91,7 @@ impl<I: Iterator> Drop for Splice<'_, I> {
             I: Iterator,
         {
             splice: &'b mut Splice<'a, I>,
-        };
+        }
 
         impl<'b, 'a, I> Drop for DropGuard<'b, 'a, I>
         where

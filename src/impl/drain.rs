@@ -76,7 +76,7 @@ impl<T> Drop for Drain<'_, T> {
     fn drop(&mut self) {
         struct DropGuard<'b, 'a, T> {
             drain: &'b mut Drain<'a, T>,
-        };
+        }
 
         impl<'b, 'a, T> Drop for DropGuard<'b, 'a, T> {
             fn drop(&mut self) {

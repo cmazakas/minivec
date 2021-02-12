@@ -74,7 +74,7 @@ impl<T> MiniVec<T> {
     fn header_mut(&mut self) -> &mut Header {
         #[allow(clippy::cast_ptr_alignment)]
         unsafe {
-            &mut *(self.buf as *mut Header)
+            &mut *self.buf.cast::<Header>()
         }
     }
 
@@ -82,7 +82,7 @@ impl<T> MiniVec<T> {
         debug_assert!(!self.buf.is_null());
 
         let count = next_aligned(core::mem::size_of::<Header>(), self.alignment());
-        unsafe { self.buf.add(count) as *mut T }
+        unsafe { self.buf.add(count).cast::<T>() }
     }
 
     fn alignment(&self) -> usize {
@@ -127,7 +127,7 @@ impl<T> MiniVec<T> {
 
         #[allow(clippy::cast_ptr_alignment)]
         unsafe {
-            core::ptr::write(new_buf as *mut Header, header)
+            core::ptr::write(new_buf.cast::<Header>(), header)
         };
 
         self.buf = new_buf;
@@ -526,7 +526,7 @@ impl<T> MiniVec<T> {
         let header_size = core::mem::size_of::<Header>();
         let aligned = next_aligned(header_size, core::mem::align_of::<T>());
 
-        let p = ptr as *mut u8;
+        let p = ptr.cast::<u8>();
         let buf = p.sub(aligned);
 
         MiniVec {
@@ -569,11 +569,11 @@ impl<T> MiniVec<T> {
         let header_size = core::mem::size_of::<Header>();
         let aligned = next_aligned(header_size, core::mem::align_of::<T>());
 
-        let p = ptr as *mut u8;
+        let p = ptr.cast::<u8>();
         let buf = p.sub(aligned);
 
-        debug_assert!((*(buf as *mut Header)).len == length);
-        debug_assert!((*(buf as *mut Header)).cap == capacity);
+        debug_assert!((*buf.cast::<Header>()).len == length);
+        debug_assert!((*buf.cast::<Header>()).cap == capacity);
 
         MiniVec {
             buf,
@@ -1119,7 +1119,7 @@ impl<T> MiniVec<T> {
         }
 
         let len = self.len();
-        let data = unsafe { self.data().add(len) as *mut core::mem::MaybeUninit<T> };
+        let data = unsafe { self.data().add(len).cast::<core::mem::MaybeUninit<T>>() };
         let spare_len = capacity - len;
 
         unsafe { core::slice::from_raw_parts_mut(data, spare_len) }

@@ -4,9 +4,10 @@ extern crate alloc;
 
 pub struct Drain<'a, T: 'a> {
     vec_: core::ptr::NonNull<MiniVec<T>>,
-    drain_pos_: core::ptr::NonNull<T>,
-    drain_end_: core::ptr::NonNull<T>,
-    remaining_pos_: core::ptr::NonNull<T>,
+    data: *mut T,
+    drain_pos_: usize,
+    drain_end_: usize,
+    remaining_pos_: usize,
     remaining_: usize,
     marker_: core::marker::PhantomData<&'a T>,
 }
@@ -20,9 +21,10 @@ pub fn make_drain_iterator<'a, T>(
 ) -> Drain<'a, T> {
     Drain {
         vec_: core::ptr::NonNull::from(vec),
-        drain_pos_: unsafe { core::ptr::NonNull::new_unchecked(data.add(start_idx)) },
-        drain_end_: unsafe { core::ptr::NonNull::new_unchecked(data.add(end_idx)) },
-        remaining_pos_: unsafe { core::ptr::NonNull::new_unchecked(data.add(end_idx)) },
+        data,
+        drain_pos_: start_idx,
+        drain_end_: end_idx,
+        remaining_pos_: end_idx,
         remaining_: remaining,
         marker_: core::marker::PhantomData,
     }
@@ -35,16 +37,20 @@ impl<T> Iterator for Drain<'_, T> {
         if self.drain_pos_ >= self.drain_end_ {
             return None;
         }
-
-        let p = self.drain_pos_.as_ptr();
+        let p =
+            unsafe { core::ptr::NonNull::new_unchecked(self.data.add(self.drain_pos_)).as_ptr() };
         let tmp = unsafe { core::ptr::read(p) };
-        self.drain_pos_ = unsafe { core::ptr::NonNull::new_unchecked(p.add(1)) };
+        self.drain_pos_ += 1;
         Some(tmp)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = (self.drain_end_.as_ptr() as *const _ as usize
-            - self.drain_pos_.as_ptr() as *const _ as usize)
+        let drain_end_ =
+            unsafe { core::ptr::NonNull::new_unchecked(self.data.add(self.drain_end_)) };
+        let drain_pos_ =
+            unsafe { core::ptr::NonNull::new_unchecked(self.data.add(self.drain_pos_)) };
+        let len = (drain_end_.as_ptr() as *const _ as usize
+            - drain_pos_.as_ptr() as *const _ as usize)
             / core::mem::size_of::<T>();
 
         (len, Some(len))
@@ -55,13 +61,21 @@ impl<T> ExactSizeIterator for Drain<'_, T> {}
 
 impl<T> DoubleEndedIterator for Drain<'_, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let pos = unsafe { self.drain_end_.as_ptr().sub(1) };
-        if pos < self.drain_pos_.as_ptr() {
+        if self.drain_end_ == 0 {
             return None;
         }
 
-        let tmp = unsafe { core::ptr::read(pos) };
-        self.drain_end_ = unsafe { core::ptr::NonNull::new_unchecked(pos) };
+        self.drain_end_ -= 1;
+
+        if self.drain_end_ < self.drain_pos_ {
+            return None;
+        }
+
+        let drain_end_ =
+            unsafe { core::ptr::NonNull::new_unchecked(self.data.add(self.drain_end_)).as_ptr() };
+
+        let tmp = unsafe { core::ptr::read(drain_end_) };
+
         Some(tmp)
     }
 }
@@ -80,7 +94,12 @@ impl<T> Drop for Drain<'_, T> {
                     let v = unsafe { self.drain.vec_.as_mut() };
                     let v_len = v.len();
 
-                    let src = self.drain.remaining_pos_.as_ptr();
+                    let src = unsafe {
+                        core::ptr::NonNull::new_unchecked(
+                            self.drain.data.add(self.drain.remaining_pos_),
+                        )
+                        .as_ptr()
+                    };
                     let dst = unsafe { v.as_mut_ptr().add(v_len) };
 
                     if src == dst {

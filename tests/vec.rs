@@ -850,9 +850,9 @@ fn test_into_iter_leak() {
 
 #[allow(dead_code)]
 fn assert_covariance() {
-    fn drain<'new>(d: Drain<'static, &'static str>) -> Drain<'new, &'new str> {
-        d
-    }
+    //    fn drain<'new>(d: Drain<'static, &'static str>) -> Drain<'new, &'new str> {
+    //        d
+    //    }
     fn into_iter<'new>(i: IntoIter<&'static str>) -> IntoIter<&'new str> {
         i
     }

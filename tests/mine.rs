@@ -111,6 +111,15 @@ fn minvec_drain() {
 }
 
 #[test]
+fn minivec_drain_into_vec() {
+    let mut vec: MiniVec<usize> = mini_vec![];
+
+    let drain = vec.drain(..).collect::<MiniVec<_>>();
+
+    assert_eq!(drain.len(), 0);
+}
+
+#[test]
 fn minivec_with_capacity() {
     let size = 128;
     let mut v: MiniVec<i32> = MiniVec::with_capacity(size);

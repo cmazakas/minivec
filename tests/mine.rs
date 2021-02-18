@@ -98,6 +98,15 @@ fn minivec_dedup_needs_drop() {
 }
 
 #[test]
+fn minivec_drain_into_vec() {
+    let mut vec: MiniVec<usize> = mini_vec![];
+
+    let drain = vec.drain(..).collect::<MiniVec<_>>();
+
+    assert_eq!(drain.len(), 0);
+}
+
+#[test]
 fn minvec_drain() {
     let mut vec = mini_vec![1, 2, 3];
 

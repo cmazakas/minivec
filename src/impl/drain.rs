@@ -18,13 +18,24 @@ pub fn make_drain_iterator<'a, T>(
     start_idx: usize,
     end_idx: usize,
 ) -> Drain<'a, T> {
-    Drain {
-        vec_: core::ptr::NonNull::from(vec),
-        drain_pos_: unsafe { core::ptr::NonNull::new_unchecked(data.add(start_idx)) },
-        drain_end_: unsafe { core::ptr::NonNull::new_unchecked(data.add(end_idx)) },
-        remaining_pos_: unsafe { core::ptr::NonNull::new_unchecked(data.add(end_idx)) },
-        remaining_: remaining,
-        marker_: core::marker::PhantomData,
+    if data.is_null() {
+        Drain {
+            vec_: core::ptr::NonNull::from(vec),
+            drain_pos_: core::ptr::NonNull::dangling(),
+            drain_end_: core::ptr::NonNull::dangling(),
+            remaining_pos_: core::ptr::NonNull::dangling(),
+            remaining_: remaining,
+            marker_: core::marker::PhantomData,
+        }
+    } else {
+        Drain {
+            vec_: core::ptr::NonNull::from(vec),
+            drain_pos_: unsafe { core::ptr::NonNull::new_unchecked(data.add(start_idx)) },
+            drain_end_: unsafe { core::ptr::NonNull::new_unchecked(data.add(end_idx)) },
+            remaining_pos_: unsafe { core::ptr::NonNull::new_unchecked(data.add(end_idx)) },
+            remaining_: remaining,
+            marker_: core::marker::PhantomData,
+        }
     }
 }
 

@@ -675,6 +675,17 @@ fn minivec_split_off() {
 }
 
 #[test]
+fn minivec_splice_empty() {
+    let mut v = MiniVec::<i32>::new();
+    let replace = mini_vec![1, 2, 3];
+
+    let u: MiniVec<_> = v.splice(.., replace.iter().cloned()).collect();
+
+    assert!(u.is_empty());
+    assert_eq!(v, &[1, 2, 3]);
+}
+
+#[test]
 fn minivec_splice() {
     let mut v = mini_vec![1, 2, 3];
     let new = [7, 8];

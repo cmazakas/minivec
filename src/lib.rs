@@ -1216,7 +1216,9 @@ impl<T> MiniVec<T> {
 
         let data = self.as_mut_ptr();
 
-        unsafe { self.set_len(start_idx) };
+        if !data.is_null() {
+            unsafe { self.set_len(start_idx) };
+        }
 
         make_splice_iterator(
             self,

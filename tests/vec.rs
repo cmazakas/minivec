@@ -1,8 +1,15 @@
-#![allow(clippy::unnecessary_operation)]
-#![allow(clippy::op_ref)]
-#![allow(clippy::verbose_bit_mask)]
-#![allow(clippy::reversed_empty_ranges)]
-#![allow(clippy::vtable_address_comparisons)]
+#![allow(
+    clippy::unnecessary_operation,
+    clippy::op_ref,
+    clippy::verbose_bit_mask,
+    clippy::reversed_empty_ranges,
+    clippy::vtable_address_comparisons,
+    clippy::clippy::assign_op_pattern,
+    clippy::clippy::many_single_char_names,
+    clippy::clippy::redundant_closure,
+    clippy::unit_arg,
+    clippy::unnecessary_filter_map
+)]
 
 extern crate minivec;
 
@@ -13,18 +20,29 @@ use minivec::MiniVec;
 // both Apache 2.0 and MIT licensed. See the accompanying LICENSE-APACHE and LICENSE-MIT files for
 // more information on those
 //
-// https://github.com/rust-lang/rust/blob/1e6e082039a52c03a2ca93c0483e86b3c7f67af4/src/liballoc/tests/vec.rs
+// https://github.com/rust-lang/rust/blob/fa9af6a9be72e80c7c86adf656bee5964cb2f6a2/library/alloc/tests/vec.rs
+// https://raw.githubusercontent.com/rust-lang/rust/fa9af6a9be72e80c7c86adf656bee5964cb2f6a2/library/alloc/tests/vec.rs
 //
 // ^ official source for `Vec` test file
 //
-// Code modifications: mostly rename Vec to MiniVec and vec! to mini_vec!
+// Code modifications:
+// * rename `Vec` to `MiniVec` and `vec!` to `mini_vec!`
+// * change `size_of` test to match `size_of::<usize>()`
+// * comment out yet-to-be-completed features
+// * replace `box` expressions with `Box::new()`
+// * comment out test assertions that require specialization
 //
 
 // use std::borrow::Cow;
+// use std::cell::Cell;
 // use std::collections::TryReserveError::*;
-use minivec::{Drain, IntoIter};
-use std::mem::size_of;
+use std::fmt::Debug;
+// use std::iter::InPlaceIterable;
+use std::mem::{size_of, swap};
+use std::ops::Bound::*;
 use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::rc::Rc;
+// use std::vec::{Drain, IntoIter};
 
 struct DropCounter<'a> {
     count: &'a mut u32,
@@ -38,11 +56,10 @@ impl Drop for DropCounter<'_> {
 
 #[test]
 fn test_small_vec_struct() {
-    // one of the few source changes that we get to make!
-    // our Vec is a mini one so ours is just size of usize
+    // the only test we actually wind up changing beyond a simple renaming
+    // this is because `MiniVec` is genuinely mini and is only a third the size of the genuine `Vec`
     //
     // assert_eq!(size_of::<Vec<u8>>(), size_of::<usize>() * 3);
-    //
     assert_eq!(size_of::<MiniVec<u8>>(), size_of::<usize>());
 }
 
@@ -106,6 +123,42 @@ fn test_reserve() {
 // }
 
 #[test]
+fn test_indexing() {
+    let v: MiniVec<isize> = mini_vec![10, 20];
+    assert_eq!(v[0], 10);
+    assert_eq!(v[1], 20);
+    let mut x: usize = 0;
+    assert_eq!(v[x], 10);
+    assert_eq!(v[x + 1], 20);
+    x = x + 1;
+    assert_eq!(v[x], 20);
+    assert_eq!(v[x - 1], 10);
+}
+
+#[test]
+fn test_debug_fmt() {
+    let vec1: MiniVec<isize> = mini_vec![];
+    assert_eq!("[]", format!("{:?}", vec1));
+
+    let vec2 = mini_vec![0, 1];
+    assert_eq!("[0, 1]", format!("{:?}", vec2));
+
+    let slice: &[isize] = &[4, 5];
+    assert_eq!("[4, 5]", format!("{:?}", slice));
+}
+
+#[test]
+fn test_push() {
+    let mut v = mini_vec![];
+    v.push(1);
+    assert_eq!(v, [1]);
+    v.push(2);
+    assert_eq!(v, [1, 2]);
+    v.push(3);
+    assert_eq!(v, [1, 2, 3]);
+}
+
+#[test]
 fn test_extend() {
     let mut v = MiniVec::new();
     let mut w = MiniVec::new();
@@ -130,26 +183,38 @@ fn test_extend() {
     v.extend(w.clone()); // specializes to `append`
     assert!(v.iter().eq(w.iter().chain(w.iter())));
 
-    // // Zero sized types
+    // Zero sized types
     // #[derive(PartialEq, Debug)]
     // struct Foo;
 
-    // let mut a = Vec::new();
-    // let b = vec![Foo, Foo];
+    // let mut a = MiniVec::new();
+    // let b = mini_vec![Foo, Foo];
 
     // a.extend(b);
     // assert_eq!(a, &[Foo, Foo]);
 
-    // Double drop
-    let mut count_x = 0;
-    {
-        let mut x = MiniVec::new();
-        let y = mini_vec![DropCounter {
-            count: &mut count_x,
-        }];
-        x.extend(y);
-    }
-    assert_eq!(count_x, 1);
+    // // Double drop
+    // let mut count_x = 0;
+    // {
+    //     let mut x = MiniVec::new();
+    //     let y = mini_vec![DropCounter {
+    //         count: &mut count_x,
+    //     }];
+    //     x.extend(y);
+    // }
+    // assert_eq!(count_x, 1);
+}
+
+#[test]
+fn test_extend_from_slice() {
+    let a: MiniVec<isize> = mini_vec![1, 2, 3, 4, 5];
+    let b: MiniVec<isize> = mini_vec![6, 7, 8, 9, 0];
+
+    let mut v: MiniVec<isize> = a;
+
+    v.extend_from_slice(&b);
+
+    assert_eq!(v, [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
 }
 
 #[test]
@@ -165,6 +230,14 @@ fn test_extend_ref() {
 
     assert_eq!(v.len(), 7);
     assert_eq!(v, [1, 2, 3, 4, 5, 6, 7]);
+}
+
+#[test]
+fn test_slice_from_ref() {
+    let values = mini_vec![1, 2, 3, 4, 5];
+    let slice = &values[1..3];
+
+    assert_eq!(slice, [2, 3]);
 }
 
 #[test]
@@ -263,6 +336,67 @@ fn test_retain() {
 }
 
 #[test]
+fn test_retain_pred_panic_with_hole() {
+    let v = (0..5).map(Rc::new).collect::<MiniVec<_>>();
+    catch_unwind(AssertUnwindSafe(|| {
+        let mut v = v.clone();
+        v.retain(|r| match **r {
+            0 => true,
+            1 => false,
+            2 => true,
+            _ => panic!(),
+        });
+    }))
+    .unwrap_err();
+    // Everything is dropped when predicate panicked.
+    assert!(v.iter().all(|r| Rc::strong_count(r) == 1));
+}
+
+#[test]
+fn test_retain_pred_panic_no_hole() {
+    let v = (0..5).map(Rc::new).collect::<MiniVec<_>>();
+    catch_unwind(AssertUnwindSafe(|| {
+        let mut v = v.clone();
+        v.retain(|r| match **r {
+            0 | 1 | 2 => true,
+            _ => panic!(),
+        });
+    }))
+    .unwrap_err();
+    // Everything is dropped when predicate panicked.
+    assert!(v.iter().all(|r| Rc::strong_count(r) == 1));
+}
+
+#[test]
+fn test_retain_drop_panic() {
+    struct Wrap(Rc<i32>);
+
+    impl Drop for Wrap {
+        fn drop(&mut self) {
+            if *self.0 == 3 {
+                panic!();
+            }
+        }
+    }
+
+    let v = (0..5).map(|x| Rc::new(x)).collect::<MiniVec<_>>();
+    catch_unwind(AssertUnwindSafe(|| {
+        let mut v = v.iter().map(|r| Wrap(r.clone())).collect::<MiniVec<_>>();
+        v.retain(|w| match *w.0 {
+            0 => true,
+            1 => false,
+            2 => true,
+            3 => false, // Drop panic.
+            _ => true,
+        });
+    }))
+    .unwrap_err();
+    // Other elements are dropped when `drop` of one element panicked.
+    // The panicked wrapper also has its Rc dropped.
+    assert!(v.iter().all(|r| Rc::strong_count(r) == 1));
+}
+
+#[test]
 fn test_dedup() {
     fn case(a: MiniVec<i32>, b: MiniVec<i32>) {
         let mut v = a;
@@ -316,11 +450,6 @@ fn test_dedup_by() {
 
 #[test]
 fn test_dedup_unique() {
-    // note: we have to change the source code here to eschew the `box` expression as that's still
-    // experimental
-    //
-    // we swap `box x` to `Box::new(x)`
-    //
     let mut v0: MiniVec<Box<_>> = mini_vec![Box::new(1), Box::new(1), Box::new(2), Box::new(3)];
     v0.dedup();
     let mut v1: MiniVec<Box<_>> = mini_vec![Box::new(1), Box::new(2), Box::new(2), Box::new(3)];
@@ -333,7 +462,7 @@ fn test_dedup_unique() {
 
 // #[test]
 // fn zero_sized_values() {
-//     let mut v = Vec::new();
+//     let mut v = MiniVec::new();
 //     assert_eq!(v.len(), 0);
 //     v.push(());
 //     assert_eq!(v.len(), 1);
@@ -370,17 +499,14 @@ fn test_partition() {
         mini_vec![].into_iter().partition(|x: &i32| *x < 3),
         (mini_vec![], mini_vec![])
     );
-
     assert_eq!(
         mini_vec![1, 2, 3].into_iter().partition(|x| *x < 4),
         (mini_vec![1, 2, 3], mini_vec![])
     );
-
     assert_eq!(
         mini_vec![1, 2, 3].into_iter().partition(|x| *x < 2),
         (mini_vec![1], mini_vec![2, 3])
     );
-
     assert_eq!(
         mini_vec![1, 2, 3].into_iter().partition(|x| *x < 0),
         (mini_vec![], mini_vec![1, 2, 3])
@@ -396,6 +522,29 @@ fn test_zip_unzip() {
     assert_eq!((1, 4), (left[0], right[0]));
     assert_eq!((2, 5), (left[1], right[1]));
     assert_eq!((3, 6), (left[2], right[2]));
+}
+
+#[test]
+fn test_cmp() {
+    let x: &[isize] = &[1, 2, 3, 4, 5];
+    let cmp: &[isize] = &[1, 2, 3, 4, 5];
+    assert_eq!(&x[..], cmp);
+    let cmp: &[isize] = &[3, 4, 5];
+    assert_eq!(&x[2..], cmp);
+    let cmp: &[isize] = &[1, 2, 3];
+    assert_eq!(&x[..3], cmp);
+    let cmp: &[isize] = &[2, 3, 4];
+    assert_eq!(&x[1..4], cmp);
+
+    let x: MiniVec<isize> = mini_vec![1, 2, 3, 4, 5];
+    let cmp: &[isize] = &[1, 2, 3, 4, 5];
+    assert_eq!(&x[..], cmp);
+    let cmp: &[isize] = &[3, 4, 5];
+    assert_eq!(&x[2..], cmp);
+    let cmp: &[isize] = &[1, 2, 3];
+    assert_eq!(&x[..3], cmp);
+    let cmp: &[isize] = &[2, 3, 4];
+    assert_eq!(&x[1..4], cmp);
 }
 
 #[test]
@@ -486,7 +635,7 @@ fn test_slice_out_of_bounds_5() {
 #[test]
 #[should_panic]
 fn test_swap_remove_empty() {
-    let mut vec = MiniVec::<i32>::new();
+    let mut vec = Vec::<i32>::new();
     vec.swap_remove(0);
 }
 
@@ -512,13 +661,24 @@ fn test_move_items_reverse() {
 
 // #[test]
 // fn test_move_items_zero_sized() {
-//     let vec = vec![(), (), ()];
-//     let mut vec2 = vec![];
+//     let vec = mini_vec![(), (), ()];
+//     let mut vec2 = mini_vec![];
 //     for i in vec {
 //         vec2.push(i);
 //     }
 //     assert_eq!(vec2, [(), (), ()]);
 // }
+
+#[test]
+fn test_drain_empty_vec() {
+    let mut vec: MiniVec<i32> = mini_vec![];
+    let mut vec2: MiniVec<i32> = mini_vec![];
+    for i in vec.drain(..) {
+        vec2.push(i);
+    }
+    assert!(vec.is_empty());
+    assert!(vec2.is_empty());
+}
 
 #[test]
 fn test_drain_items() {
@@ -544,8 +704,8 @@ fn test_drain_items_reverse() {
 
 // #[test]
 // fn test_drain_items_zero_sized() {
-//     let mut vec = vec![(), (), ()];
-//     let mut vec2 = vec![];
+//     let mut vec = mini_vec![(), (), ()];
+//     let mut vec2 = mini_vec![];
 //     for i in vec.drain(..) {
 //         vec2.push(i);
 //     }
@@ -619,11 +779,35 @@ fn test_drain_inclusive_range() {
 //     assert_eq!(v.len(), usize::MAX - 1);
 // }
 
+// #[test]
+// #[should_panic]
+// fn test_drain_index_overflow() {
+//     let mut v = MiniVec::<()>::with_capacity(usize::MAX);
+//     unsafe {
+//         v.set_len(usize::MAX);
+//     }
+//     v.drain(0..=usize::MAX);
+// }
+
 #[test]
 #[should_panic]
 fn test_drain_inclusive_out_of_bounds() {
     let mut v = mini_vec![1, 2, 3, 4, 5];
     v.drain(5..=5);
+}
+
+#[test]
+#[should_panic]
+fn test_drain_start_overflow() {
+    let mut v = mini_vec![1, 2, 3];
+    v.drain((Excluded(usize::MAX), Included(0)));
+}
+
+#[test]
+#[should_panic]
+fn test_drain_end_overflow() {
+    let mut v = mini_vec![1, 2, 3];
+    v.drain((Included(0), Included(usize::MAX)));
 }
 
 #[test]
@@ -704,9 +888,9 @@ fn test_splice_inclusive_out_of_bounds() {
 
 // #[test]
 // fn test_splice_items_zero_sized() {
-//     let mut vec = vec![(), (), ()];
-//     let vec2 = vec![];
-//     let t: Vec<_> = vec.splice(1..2, vec2.iter().cloned()).collect();
+//     let mut vec = mini_vec![(), (), ()];
+//     let vec2 = mini_vec![];
+//     let t: MiniVec<_> = vec.splice(1..2, vec2.iter().cloned()).collect();
 //     assert_eq!(vec, &[(), ()]);
 //     assert_eq!(t, &[()]);
 // }
@@ -729,7 +913,7 @@ fn test_splice_forget() {
 
 // #[test]
 // fn test_into_boxed_slice() {
-//     let xs = vec![1, 2, 3];
+//     let xs = mini_vec![1, 2, 3];
 //     let ys = xs.into_boxed_slice();
 //     assert_eq!(&*ys, [1, 2, 3]);
 // }
@@ -746,9 +930,23 @@ fn test_append() {
 #[test]
 fn test_split_off() {
     let mut vec = mini_vec![1, 2, 3, 4, 5, 6];
+    let orig_capacity = vec.capacity();
     let vec2 = vec.split_off(4);
     assert_eq!(vec, [1, 2, 3, 4]);
     assert_eq!(vec2, [5, 6]);
+    assert_eq!(vec.capacity(), orig_capacity);
+}
+
+#[test]
+fn test_split_off_take_all() {
+    let mut vec = mini_vec![1, 2, 3, 4, 5, 6];
+    let orig_ptr = vec.as_ptr();
+    let orig_capacity = vec.capacity();
+    let vec2 = vec.split_off(0);
+    assert_eq!(vec, []);
+    assert_eq!(vec2, [1, 2, 3, 4, 5, 6]);
+    assert_eq!(vec.capacity(), orig_capacity);
+    assert_eq!(vec2.as_ptr(), orig_ptr);
 }
 
 #[test]
@@ -831,9 +1029,97 @@ fn test_into_iter_leak() {
 }
 
 // #[test]
+// fn test_from_iter_specialization() {
+//     let src: MiniVec<usize> = mini_vec![0usize; 1];
+//     let srcptr = src.as_ptr();
+//     let sink = src.into_iter().collect::<MiniVec<_>>();
+//     let sinkptr = sink.as_ptr();
+//     assert_eq!(srcptr, sinkptr);
+// }
+
+// #[test]
+// fn test_from_iter_partially_drained_in_place_specialization() {
+//     let src: MiniVec<usize> = mini_vec![0usize; 10];
+//     let srcptr = src.as_ptr();
+//     let mut iter = src.into_iter();
+//     iter.next();
+//     iter.next();
+//     let sink = iter.collect::<MiniVec<_>>();
+//     let sinkptr = sink.as_ptr();
+//     assert_eq!(srcptr, sinkptr);
+// }
+
+// #[test]
+// fn test_from_iter_specialization_with_iterator_adapters() {
+//     fn assert_in_place_trait<T: InPlaceIterable>(_: &T) {}
+//     let src: MiniVec<usize> = mini_vec![0usize; 256];
+//     let srcptr = src.as_ptr();
+//     let iter = src
+//         .into_iter()
+//         .enumerate()
+//         .map(|i| i.0 + i.1)
+//         .zip(std::iter::repeat(1usize))
+//         .map(|(a, b)| a + b)
+//         .map_while(Option::Some)
+//         .peekable()
+//         .skip(1)
+//         .map(|e| std::num::NonZeroUsize::new(e));
+//     assert_in_place_trait(&iter);
+//     let sink = iter.collect::<MiniVec<_>>();
+//     let sinkptr = sink.as_ptr();
+//     assert_eq!(srcptr, sinkptr as *const usize);
+// }
+
+// #[test]
+// fn test_from_iter_specialization_head_tail_drop() {
+//     let drop_count: MiniVec<_> = (0..=2).map(|_| Rc::new(())).collect();
+//     let src: MiniVec<_> = drop_count.iter().cloned().collect();
+//     let srcptr = src.as_ptr();
+//     let iter = src.into_iter();
+//     let sink: MiniVec<_> = iter.skip(1).take(1).collect();
+//     let sinkptr = sink.as_ptr();
+//     assert_eq!(srcptr, sinkptr, "specialization was applied");
+//     assert_eq!(Rc::strong_count(&drop_count[0]), 1, "front was dropped");
+//     assert_eq!(
+//         Rc::strong_count(&drop_count[1]),
+//         2,
+//         "one element was collected"
+//     );
+//     assert_eq!(Rc::strong_count(&drop_count[2]), 1, "tail was dropped");
+//     assert_eq!(sink.len(), 1);
+// }
+
+#[test]
+fn test_from_iter_specialization_panic_drop() {
+    let drop_count: MiniVec<_> = (0..=2).map(|_| Rc::new(())).collect();
+    let src: MiniVec<_> = drop_count.iter().cloned().collect();
+    let iter = src.into_iter();
+
+    let _ = std::panic::catch_unwind(AssertUnwindSafe(|| {
+        let _ = iter
+            .enumerate()
+            .filter_map(|(i, e)| {
+                if i == 1 {
+                    std::panic!("aborting iteration");
+                }
+                Some(e)
+            })
+            .collect::<MiniVec<_>>();
+    }));
+
+    assert!(
+        drop_count
+            .iter()
+            .map(Rc::strong_count)
+            .all(|count| count == 1),
+        "all items were dropped once"
+    );
+}
+
+// #[test]
 // fn test_cow_from() {
 //     let borrowed: &[_] = &["borrowed", "(slice)"];
-//     let owned = vec!["owned", "(vec)"];
+//     let owned = mini_vec!["owned", "(vec)"];
 //     match (Cow::from(owned.clone()), Cow::from(borrowed)) {
 //         (Cow::Owned(o), Cow::Borrowed(b)) => assert!(o == owned && b == borrowed),
 //         _ => panic!("invalid `Cow::from`"),
@@ -843,41 +1129,39 @@ fn test_into_iter_leak() {
 // #[test]
 // fn test_from_cow() {
 //     let borrowed: &[_] = &["borrowed", "(slice)"];
-//     let owned = vec!["owned", "(vec)"];
-//     assert_eq!(Vec::from(Cow::Borrowed(borrowed)), vec!["borrowed", "(slice)"]);
-//     assert_eq!(Vec::from(Cow::Owned(owned)), vec!["owned", "(vec)"]);
+//     let owned = mini_vec!["owned", "(vec)"];
+//     assert_eq!(
+//         Vec::from(Cow::Borrowed(borrowed)),
+//         mini_vec!["borrowed", "(slice)"]
+//     );
+//     assert_eq!(Vec::from(Cow::Owned(owned)), mini_vec!["owned", "(vec)"]);
 // }
 
 #[allow(dead_code)]
 fn assert_covariance() {
-    fn drain<'new>(d: Drain<'static, &'static str>) -> Drain<'new, &'new str> {
+    fn drain<'new>(d: minivec::Drain<'static, &'static str>) -> minivec::Drain<'new, &'new str> {
         d
     }
-    fn into_iter<'new>(i: IntoIter<&'static str>) -> IntoIter<&'new str> {
+    fn into_iter<'new>(i: minivec::IntoIter<&'static str>) -> minivec::IntoIter<&'new str> {
         i
     }
 }
 
-// this test really only works because of the stdlib using trait specialization here
-// someday, we need to improve our FromIterator implementation to check for a TrustedLen iterator
-// which then checks if it can reuse the allocation the MiniVec had previously
-// if we can reuse the allocation then this will wind up passing
-//
-// #[test]
-// fn from_into_inner() {
-//     let vec = vec![1, 2, 3];
-//     let ptr = vec.as_ptr();
-//     let vec = vec.into_iter().collect::<Vec<_>>();
-//     assert_eq!(vec, [1, 2, 3]);
-//     assert_eq!(vec.as_ptr(), ptr);
+#[test]
+fn from_into_inner() {
+    let vec = mini_vec![1, 2, 3];
+    // let ptr = vec.as_ptr();
+    let vec = vec.into_iter().collect::<MiniVec<_>>();
+    assert_eq!(vec, [1, 2, 3]);
+    // assert_eq!(vec.as_ptr(), ptr);
 
-//     let ptr = &vec[1] as *const _;
-//     let mut it = vec.into_iter();
-//     it.next().unwrap();
-//     let vec = it.collect::<Vec<_>>();
-//     assert_eq!(vec, [2, 3]);
-//     assert!(ptr != vec.as_ptr());
-// }
+    let ptr = &vec[1] as *const _;
+    let mut it = vec.into_iter();
+    it.next().unwrap();
+    let vec = it.collect::<MiniVec<_>>();
+    assert_eq!(vec, [2, 3]);
+    assert!(ptr != vec.as_ptr());
+}
 
 #[test]
 fn overaligned_allocations() {
@@ -912,7 +1196,7 @@ fn drain_filter_empty() {
 
 // #[test]
 // fn drain_filter_zst() {
-//     let mut vec = vec![(), (), (), (), ()];
+//     let mut vec = mini_vec![(), (), (), (), ()];
 //     let initial_len = vec.len();
 //     let mut count = 0;
 //     {
@@ -929,7 +1213,7 @@ fn drain_filter_empty() {
 
 //     assert_eq!(count, initial_len);
 //     assert_eq!(vec.len(), 0);
-//     assert_eq!(vec, vec![]);
+//     assert_eq!(vec, mini_vec![]);
 // }
 
 #[test]
@@ -988,12 +1272,12 @@ fn drain_filter_complex() {
 
         let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<MiniVec<_>>();
         assert_eq!(removed.len(), 10);
-        assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
+        assert_eq!(removed, mini_vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
 
         assert_eq!(vec.len(), 14);
         assert_eq!(
             vec,
-            vec![1, 7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]
+            mini_vec![1, 7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]
         );
     }
 
@@ -1005,10 +1289,13 @@ fn drain_filter_complex() {
 
         let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<MiniVec<_>>();
         assert_eq!(removed.len(), 10);
-        assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
+        assert_eq!(removed, mini_vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
 
         assert_eq!(vec.len(), 13);
-        assert_eq!(vec, vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]);
+        assert_eq!(
+            vec,
+            mini_vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]
+        );
     }
 
     {
@@ -1019,10 +1306,10 @@ fn drain_filter_complex() {
 
         let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<MiniVec<_>>();
         assert_eq!(removed.len(), 10);
-        assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
+        assert_eq!(removed, mini_vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
 
         assert_eq!(vec.len(), 11);
-        assert_eq!(vec, vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35]);
+        assert_eq!(vec, mini_vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35]);
     }
 
     {
@@ -1032,10 +1319,10 @@ fn drain_filter_complex() {
 
         let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<MiniVec<_>>();
         assert_eq!(removed.len(), 10);
-        assert_eq!(removed, vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
+        assert_eq!(removed, mini_vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
 
         assert_eq!(vec.len(), 10);
-        assert_eq!(vec, vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+        assert_eq!(vec, mini_vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
     }
 
     {
@@ -1045,10 +1332,10 @@ fn drain_filter_complex() {
 
         let removed = vec.drain_filter(|x| *x % 2 == 0).collect::<MiniVec<_>>();
         assert_eq!(removed.len(), 10);
-        assert_eq!(removed, vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
+        assert_eq!(removed, mini_vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20]);
 
         assert_eq!(vec.len(), 10);
-        assert_eq!(vec, vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+        assert_eq!(vec, mini_vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
     }
 }
 
@@ -1062,7 +1349,7 @@ fn drain_filter_consumed_panic() {
     struct Check {
         index: usize,
         drop_counts: Rc<Mutex<MiniVec<usize>>>,
-    };
+    }
 
     impl Drop for Check {
         fn drop(&mut self) {
@@ -1121,7 +1408,7 @@ fn drain_filter_unconsumed_panic() {
     struct Check {
         index: usize,
         drop_counts: Rc<Mutex<MiniVec<usize>>>,
-    };
+    }
 
     impl Drop for Check {
         fn drop(&mut self) {
@@ -1220,11 +1507,11 @@ fn test_reserve_exact() {
 //     // on 64-bit, we assume the OS will give an OOM for such a ridiculous size.
 //     // Any platform that succeeds for these requests is technically broken with
 //     // ptr::offset because LLVM is the worst.
-//     let guards_against_isize = size_of::<usize>() < 8;
+//     let guards_against_isize = usize::BITS < 64;
 
 //     {
 //         // Note: basic stuff is checked by test_reserve
-//         let mut empty_bytes: Vec<u8> = Vec::new();
+//         let mut empty_bytes: MiniVec<u8> = MiniVec::new();
 
 //         // Check isize::MAX doesn't count as an overflow
 //         if let Err(CapacityOverflow) = empty_bytes.try_reserve(MAX_CAP) {
@@ -1264,7 +1551,7 @@ fn test_reserve_exact() {
 
 //     {
 //         // Same basic idea, but with non-zero len
-//         let mut ten_bytes: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+//         let mut ten_bytes: MiniVec<u8> = mini_vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 //         if let Err(CapacityOverflow) = ten_bytes.try_reserve(MAX_CAP - 10) {
 //             panic!("isize::MAX shouldn't trigger an overflow!");
@@ -1292,7 +1579,7 @@ fn test_reserve_exact() {
 
 //     {
 //         // Same basic idea, but with interesting type size
-//         let mut ten_u32s: Vec<u32> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+//         let mut ten_u32s: MiniVec<u32> = mini_vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 //         if let Err(CapacityOverflow) = ten_u32s.try_reserve(MAX_CAP / 4 - 10) {
 //             panic!("isize::MAX shouldn't trigger an overflow!");
@@ -1332,7 +1619,7 @@ fn test_reserve_exact() {
 //     let guards_against_isize = size_of::<usize>() < 8;
 
 //     {
-//         let mut empty_bytes: Vec<u8> = Vec::new();
+//         let mut empty_bytes: MiniVec<u8> = MiniVec::new();
 
 //         if let Err(CapacityOverflow) = empty_bytes.try_reserve_exact(MAX_CAP) {
 //             panic!("isize::MAX shouldn't trigger an overflow!");
@@ -1365,7 +1652,7 @@ fn test_reserve_exact() {
 //     }
 
 //     {
-//         let mut ten_bytes: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+//         let mut ten_bytes: MiniVec<u8> = mini_vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 //         if let Err(CapacityOverflow) = ten_bytes.try_reserve_exact(MAX_CAP - 10) {
 //             panic!("isize::MAX shouldn't trigger an overflow!");
@@ -1391,7 +1678,7 @@ fn test_reserve_exact() {
 //     }
 
 //     {
-//         let mut ten_u32s: Vec<u32> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+//         let mut ten_u32s: MiniVec<u32> = mini_vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 //         if let Err(CapacityOverflow) = ten_u32s.try_reserve_exact(MAX_CAP / 4 - 10) {
 //             panic!("isize::MAX shouldn't trigger an overflow!");
@@ -1429,6 +1716,9 @@ fn test_stable_pointers() {
     // Test that, if we reserved enough space, adding and removing elements does not
     // invalidate references into the vector (such as `v0`).  This test also
     // runs in Miri, which would detect such problems.
+    // Note that this test does *not* constitute a stable guarantee that all these functions do not
+    // reallocate! Only what is explicitly documented at
+    // <https://doc.rust-lang.org/nightly/std/vec/struct.Vec.html#guarantees> is stably guaranteed.
     let mut v = MiniVec::with_capacity(128);
     v.push(13);
 
@@ -1458,7 +1748,7 @@ fn test_stable_pointers() {
     // Extending
     v.extend_from_slice(&[1, 2]);
     v.extend(&[1, 2]); // `slice::Iter` (with `T: Copy`) specialization
-    v.extend(vec![2, 3]); // `vec::IntoIter` specialization
+    v.extend(mini_vec![2, 3]); // `vec::IntoIter` specialization
     v.extend(std::iter::once(3)); // `TrustedLen` specialization
     v.extend(std::iter::empty::<i32>()); // `TrustedLen` specialization with empty iterator
     v.extend(std::iter::once(3).filter(|_| true)); // base case
@@ -1487,11 +1777,11 @@ fn test_stable_pointers() {
 
     // Splicing
     v.resize_with(10, || 42);
-    next_then_drop(v.splice(5.., vec![1, 2, 3, 4, 5])); // empty tail after range
+    next_then_drop(v.splice(5.., mini_vec![1, 2, 3, 4, 5])); // empty tail after range
     assert_eq!(*v0, 13);
-    next_then_drop(v.splice(5..8, vec![1])); // replacement is smaller than original range
+    next_then_drop(v.splice(5..8, mini_vec![1])); // replacement is smaller than original range
     assert_eq!(*v0, 13);
-    next_then_drop(v.splice(5..6, vec![1; 10].into_iter().filter(|_| true))); // lower bound not exact
+    next_then_drop(v.splice(5..6, mini_vec![1; 10].into_iter().filter(|_| true))); // lower bound not exact
     assert_eq!(*v0, 13);
 
     // Smoke test that would fire even outside Miri if an actual relocation happened.
@@ -1521,7 +1811,6 @@ fn vec_macro_repeating_null_raw_fat_pointer() {
 
     let vec = mini_vec![null_raw_dyn; 1];
     dbg!(ptr_metadata(vec[0]));
-
     assert!(vec[0] == null_raw_dyn);
 
     // Polyfill for https://github.com/rust-lang/rfcs/pull/2580
@@ -1655,3 +1944,255 @@ fn test_push_growth_strategy() {
         }
     }
 }
+
+// macro_rules! generate_assert_eq_vec_and_prim {
+//     ($name:ident<$B:ident>($type:ty)) => {
+//         fn $name<A: PartialEq<$B> + Debug, $B: Debug>(a: MiniVec<A>, b: $type) {
+//             assert!(a == b);
+//             assert_eq!(a, b);
+//         }
+//     };
+// }
+
+// generate_assert_eq_vec_and_prim! { assert_eq_vec_and_slice  <B>(&[B])   }
+// generate_assert_eq_vec_and_prim! { assert_eq_vec_and_array_3<B>([B; 3]) }
+
+// #[test]
+// fn partialeq_vec_and_prim() {
+//     assert_eq_vec_and_slice(mini_vec![1, 2, 3], &[1, 2, 3]);
+//     assert_eq_vec_and_array_3(mini_vec![1, 2, 3], [1, 2, 3]);
+// }
+
+// macro_rules! assert_partial_eq_valid {
+//     ($a2:expr, $a3:expr; $b2:expr, $b3: expr) => {
+//         assert!($a2 == $b2);
+//         assert!($a2 != $b3);
+//         assert!($a3 != $b2);
+//         assert!($a3 == $b3);
+//         assert_eq!($a2, $b2);
+//         assert_ne!($a2, $b3);
+//         assert_ne!($a3, $b2);
+//         assert_eq!($a3, $b3);
+//     };
+// }
+
+// #[test]
+// fn partialeq_vec_full() {
+//     let vec2: MiniVec<_> = mini_vec![1, 2];
+//     let vec3: MiniVec<_> = mini_vec![1, 2, 3];
+//     let slice2: &[_] = &[1, 2];
+//     let slice3: &[_] = &[1, 2, 3];
+//     let slicemut2: &[_] = &mut [1, 2];
+//     let slicemut3: &[_] = &mut [1, 2, 3];
+//     let array2: [_; 2] = [1, 2];
+//     let array3: [_; 3] = [1, 2, 3];
+//     let arrayref2: &[_; 2] = &[1, 2];
+//     let arrayref3: &[_; 3] = &[1, 2, 3];
+
+//     assert_partial_eq_valid!(vec2,vec3; vec2,vec3);
+//     assert_partial_eq_valid!(vec2,vec3; slice2,slice3);
+//     assert_partial_eq_valid!(vec2,vec3; slicemut2,slicemut3);
+//     assert_partial_eq_valid!(slice2,slice3; vec2,vec3);
+//     assert_partial_eq_valid!(slicemut2,slicemut3; vec2,vec3);
+//     assert_partial_eq_valid!(vec2,vec3; array2,array3);
+//     assert_partial_eq_valid!(vec2,vec3; arrayref2,arrayref3);
+//     assert_partial_eq_valid!(vec2,vec3; arrayref2[..],arrayref3[..]);
+// }
+
+// #[test]
+// fn test_vec_cycle() {
+//     #[derive(Debug)]
+//     struct C<'a> {
+//         v: MiniVec<Cell<Option<&'a C<'a>>>>,
+//     }
+
+//     impl<'a> C<'a> {
+//         fn new() -> C<'a> {
+//             C { v: MiniVec::new() }
+//         }
+//     }
+
+//     let mut c1 = C::new();
+//     let mut c2 = C::new();
+//     let mut c3 = C::new();
+
+//     // Push
+//     c1.v.push(Cell::new(None));
+//     c1.v.push(Cell::new(None));
+
+//     c2.v.push(Cell::new(None));
+//     c2.v.push(Cell::new(None));
+
+//     c3.v.push(Cell::new(None));
+//     c3.v.push(Cell::new(None));
+
+//     // Set
+//     c1.v[0].set(Some(&c2));
+//     c1.v[1].set(Some(&c3));
+
+//     c2.v[0].set(Some(&c2));
+//     c2.v[1].set(Some(&c3));
+
+//     c3.v[0].set(Some(&c1));
+//     c3.v[1].set(Some(&c2));
+// }
+
+// #[test]
+// fn test_vec_cycle_wrapped() {
+//     struct Refs<'a> {
+//         v: MiniVec<Cell<Option<&'a C<'a>>>>,
+//     }
+
+//     struct C<'a> {
+//         refs: Refs<'a>,
+//     }
+
+//     impl<'a> Refs<'a> {
+//         fn new() -> Refs<'a> {
+//             Refs { v: MiniVec::new() }
+//         }
+//     }
+
+//     impl<'a> C<'a> {
+//         fn new() -> C<'a> {
+//             C { refs: Refs::new() }
+//         }
+//     }
+
+//     let mut c1 = C::new();
+//     let mut c2 = C::new();
+//     let mut c3 = C::new();
+
+//     c1.refs.v.push(Cell::new(None));
+//     c1.refs.v.push(Cell::new(None));
+//     c2.refs.v.push(Cell::new(None));
+//     c2.refs.v.push(Cell::new(None));
+//     c3.refs.v.push(Cell::new(None));
+//     c3.refs.v.push(Cell::new(None));
+
+//     c1.refs.v[0].set(Some(&c2));
+//     c1.refs.v[1].set(Some(&c3));
+//     c2.refs.v[0].set(Some(&c2));
+//     c2.refs.v[1].set(Some(&c3));
+//     c3.refs.v[0].set(Some(&c1));
+//     c3.refs.v[1].set(Some(&c2));
+// }
+
+#[test]
+fn test_zero_sized_vec_push() {
+    const N: usize = 8;
+
+    for len in 0..N {
+        let mut tester = Vec::with_capacity(len);
+        assert_eq!(tester.len(), 0);
+        assert!(tester.capacity() >= len);
+        for _ in 0..len {
+            tester.push(());
+        }
+        assert_eq!(tester.len(), len);
+        assert_eq!(tester.iter().count(), len);
+        tester.clear();
+    }
+}
+
+#[test]
+fn test_vec_macro_repeat() {
+    assert_eq!(mini_vec![1; 3], mini_vec![1, 1, 1]);
+    assert_eq!(mini_vec![1; 2], mini_vec![1, 1]);
+    assert_eq!(mini_vec![1; 1], mini_vec![1]);
+    assert_eq!(mini_vec![1; 0], mini_vec![]);
+
+    // from_elem syntax (see RFC 832)
+    let el = Box::new(1);
+    let n = 3;
+    assert_eq!(
+        mini_vec![el; n],
+        mini_vec![Box::new(1), Box::new(1), Box::new(1)]
+    );
+}
+
+#[test]
+fn test_vec_swap() {
+    let mut a: MiniVec<isize> = mini_vec![0, 1, 2, 3, 4, 5, 6];
+    a.swap(2, 4);
+    assert_eq!(a[2], 4);
+    assert_eq!(a[4], 2);
+    let mut n = 42;
+    swap(&mut n, &mut a[0]);
+    assert_eq!(a[0], 42);
+    assert_eq!(n, 0);
+}
+
+// #[test]
+// fn test_extend_from_within_spec() {
+//     #[derive(Copy)]
+//     struct CopyOnly;
+
+//     impl Clone for CopyOnly {
+//         fn clone(&self) -> Self {
+//             panic!("extend_from_within must use specialization on copy");
+//         }
+//     }
+
+//     mini_vec![CopyOnly, CopyOnly].extend_from_within(..);
+// }
+
+// #[test]
+// fn test_extend_from_within_clone() {
+//     let mut v = mini_vec![
+//         String::from("sssss"),
+//         String::from("12334567890"),
+//         String::from("c"),
+//     ];
+//     v.extend_from_within(1..);
+
+//     assert_eq!(v, ["sssss", "12334567890", "c", "12334567890", "c"]);
+// }
+
+// #[test]
+// fn test_extend_from_within_complete_rande() {
+//     let mut v = mini_vec![0, 1, 2, 3];
+//     v.extend_from_within(..);
+
+//     assert_eq!(v, [0, 1, 2, 3, 0, 1, 2, 3]);
+// }
+
+// #[test]
+// fn test_extend_from_within_empty_rande() {
+//     let mut v = mini_vec![0, 1, 2, 3];
+//     v.extend_from_within(1..1);
+
+//     assert_eq!(v, [0, 1, 2, 3]);
+// }
+
+// #[test]
+// #[should_panic]
+// fn test_extend_from_within_out_of_rande() {
+//     let mut v = mini_vec![0, 1];
+//     v.extend_from_within(..3);
+// }
+
+// #[test]
+// fn test_extend_from_within_zst() {
+//     let mut v = mini_vec![(); 8];
+//     v.extend_from_within(3..7);
+
+//     assert_eq!(v, [(); 12]);
+// }
+
+// #[test]
+// fn test_extend_from_within_empty_vec() {
+//     let mut v = Vec::<i32>::new();
+//     v.extend_from_within(..);
+
+//     assert_eq!(v, []);
+// }
+
+// #[test]
+// fn test_extend_from_within() {
+//     let mut v = mini_vec![String::from("a"), String::from("b"), String::from("c")];
+//     v.extend_from_within(1..=2);
+//     v.extend_from_within(..=1);
+
+//     assert_eq!(v, ["a", "b", "c", "b", "c", "a", "b"]);
+// }

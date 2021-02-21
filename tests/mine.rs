@@ -672,6 +672,11 @@ fn minivec_split_off() {
     let vec2 = vec.split_off(0);
     assert_eq!(vec, []);
     assert_eq!(vec2, [1, 2, 3]);
+
+    let mut vec = MiniVec::<i32>::new();
+    let vec2 = vec.split_off(0);
+    assert_eq!(vec, []);
+    assert_eq!(vec2, []);
 }
 
 #[test]

@@ -1254,6 +1254,30 @@ impl<T> MiniVec<T> {
             panic!("`at` split index (is {}) should be <= len (is {})", at, len);
         }
 
+        if len == 0 {
+            let other = if self.capacity() > 0 {
+                MiniVec::with_capacity(self.capacity())
+            } else {
+                MiniVec::new()
+            };
+
+            return other;
+        }
+
+        if at == 0 {
+            let orig_cap = self.capacity();
+
+            let other = MiniVec {
+                buf: self.buf,
+                phantom: core::marker::PhantomData,
+            };
+
+            self.buf = core::ptr::null_mut();
+            self.reserve_exact(orig_cap);
+
+            return other;
+        }
+
         let mut other = MiniVec::with_capacity(self.capacity());
 
         unsafe { self.set_len(at) }
@@ -1482,13 +1506,17 @@ macro_rules! mini_vec {
     );
     ($elem:expr; $n:expr) => {
         {
-            let mut tmp = $crate::MiniVec::with_capacity($n);
+            let len = $n;
+            let mut tmp = $crate::MiniVec::with_capacity(len);
 
-            for idx in 0..$n {
+            for idx in 0..len {
                 unsafe { tmp.unsafe_write(idx, $elem.clone()) };
             }
 
-            unsafe { tmp.set_len($n) };
+
+            if len > 0 {
+                unsafe { tmp.set_len(len) };
+            }
 
             tmp
         }

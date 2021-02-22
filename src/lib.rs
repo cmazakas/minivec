@@ -16,9 +16,24 @@
 //!
 //! ---
 //!
-//! In general, `MiniVec` aims to be API compatible with what's currently stable in the stdlib so
+//! In general, `MiniVec` aims to be API compatible with what's currently stable in the stdlib so some
 //! Nightly features are not supported. `MiniVec` also supports myriad extensions, one such being
 //! support for over-alignment via the associated function [`with_alignment`](MiniVec::with_alignment).
+//!
+//! `MiniVec` has stable implementations of the following nightly-only associated functions on `Vec`:
+//! * [`into_raw_parts`](MiniVec::into_raw_parts)
+//! * [`shrink_to`](MiniVec::shrink_to)
+//! * [`spare_capacity_mut`](MiniVec::spare_capacity_mut)
+//! * [`drain_filter`](MiniVec::drain_filter)
+//!
+//! `MiniVec` has the following associated functions not found in `Vec`:
+//! * [`with_alignment`](MiniVec::with_alignment)
+//! * [`from_raw_part`](MiniVec::from_raw_part)
+//!
+//! Eventual TODO's:
+//! * add `try_reserve` methods once stable
+//! * add myriad specializations to associated functions such as `FromIterator` once stable
+//! * add Allocator support once stable
 //!
 
 extern crate alloc;
@@ -409,7 +424,9 @@ impl<T> MiniVec<T> {
     /// If the returned iterator is not iterated until exhaustion then the `Drop` implementation
     /// for `Drain` will remove the remaining elements.
     ///
-    /// Note: panics if the supplied range would be outside the vector
+    /// # Panics
+    ///
+    /// Panics if the supplied range would be outside the vector
     ///
     /// # Example
     ///
@@ -507,6 +524,10 @@ impl<T> MiniVec<T> {
     /// at its head and is not guaranteed to be stable so users are discouraged from attempting to
     /// support this directly.
     ///
+    /// # Panics
+    ///
+    /// Panics in debug mode if the supplied pointer is null.
+    ///
     /// # Example
     ///
     /// ```
@@ -543,6 +564,10 @@ impl<T> MiniVec<T> {
     ///
     /// Like [`MiniVec::from_raw_part`](MiniVec::from_raw_part), this function is only safe to use
     /// with the result of a call to [`MiniVec::as_mut_ptr()`](MiniVec::as_mut_ptr).
+    ///
+    /// # Panics
+    ///
+    /// Panics in debug mode if the supplied pointer is null.
     ///
     /// # Safety
     ///
@@ -586,7 +611,9 @@ impl<T> MiniVec<T> {
     /// `insert` places an element at the specified index, subsequently shifting all elements to the
     /// right of the insertion index by 1
     ///
-    /// Note: will panic when `index > vec.len()`
+    /// # Panics
+    ///
+    /// Will panic when `index > vec.len()`.
     ///
     /// # Example
     ///
@@ -713,6 +740,10 @@ impl<T> MiniVec<T> {
     ///
     /// Note: does not allocate any memory.
     ///
+    /// # Panics
+    ///
+    /// Panics when a zero-sized type is attempted to be used.
+    ///
     /// # Example
     ///
     /// ```
@@ -798,6 +829,8 @@ impl<T> MiniVec<T> {
     /// `remove` moves the element at the specified `index` and then returns it to the user. This
     /// operation shifts all elements to the right `index` to the left by one so it has a linear
     /// time complexity of `vec.len() - index`.
+    ///
+    /// # Panics
     ///
     /// Panics if `index >= len()`.
     ///
@@ -1057,6 +1090,8 @@ impl<T> MiniVec<T> {
     /// If the [`capacity()`](MiniVec::capacity) is identical to `min_capacity` then this function
     /// does nothing.
     ///
+    /// # Panics
+    ///
     /// If the `min_capacity` is larger than the current capacity this function will panic.
     ///
     /// Otherwise, the allocation is reallocated with the new `min_capacity` kept in mind.
@@ -1163,7 +1198,9 @@ impl<T> MiniVec<T> {
     ///
     /// `Splice` only fills the removed region when it is dropped.
     ///
-    /// Note: panics if the supplied `range` is outside of the vector's bounds.
+    /// # Panics
+    ///
+    /// Panics if the supplied `range` is outside of the vector's bounds.
     ///
     /// # Example
     ///
@@ -1235,7 +1272,9 @@ impl<T> MiniVec<T> {
     /// After this function call, `self` will have kept elements `[0, at)` while the new segment
     /// contains elements `[at, len)`.
     ///
-    /// Note: panics if `at` is greater than [`len()`](MiniVec::len).
+    /// # Panics
+    ///
+    /// Panics if `at` is greater than [`len()`](MiniVec::len).
     ///
     /// # Example
     ///
@@ -1295,7 +1334,9 @@ impl<T> MiniVec<T> {
     /// `swap_remove` removes the element located at `index` and replaces it with the last value
     /// in the vector, returning the removed element to the caller.
     ///
-    /// Note: panics if `index >= len()`.
+    /// # Panics
+    ///
+    /// Panics if `index >= len()`.
     ///
     /// # Example
     ///

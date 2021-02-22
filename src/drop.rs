@@ -17,6 +17,7 @@ impl<T> Drop for MiniVec<T> {
         }
 
         unsafe {
+            #[allow(clippy::cast_ptr_alignment)]
             let Header {
                 len,
                 cap,

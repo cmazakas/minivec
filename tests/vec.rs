@@ -26,12 +26,18 @@ use minivec::MiniVec;
 //
 // ^ official source for `Vec` test file
 //
+// TODO:
+// * implement FromIterator specialization for minivec::IntoIterator when it's stable
+// * implement unsafe impl Drop<#[may_dangle] T> when it's stable
+// * refactor PartialEq to use const generics when stable
+//
 // Code modifications:
 // * rename `Vec` to `MiniVec` and `vec!` to `mini_vec!`
 // * change `size_of` test to match `size_of::<usize>()`
 // * comment out yet-to-be-completed features
 // * replace `box` expressions with `Box::new()`
 // * comment out test assertions that require specialization
+// * comment out tests that rely on Vec's Drop impl potentially dangling
 //
 
 // use std::borrow::Cow;

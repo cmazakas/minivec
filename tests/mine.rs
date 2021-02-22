@@ -641,7 +641,7 @@ fn minivec_into_iter() {
 
 #[test]
 fn minivec_swap_remove() {
-    let mut v = mini_vec!["foo", "bar", "baz", "qux"];
+    let mut v: MiniVec<&str> = mini_vec!["foo", "bar", "baz", "qux"];
 
     assert_eq!(v.swap_remove(1), "bar");
     assert_eq!(v, ["foo", "qux", "baz"]);
@@ -653,7 +653,7 @@ fn minivec_swap_remove() {
     assert_eq!(v, ["qux"]);
 
     assert_eq!(v.swap_remove(0), "qux");
-    assert_eq!(v, []);
+    assert!(v.is_empty());
 }
 
 #[test]
@@ -802,7 +802,7 @@ fn minivec_splice_raii() {
         ]
     );
 
-    assert_eq!(u, &[]);
+    assert!(u.is_empty());
 
     let mut v = mini_vec![
         1.to_string(),

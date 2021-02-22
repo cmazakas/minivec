@@ -8,7 +8,8 @@
     clippy::clippy::many_single_char_names,
     clippy::clippy::redundant_closure,
     clippy::unit_arg,
-    clippy::unnecessary_filter_map
+    clippy::unnecessary_filter_map,
+    clippy::eq_op
 )]
 
 extern crate minivec;
@@ -1945,59 +1946,59 @@ fn test_push_growth_strategy() {
     }
 }
 
-// macro_rules! generate_assert_eq_vec_and_prim {
-//     ($name:ident<$B:ident>($type:ty)) => {
-//         fn $name<A: PartialEq<$B> + Debug, $B: Debug>(a: MiniVec<A>, b: $type) {
-//             assert!(a == b);
-//             assert_eq!(a, b);
-//         }
-//     };
-// }
+macro_rules! generate_assert_eq_vec_and_prim {
+    ($name:ident<$B:ident>($type:ty)) => {
+        fn $name<A: PartialEq<$B> + Debug, $B: Debug>(a: MiniVec<A>, b: $type) {
+            assert!(a == b);
+            assert_eq!(a, b);
+        }
+    };
+}
 
-// generate_assert_eq_vec_and_prim! { assert_eq_vec_and_slice  <B>(&[B])   }
-// generate_assert_eq_vec_and_prim! { assert_eq_vec_and_array_3<B>([B; 3]) }
+generate_assert_eq_vec_and_prim! { assert_eq_vec_and_slice  <B>(&[B])   }
+generate_assert_eq_vec_and_prim! { assert_eq_vec_and_array_3<B>([B; 3]) }
 
-// #[test]
-// fn partialeq_vec_and_prim() {
-//     assert_eq_vec_and_slice(mini_vec![1, 2, 3], &[1, 2, 3]);
-//     assert_eq_vec_and_array_3(mini_vec![1, 2, 3], [1, 2, 3]);
-// }
+#[test]
+fn partialeq_vec_and_prim() {
+    assert_eq_vec_and_slice(mini_vec![1, 2, 3], &[1, 2, 3]);
+    assert_eq_vec_and_array_3(mini_vec![1, 2, 3], [1, 2, 3]);
+}
 
-// macro_rules! assert_partial_eq_valid {
-//     ($a2:expr, $a3:expr; $b2:expr, $b3: expr) => {
-//         assert!($a2 == $b2);
-//         assert!($a2 != $b3);
-//         assert!($a3 != $b2);
-//         assert!($a3 == $b3);
-//         assert_eq!($a2, $b2);
-//         assert_ne!($a2, $b3);
-//         assert_ne!($a3, $b2);
-//         assert_eq!($a3, $b3);
-//     };
-// }
+macro_rules! assert_partial_eq_valid {
+    ($a2:expr, $a3:expr; $b2:expr, $b3: expr) => {
+        assert!($a2 == $b2);
+        assert!($a2 != $b3);
+        assert!($a3 != $b2);
+        assert!($a3 == $b3);
+        assert_eq!($a2, $b2);
+        assert_ne!($a2, $b3);
+        assert_ne!($a3, $b2);
+        assert_eq!($a3, $b3);
+    };
+}
 
-// #[test]
-// fn partialeq_vec_full() {
-//     let vec2: MiniVec<_> = mini_vec![1, 2];
-//     let vec3: MiniVec<_> = mini_vec![1, 2, 3];
-//     let slice2: &[_] = &[1, 2];
-//     let slice3: &[_] = &[1, 2, 3];
-//     let slicemut2: &[_] = &mut [1, 2];
-//     let slicemut3: &[_] = &mut [1, 2, 3];
-//     let array2: [_; 2] = [1, 2];
-//     let array3: [_; 3] = [1, 2, 3];
-//     let arrayref2: &[_; 2] = &[1, 2];
-//     let arrayref3: &[_; 3] = &[1, 2, 3];
+#[test]
+fn partialeq_vec_full() {
+    let vec2: MiniVec<_> = mini_vec![1, 2];
+    let vec3: MiniVec<_> = mini_vec![1, 2, 3];
+    let slice2: &[_] = &[1, 2];
+    let slice3: &[_] = &[1, 2, 3];
+    let slicemut2: &[_] = &mut [1, 2];
+    let slicemut3: &[_] = &mut [1, 2, 3];
+    let array2: [_; 2] = [1, 2];
+    let array3: [_; 3] = [1, 2, 3];
+    let arrayref2: &[_; 2] = &[1, 2];
+    let arrayref3: &[_; 3] = &[1, 2, 3];
 
-//     assert_partial_eq_valid!(vec2,vec3; vec2,vec3);
-//     assert_partial_eq_valid!(vec2,vec3; slice2,slice3);
-//     assert_partial_eq_valid!(vec2,vec3; slicemut2,slicemut3);
-//     assert_partial_eq_valid!(slice2,slice3; vec2,vec3);
-//     assert_partial_eq_valid!(slicemut2,slicemut3; vec2,vec3);
-//     assert_partial_eq_valid!(vec2,vec3; array2,array3);
-//     assert_partial_eq_valid!(vec2,vec3; arrayref2,arrayref3);
-//     assert_partial_eq_valid!(vec2,vec3; arrayref2[..],arrayref3[..]);
-// }
+    assert_partial_eq_valid!(vec2,vec3; vec2,vec3);
+    assert_partial_eq_valid!(vec2,vec3; slice2,slice3);
+    assert_partial_eq_valid!(vec2,vec3; slicemut2,slicemut3);
+    assert_partial_eq_valid!(slice2,slice3; vec2,vec3);
+    assert_partial_eq_valid!(slicemut2,slicemut3; vec2,vec3);
+    assert_partial_eq_valid!(vec2,vec3; array2,array3);
+    assert_partial_eq_valid!(vec2,vec3; arrayref2,arrayref3);
+    assert_partial_eq_valid!(vec2,vec3; arrayref2[..],arrayref3[..]);
+}
 
 // #[test]
 // fn test_vec_cycle() {

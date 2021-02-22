@@ -447,12 +447,16 @@ impl<T> MiniVec<T> {
 
         let start_idx = match range.start_bound() {
             core::ops::Bound::Included(&n) => n,
-            core::ops::Bound::Excluded(&n) => n + 1,
+            core::ops::Bound::Excluded(&n) => {
+                n.checked_add(1).expect("Start idx exceeded numeric limits")
+            }
             core::ops::Bound::Unbounded => 0,
         };
 
         let end_idx = match range.end_bound() {
-            core::ops::Bound::Included(&n) => n + 1,
+            core::ops::Bound::Included(&n) => {
+                n.checked_add(1).expect("End idx exceeded numeric limits")
+            }
             core::ops::Bound::Excluded(&n) => n,
             core::ops::Bound::Unbounded => len,
         };
@@ -1227,12 +1231,16 @@ impl<T> MiniVec<T> {
 
         let start_idx = match range.start_bound() {
             core::ops::Bound::Included(&n) => n,
-            core::ops::Bound::Excluded(&n) => n + 1,
+            core::ops::Bound::Excluded(&n) => {
+                n.checked_add(1).expect("Start idx exceeded numeric limits")
+            }
             core::ops::Bound::Unbounded => 0,
         };
 
         let end_idx = match range.end_bound() {
-            core::ops::Bound::Included(&n) => n + 1,
+            core::ops::Bound::Included(&n) => {
+                n.checked_add(1).expect("End idx exceeded numeric limits")
+            }
             core::ops::Bound::Excluded(&n) => n,
             core::ops::Bound::Unbounded => len,
         };

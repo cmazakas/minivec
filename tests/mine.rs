@@ -962,3 +962,59 @@ fn minivec_page_aligned() {
     let mut vec = minivec::MiniVec::<i32>::with_alignment(capacity, alignment).unwrap();
     assert_eq!(vec.as_mut_ptr() as usize % alignment, 0);
 }
+
+#[test]
+fn minivec_split_at_spare_mut() {
+    // empty case
+    //
+    let mut vec = MiniVec::<i32>::new();
+
+    let (init, uninit) = vec.split_at_spare_mut();
+    assert_eq!(init, []);
+    assert_eq!(uninit.len(), 0);
+
+    // Copy type
+    //
+    let capacity = 2048;
+    let len = capacity / 3;
+
+    let mut vec = MiniVec::<i32>::with_capacity(capacity);
+
+    for idx in 0..len {
+        vec.push(idx as i32);
+    }
+
+    let (init, uninit) = vec.split_at_spare_mut();
+
+    assert_eq!(init.len(), len);
+    assert_eq!(uninit.len(), capacity - len);
+
+    for (idx, v) in uninit.iter_mut().enumerate() {
+        *v = core::mem::MaybeUninit::<i32>::new(idx as i32);
+    }
+
+    unsafe { vec.set_len(capacity) };
+
+    for idx in 0..len {
+        assert_eq!(vec[idx], idx as i32);
+    }
+
+    for idx in 0..(capacity - len) {
+        assert_eq!(vec[idx + len], idx as i32);
+    }
+
+    // Clone/RAII type
+    //
+    let mut vec = MiniVec::<String>::with_capacity(4);
+    vec.push(String::from("hello"));
+    vec.push(String::from("world"));
+
+    let (_, uninit) = vec.split_at_spare_mut();
+    uninit[0] = core::mem::MaybeUninit::<String>::new(String::from("rawr"));
+    uninit[1] = core::mem::MaybeUninit::<String>::new(String::from("RAWR"));
+
+    unsafe { vec.set_len(4) };
+
+    assert_eq!(vec[2], "rawr");
+    assert_eq!(vec[3], "RAWR");
+}

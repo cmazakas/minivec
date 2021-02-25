@@ -25,6 +25,7 @@
 //! * [`shrink_to`](MiniVec::shrink_to)
 //! * [`spare_capacity_mut`](MiniVec::spare_capacity_mut)
 //! * [`drain_filter`](MiniVec::drain_filter)
+//! * [`split_at_spare_mut`](MiniVec::split_at_spare_mut)
 //!
 //! `MiniVec` has the following associated functions not found in `Vec`:
 //! * [`with_alignment`](MiniVec::with_alignment)
@@ -1273,6 +1274,60 @@ impl<T> MiniVec<T> {
             end_idx,
             replace_with.into_iter(),
         )
+    }
+
+    /// `split_at_spare_mut` returns a pair containing two mutable slices: one referring to the currently
+    /// initialized elements and the other pointing to the spare capacity of the backing allocation as a
+    /// `&mut [MaybeUninit<T>]`.
+    ///
+    /// This is a convenience API that handles borrowing issues when attempting to do something like:
+    /// ```ignore
+    /// let (init, uninit) = (vec.as_mut_slice(), vec.spare_capacity_mut());
+    /// ```
+    ///
+    /// which results in borrowing errors from the compiler:
+    /// > cannot borrow `vec` as mutable more than once at a time
+    ///
+    /// # Safety
+    ///
+    /// When working with uninitialized storage, it is required that the user call `set_len()` appropriately
+    /// to readjust the length of the vector. This ensures that newly inserted elements are dropped when
+    /// needed.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut vec = minivec::MiniVec::<String>::with_capacity(4);
+    /// vec.push(String::from("hello"));
+    /// vec.push(String::from("world"));
+    ///
+    /// let (_, uninit) = vec.split_at_spare_mut();
+    /// uninit[0] = core::mem::MaybeUninit::<String>::new(String::from("rawr"));
+    /// uninit[1] = core::mem::MaybeUninit::<String>::new(String::from("RAWR"));
+    ///
+    /// unsafe { vec.set_len(4) };
+    ///
+    /// assert_eq!(vec[2], "rawr");
+    /// assert_eq!(vec[3], "RAWR");
+    /// ```
+    ///
+    pub fn split_at_spare_mut(&mut self) -> (&mut [T], &mut [core::mem::MaybeUninit<T>]) {
+        let capacity = self.capacity();
+        if capacity == 0 {
+            return (&mut [], &mut []);
+        }
+
+        let (p, len) = (self.as_mut_ptr(), self.len());
+
+        let init = unsafe { core::slice::from_raw_parts_mut(p, len) };
+        let uninit = unsafe {
+            core::slice::from_raw_parts_mut(
+                p.add(len).cast::<core::mem::MaybeUninit<T>>(),
+                capacity - len,
+            )
+        };
+
+        (init, uninit)
     }
 
     /// `split_off` will segment the vector into two, returning the new segment to the user.

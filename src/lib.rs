@@ -26,6 +26,7 @@
 //! * [`spare_capacity_mut`](MiniVec::spare_capacity_mut)
 //! * [`drain_filter`](MiniVec::drain_filter)
 //! * [`split_at_spare_mut`](MiniVec::split_at_spare_mut)
+//! * [`extend_from_within`](MiniVec::extend_from_within)
 //!
 //! `MiniVec` has the following associated functions not found in `Vec`:
 //! * [`with_alignment`](MiniVec::with_alignment)
@@ -68,15 +69,15 @@ use crate::r#impl::splice::make_splice_iterator;
 
 pub use crate::r#impl::{Drain, DrainFilter, IntoIter, Splice};
 
+pub struct MiniVec<T> {
+    buf: *mut u8,
+    phantom: core::marker::PhantomData<T>,
+}
+
 #[derive(core::fmt::Debug)]
 pub enum LayoutErr {
     AlignmentTooSmall,
     AlignmentNotDivisibleByTwo,
-}
-
-pub struct MiniVec<T> {
-    buf: *mut u8,
-    phantom: core::marker::PhantomData<T>,
 }
 
 struct Header {
@@ -1590,6 +1591,111 @@ impl<T: Clone> MiniVec<T> {
         for x in elems {
             self.push((*x).clone());
         }
+    }
+
+    /// `extend_from_within` clones the elements contained in the provided `Range` and appends them
+    /// to the end of the vector, allocating extra space as required.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the provided range exceeds the bounds of `[0, len)`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut vec = minivec::mini_vec![1, 2, 3, 4, 5];
+    /// vec.extend_from_within(1..4);
+    ///
+    /// assert_eq!(vec, [1, 2, 3, 4, 5, 2, 3, 4]);
+    /// ```
+    ///
+    pub fn extend_from_within<Range>(&mut self, range: Range)
+    where
+        Range: core::ops::RangeBounds<usize>,
+    {
+        struct PanicGuard<'a, T>
+        where
+            T: Clone,
+        {
+            count: usize,
+            start_idx: usize,
+            end_idx: usize,
+            vec: &'a mut MiniVec<T>,
+        }
+
+        impl<'a, T> Drop for PanicGuard<'a, T>
+        where
+            T: Clone,
+        {
+            fn drop(&mut self) {
+                unsafe { self.vec.set_len(self.vec.len() + self.count) };
+            }
+        }
+
+        impl<'a, 'b, T> PanicGuard<'a, T>
+        where
+            T: Clone,
+        {
+            fn extend(&mut self) {
+                let count = &mut self.count;
+                let (init, uninit) = self.vec.split_at_spare_mut();
+                init[self.start_idx..self.end_idx]
+                    .iter()
+                    .cloned()
+                    .zip(uninit.iter_mut())
+                    .for_each(|(val, p)| {
+                        *p = core::mem::MaybeUninit::new(val);
+                        *count += 1;
+                    });
+            }
+        }
+
+        let len = self.len();
+
+        let start_idx = match range.start_bound() {
+            core::ops::Bound::Included(&n) => n,
+            core::ops::Bound::Excluded(&n) => {
+                n.checked_add(1).expect("Start idx exceeded numeric limits")
+            }
+            core::ops::Bound::Unbounded => 0,
+        };
+
+        let end_idx = match range.end_bound() {
+            core::ops::Bound::Included(&n) => {
+                n.checked_add(1).expect("End idx exceeded numeric limits")
+            }
+            core::ops::Bound::Excluded(&n) => n,
+            core::ops::Bound::Unbounded => len,
+        };
+
+        if start_idx > end_idx {
+            panic!(
+                "start extend_from_within index (is {}) should be <= end (is {})",
+                start_idx, end_idx
+            );
+        }
+
+        if end_idx > len {
+            panic!(
+                "end extend_from_within index (is {}) should be <= len (is {})",
+                end_idx, len
+            );
+        }
+
+        if len == 0 {
+            return;
+        }
+
+        self.reserve(end_idx - start_idx);
+
+        let mut guard = PanicGuard {
+            count: 0,
+            start_idx,
+            end_idx,
+            vec: self,
+        };
+
+        guard.extend();
     }
 }
 

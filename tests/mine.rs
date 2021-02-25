@@ -1018,3 +1018,87 @@ fn minivec_split_at_spare_mut() {
     assert_eq!(vec[2], "rawr");
     assert_eq!(vec[3], "RAWR");
 }
+
+#[test]
+fn minivec_extend_from_within() {
+    let mut vec = minivec::MiniVec::<i32>::new();
+    vec.extend_from_within(..);
+
+    assert_eq!(vec, []);
+
+    let mut vec = minivec::mini_vec![1, 2, 3, 4, 5];
+    vec.extend_from_within(1..4);
+
+    assert_eq!(vec, [1, 2, 3, 4, 5, 2, 3, 4]);
+
+    let mut vec = minivec::MiniVec::<String>::new();
+    vec.push(String::from("hello"));
+    vec.push(String::from("world"));
+    vec.push(String::from("hola"));
+    vec.push(String::from("mundo"));
+
+    vec.extend_from_within(0..=2);
+
+    assert_eq!(
+        vec,
+        [
+            String::from("hello"),
+            String::from("world"),
+            String::from("hola"),
+            String::from("mundo"),
+            String::from("hello"),
+            String::from("world"),
+            String::from("hola"),
+        ]
+    );
+
+    struct Panicker {
+        _a: usize,
+    }
+
+    static mut CLONES: i32 = 0;
+
+    impl Clone for Panicker {
+        fn clone(&self) -> Self {
+            unsafe {
+                CLONES += 1;
+
+                if CLONES > 14 {
+                    panic!("oh no, charlie brown!");
+                }
+            }
+
+            Self { _a: 0 }
+        }
+    }
+
+    let mut vec = minivec::mini_vec![Panicker{_a: 0}; 10];
+
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        vec.extend_from_within(..);
+    }))
+    .unwrap_err();
+
+    assert_eq!(vec.len(), 14);
+}
+
+#[test]
+#[should_panic]
+fn minivec_test_extend_from_within_start_oob() {
+    let mut vec = minivec::mini_vec![0i32; 10];
+    vec.extend_from_within(13..);
+}
+
+#[test]
+#[should_panic]
+fn minivec_test_extend_from_within_end_oob() {
+    let mut vec = minivec::mini_vec![0i32; 10];
+    vec.extend_from_within(..24);
+}
+
+#[test]
+#[should_panic]
+fn minivec_test_extend_from_within_empty_oob() {
+    let mut vec = minivec::MiniVec::<i32>::new();
+    vec.extend_from_within(0..24);
+}

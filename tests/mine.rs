@@ -975,7 +975,7 @@ fn minivec_split_at_spare_mut() {
 
     // Copy type
     //
-    let capacity = 2048;
+    let capacity = 256;
     let len = capacity / 3;
 
     let mut vec = MiniVec::<i32>::with_capacity(capacity);

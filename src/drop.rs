@@ -11,21 +11,21 @@ extern crate alloc;
 //
 
 impl<T> Drop for MiniVec<T> {
-    fn drop(&mut self) {
-        if self.buf.is_null() {
-            return;
-        }
-
-        unsafe {
-            #[allow(clippy::cast_ptr_alignment)]
-            let Header {
-                len,
-                cap,
-                alignment,
-            } = core::ptr::read(self.buf.cast::<Header>());
-
-            core::ptr::drop_in_place(core::ptr::slice_from_raw_parts_mut(self.data(), len));
-            alloc::alloc::dealloc(self.buf, make_layout::<T>(cap, alignment));
-        };
+  fn drop(&mut self) {
+    if self.buf.is_null() {
+      return;
     }
+
+    unsafe {
+      #[allow(clippy::cast_ptr_alignment)]
+      let Header {
+        len,
+        cap,
+        alignment,
+      } = core::ptr::read(self.buf.cast::<Header>());
+
+      core::ptr::drop_in_place(core::ptr::slice_from_raw_parts_mut(self.data(), len));
+      alloc::alloc::dealloc(self.buf, make_layout::<T>(cap, alignment));
+    };
+  }
 }

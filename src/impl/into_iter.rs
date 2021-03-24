@@ -16,7 +16,7 @@ impl<T> IntoIter<T> {
   #[must_use]
   pub fn new(w: crate::MiniVec<T>) -> Self {
     let v = w;
-    let pos = if v.buf.is_null() {
+    let pos = if v.is_default() {
       core::ptr::null_mut()
     } else {
       v.data()
@@ -31,7 +31,7 @@ impl<T> IntoIter<T> {
 
   #[must_use]
   pub fn as_slice(&self) -> &[T] {
-    if self.v.buf.is_null() {
+    if self.v.is_default() {
       &[]
     } else {
       let data = self.pos;
@@ -40,7 +40,7 @@ impl<T> IntoIter<T> {
   }
 
   pub fn as_mut_slice(&mut self) -> &mut [T] {
-    if self.v.buf.is_null() {
+    if self.v.is_default() {
       &mut []
     } else {
       let data: *mut T = self.pos as *mut T;
@@ -77,7 +77,7 @@ impl<T: alloc::fmt::Debug> alloc::fmt::Debug for IntoIter<T> {
 
 impl<T> DoubleEndedIterator for IntoIter<T> {
   fn next_back(&mut self) -> Option<Self::Item> {
-    if self.v.buf.is_null() {
+    if self.v.is_default() {
       return None;
     }
 
@@ -99,7 +99,9 @@ impl<T> DoubleEndedIterator for IntoIter<T> {
 
 impl<T> Drop for IntoIter<T> {
   fn drop(&mut self) {
-    for _ in self {}
+    for v in self {
+      core::mem::drop(v);
+    }
   }
 }
 
@@ -119,7 +121,7 @@ impl<T> Iterator for IntoIter<T> {
   type Item = T;
 
   fn next(&mut self) -> Option<Self::Item> {
-    if self.v.buf.is_null() {
+    if self.v.is_default() {
       return None;
     }
 

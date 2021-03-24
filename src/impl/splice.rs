@@ -110,7 +110,7 @@ where
     while let Some(_) = self.splice.next() {}
 
     let vec = unsafe { self.splice.vec_.as_mut() };
-    if vec.buf.is_null() {
+    if vec.is_default() {
       for x in &mut self.splice.fill_ {
         vec.push(x);
       }

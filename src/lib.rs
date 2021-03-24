@@ -70,7 +70,7 @@ use crate::r#impl::splice::make_splice_iterator;
 pub use crate::r#impl::{Drain, DrainFilter, IntoIter, Splice};
 
 pub struct MiniVec<T> {
-  buf: *mut u8,
+  buf: core::ptr::NonNull<u8>,
   phantom: core::marker::PhantomData<T>,
 }
 
@@ -80,36 +80,48 @@ pub enum LayoutErr {
   AlignmentNotDivisibleByTwo,
 }
 
+#[derive(Clone, Copy)]
 struct Header {
   len: usize,
   cap: usize,
   alignment: usize,
 }
 
+static DEFAULT_HEADER: Header = Header {
+  len: 0,
+  cap: 0,
+  alignment: 1,
+};
+
 impl<T> MiniVec<T> {
+  #[allow(clippy::clippy::cast_ptr_alignment)]
+  fn is_default(&self) -> bool {
+    core::ptr::eq(self.buf.as_ptr() as *const Header, &DEFAULT_HEADER)
+  }
+
   fn header(&self) -> &Header {
     #[allow(clippy::cast_ptr_alignment)]
     unsafe {
-      &*(self.buf as *const Header)
+      &*(self.buf.as_ptr() as *const Header)
     }
   }
 
   fn header_mut(&mut self) -> &mut Header {
     #[allow(clippy::cast_ptr_alignment)]
     unsafe {
-      &mut *self.buf.cast::<Header>()
+      &mut *self.buf.as_ptr().cast::<Header>()
     }
   }
 
   fn data(&self) -> *mut T {
-    debug_assert!(!self.buf.is_null());
+    debug_assert!(!self.is_default());
 
     let count = next_aligned(core::mem::size_of::<Header>(), self.alignment());
-    unsafe { self.buf.add(count).cast::<T>() }
+    unsafe { self.buf.as_ptr().add(count).cast::<T>() }
   }
 
   fn alignment(&self) -> usize {
-    if self.buf.is_null() {
+    if self.capacity() == 0 {
       max_align::<T>()
     } else {
       self.header().alignment
@@ -130,12 +142,12 @@ impl<T> MiniVec<T> {
 
     let len = self.len();
 
-    let new_buf = if self.buf.is_null() {
+    let new_buf = if self.is_default() {
       unsafe { alloc::alloc::alloc(new_layout) }
     } else {
       let old_layout = make_layout::<T>(old_capacity, alignment);
 
-      unsafe { alloc::alloc::realloc(self.buf, old_layout, new_layout.size()) }
+      unsafe { alloc::alloc::realloc(self.buf.as_ptr(), old_layout, new_layout.size()) }
     };
 
     if new_buf.is_null() {
@@ -153,7 +165,7 @@ impl<T> MiniVec<T> {
       core::ptr::write(new_buf.cast::<Header>(), header)
     };
 
-    self.buf = new_buf;
+    self.buf = unsafe { core::ptr::NonNull::<u8>::new_unchecked(new_buf) };
   }
 
   /// `append` moves every element from `other` to the back of `self`. `other.is_empty()` is
@@ -206,7 +218,7 @@ impl<T> MiniVec<T> {
   /// ```
   ///
   pub fn as_mut_ptr(&mut self) -> *mut T {
-    if self.buf.is_null() {
+    if self.is_default() {
       return core::ptr::null_mut();
     }
 
@@ -234,6 +246,8 @@ impl<T> MiniVec<T> {
   /// * May return a null pointer.
   /// * May be invalidated by calls to `reserve()`
   /// * Can outlive its backing `MiniVec`
+  /// * May allow access to unitialized memory/non-existent objects
+  /// * May create out-of-bounds memory access
   ///
   /// # Example
   /// ```
@@ -252,7 +266,7 @@ impl<T> MiniVec<T> {
   ///
   #[must_use]
   pub fn as_ptr(&self) -> *const T {
-    if self.buf.is_null() {
+    if self.is_default() {
       return core::ptr::null();
     }
 
@@ -296,11 +310,7 @@ impl<T> MiniVec<T> {
   ///
   #[must_use]
   pub fn capacity(&self) -> usize {
-    if self.buf.is_null() {
-      0
-    } else {
-      self.header().cap
-    }
+    self.header().cap
   }
 
   /// `clear` clears the current contents of the `MiniVec`. Afterwards, [`len()`](MiniVec::len)
@@ -553,7 +563,7 @@ impl<T> MiniVec<T> {
     let buf = p.sub(aligned);
 
     MiniVec {
-      buf,
+      buf: core::ptr::NonNull::<u8>::new_unchecked(buf),
       phantom: core::marker::PhantomData,
     }
   }
@@ -603,7 +613,7 @@ impl<T> MiniVec<T> {
     debug_assert!((*buf.cast::<Header>()).cap == capacity);
 
     MiniVec {
-      buf,
+      buf: core::ptr::NonNull::<u8>::new_unchecked(buf),
       phantom: core::marker::PhantomData,
     }
   }
@@ -729,11 +739,7 @@ impl<T> MiniVec<T> {
   ///
   #[must_use]
   pub fn len(&self) -> usize {
-    if self.buf.is_null() {
-      0
-    } else {
-      self.header().len
-    }
+    self.header().len
   }
 
   /// `MiniVec::new` constructs an empty `MiniVec`.
@@ -755,14 +761,21 @@ impl<T> MiniVec<T> {
   /// ```
   ///
   #[must_use]
+  #[allow(clippy::ptr_as_ptr)]
   pub fn new() -> MiniVec<T> {
     assert!(
       core::mem::size_of::<T>() > 0,
       "ZSTs currently not supported"
     );
 
+    let buf = unsafe {
+      core::ptr::NonNull::<u8>::new_unchecked(
+        &DEFAULT_HEADER as *const Header as *const u8 as *mut u8,
+      )
+    };
+
     MiniVec {
-      buf: core::ptr::null_mut(),
+      buf,
       phantom: core::marker::PhantomData,
     }
   }
@@ -1339,6 +1352,7 @@ impl<T> MiniVec<T> {
   /// assert_eq!(tail, [7, 8, 9, 10]);
   /// ```
   ///
+  #[allow(clippy::ptr_as_ptr)]
   pub fn split_off(&mut self, at: usize) -> MiniVec<T> {
     let len = self.len();
     if at > len {
@@ -1363,7 +1377,11 @@ impl<T> MiniVec<T> {
         phantom: core::marker::PhantomData,
       };
 
-      self.buf = core::ptr::null_mut();
+      self.buf = unsafe {
+        core::ptr::NonNull::<u8>::new_unchecked(
+          &DEFAULT_HEADER as *const Header as *mut Header as *mut u8,
+        )
+      };
       self.reserve_exact(orig_cap);
 
       return other;

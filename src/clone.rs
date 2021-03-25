@@ -2,7 +2,7 @@ use crate::MiniVec;
 
 impl<T: Clone> Clone for MiniVec<T> {
   fn clone(&self) -> Self {
-    if self.buf.is_null() {
+    if self.is_default() {
       return MiniVec::new();
     }
 

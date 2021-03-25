@@ -1102,3 +1102,16 @@ fn minivec_test_extend_from_within_empty_oob() {
   let mut vec = minivec::MiniVec::<i32>::new();
   vec.extend_from_within(0..24);
 }
+
+#[test]
+fn minivec_nonnull_option_space_optimization() {
+  assert_eq!(
+    core::mem::size_of::<Option<MiniVec<i32>>>(),
+    core::mem::size_of::<MiniVec<i32>>()
+  );
+
+  assert_eq!(
+    core::mem::size_of::<MiniVec<i32>>(),
+    core::mem::size_of::<*mut u8>()
+  );
+}

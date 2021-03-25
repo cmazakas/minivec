@@ -12,7 +12,7 @@ extern crate alloc;
 
 impl<T> Drop for MiniVec<T> {
   fn drop(&mut self) {
-    if self.buf.is_null() {
+    if self.is_default() {
       return;
     }
 
@@ -22,10 +22,10 @@ impl<T> Drop for MiniVec<T> {
         len,
         cap,
         alignment,
-      } = core::ptr::read(self.buf.cast::<Header>());
+      } = core::ptr::read(self.buf.as_ptr().cast::<Header>());
 
       core::ptr::drop_in_place(core::ptr::slice_from_raw_parts_mut(self.data(), len));
-      alloc::alloc::dealloc(self.buf, make_layout::<T>(cap, alignment));
+      alloc::alloc::dealloc(self.buf.as_ptr(), make_layout::<T>(cap, alignment));
     };
   }
 }

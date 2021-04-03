@@ -1017,17 +1017,19 @@ impl<T> MiniVec<T> {
   where
     F: FnMut() -> T,
   {
+    use core::cmp::Ordering::{Equal, Greater, Less};
+
     let len = self.len();
     match new_len.cmp(&len) {
-      core::cmp::Ordering::Equal => {}
-      core::cmp::Ordering::Greater => {
+      Equal => {}
+      Greater => {
         let num_elems = new_len - len;
         self.reserve(num_elems);
         for _i in 0..num_elems {
           self.push(f());
         }
       }
-      core::cmp::Ordering::Less => {
+      Less => {
         self.truncate(new_len);
       }
     }

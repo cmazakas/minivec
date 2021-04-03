@@ -9,7 +9,8 @@
   clippy::clippy::redundant_closure,
   clippy::unit_arg,
   clippy::unnecessary_filter_map,
-  clippy::eq_op
+  clippy::eq_op,
+  clippy::redundant_slicing
 )]
 
 extern crate minivec;

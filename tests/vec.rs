@@ -30,7 +30,6 @@ use minivec::MiniVec;
 // TODO:
 // * implement FromIterator specialization for minivec::IntoIterator when it's stable
 // * implement unsafe impl Drop<#[may_dangle] T> when it's stable
-// * refactor PartialEq to use const generics when stable
 //
 // Code modifications:
 // * rename `Vec` to `MiniVec` and `vec!` to `mini_vec!`

@@ -1,5 +1,6 @@
+#![cfg_attr(allocator_api, feature(allocator_api))]
 #![no_std]
-#![warn(clippy::pedantic)]
+#![warn(clippy::pedantic, missing_docs)]
 
 //! A space-optimized version of `alloc::vec::Vec` that's only the size of a single pointer!
 //! Ideal for low-level APIs where ABI calling conventions will typically require most structs be

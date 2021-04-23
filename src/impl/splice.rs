@@ -2,6 +2,9 @@ use crate::MiniVec;
 
 extern crate alloc;
 
+/// `Splice` is an iterator that removes a sub-section of the backing `MiniVec` and then replaces it with the contents
+/// of another iterator. The removed sub-section and the iterator used to replace it can have independent lengths.
+///
 pub struct Splice<'a, I>
 where
   I: 'a + Iterator,

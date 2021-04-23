@@ -1,5 +1,5 @@
 #![no_std]
-#![warn(clippy::pedantic)]
+#![warn(clippy::pedantic, missing_docs)]
 
 //! A space-optimized version of `alloc::vec::Vec` that's only the size of a single pointer!
 //! Ideal for low-level APIs where ABI calling conventions will typically require most structs be
@@ -69,14 +69,29 @@ use crate::r#impl::splice::make_splice_iterator;
 
 pub use crate::r#impl::{Drain, DrainFilter, IntoIter, Splice};
 
+/// `MiniVec` is a space-optimized implementation of `alloc::vec::Vec` that is only the size of a single pointer and
+/// also extends portions of its API, including support for over-aligned allocations. `MiniVec` also aims to bring as
+/// many Nightly features from `Vec` to stable toolchains as is possible. In many cases, it is a drop-in replacement
+/// for the "real" `Vec`.
+///
 pub struct MiniVec<T> {
   buf: core::ptr::NonNull<u8>,
   phantom: core::marker::PhantomData<T>,
 }
 
+/// `LayoutErr` is the error type returned by the alignment-based associated functions for `MiniVec`
+///
 #[derive(core::fmt::Debug)]
 pub enum LayoutErr {
+  /// `AlignmentTooSmall` is returned when the user-supplied alignment fails to meet the base minimum alignment
+  /// requirements for the backing allocation of the `MiniVec`.
+  ///
+  /// The minimum alignment requirement is `core::mem::align_of::<*const ()>()`.
+  ///
   AlignmentTooSmall,
+  /// `AlignmentNotDivisibleByTwo` is returned when the user-supplied alignment fails to meet the requirement of being
+  /// a power of two.
+  ///
   AlignmentNotDivisibleByTwo,
 }
 
@@ -709,10 +724,16 @@ impl<T> MiniVec<T> {
   /// # Example
   ///
   /// ```
+  /// #[cfg(not(miri))]
+  /// fn main() {
   /// let vec = minivec::mini_vec![1, 2, 3];
   /// let static_ref: &'static mut [i32] = minivec::MiniVec::leak(vec);
   /// static_ref[0] += 1;
   /// assert_eq!(static_ref, &[2, 2, 3]);
+  /// }
+  ///
+  /// #[cfg(miri)]
+  /// fn main() {}
   /// ```
   ///
   #[must_use]
@@ -1488,6 +1509,8 @@ impl<T> MiniVec<T> {
   ///
   /// # Example
   /// ```
+  /// #[cfg(not(miri))]
+  /// fn main() {
   /// #[cfg(target_arch = "x86")]
   /// use std::arch::x86::*;
   /// #[cfg(target_arch = "x86_64")]
@@ -1534,6 +1557,10 @@ impl<T> MiniVec<T> {
   ///     .for_each(|(idx, v)| {
   ///         assert_eq!(*v, idx as f32 * 2.0);
   ///     });
+  /// }
+  ///
+  /// #[cfg(miri)]
+  /// fn main() {}
   /// ```
   ///
   pub fn with_alignment(capacity: usize, alignment: usize) -> Result<MiniVec<T>, LayoutErr> {

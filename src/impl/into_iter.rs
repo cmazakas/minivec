@@ -6,6 +6,10 @@ extern crate alloc;
 // making it a data member of the struct and then manually adjusting things in
 // the Header of the MiniVec
 //
+
+/// `IntoIter` is an iterator type that consumes the `MiniVec` and transfers ownership of the contained elements to the
+/// caller when iterated.
+///
 pub struct IntoIter<T> {
   v: crate::MiniVec<T>,
   pos: *const T,
@@ -14,7 +18,7 @@ pub struct IntoIter<T> {
 
 impl<T> IntoIter<T> {
   #[must_use]
-  pub fn new(w: crate::MiniVec<T>) -> Self {
+  pub(crate) fn new(w: crate::MiniVec<T>) -> Self {
     let v = w;
     let pos = if v.is_default() {
       core::ptr::null_mut()
@@ -29,6 +33,8 @@ impl<T> IntoIter<T> {
     }
   }
 
+  /// `as_slice` returns an immutable slice to the remaining elements of the iterator that have not yet been moved.
+  ///
   #[must_use]
   pub fn as_slice(&self) -> &[T] {
     if self.v.is_default() {
@@ -39,6 +45,8 @@ impl<T> IntoIter<T> {
     }
   }
 
+  /// `as_mut_slice` returns a mutable slice to the remaining elements of the iterator that have not yet been moved.
+  ///
   pub fn as_mut_slice(&mut self) -> &mut [T] {
     if self.v.is_default() {
       &mut []

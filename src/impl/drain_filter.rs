@@ -1,3 +1,8 @@
+/// `DrainFilter` is a version of `Drain` that uses the supplied predicate to determine when an element should be
+/// removed from the `MiniVec` and returned to the user.
+///
+/// Elements are only removed and returned to the caller when the predicate evaluates to true.
+///
 pub struct DrainFilter<'a, T, F>
 where
   F: core::ops::FnMut(&mut T) -> bool,

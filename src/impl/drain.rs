@@ -2,6 +2,9 @@ use crate::MiniVec;
 
 extern crate alloc;
 
+/// `Drain` is an iterator that removes the selected sub-range from the `MiniVec` and returns the removed elements to
+/// the caller lazily.
+///
 pub struct Drain<'a, T: 'a> {
   vec_: core::ptr::NonNull<MiniVec<T>>,
   drain_pos_: core::ptr::NonNull<T>,

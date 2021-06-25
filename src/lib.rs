@@ -539,6 +539,31 @@ impl<T> MiniVec<T> {
     make_drain_filter_iterator(self, pred)
   }
 
+
+  #[inline]
+  #[must_use]
+  /// Drain method which returns new instance of `MiniVec`, created by moving content out of `self`.
+  ///
+  /// Comparing to `drain` method, this is just simple swap of pointers.
+  ///
+  /// As result any pointer to `self` becomes invalid.
+  ///
+  /// ```
+  /// use minivec::mini_vec;
+  ///
+  /// let mut vec = mini_vec![1, 2, 3, 4, 5, 6, 7, 9];
+  /// let new_vec = vec.drain_vec();
+  ///
+  /// assert_eq!(vec.len(), 0);
+  ///
+  /// assert_eq!(new_vec, [1, 2, 3, 4, 5, 6, 7, 9]);
+  /// ```
+  pub fn drain_vec(&mut self) -> Self {
+      let mut result = Self::new();
+      core::mem::swap(&mut result, self);
+      result
+  }
+
   /// `from_raw_part` reconstructs a `MiniVec` from a previous call to [`MiniVec::as_mut_ptr`](MiniVec::as_mut_ptr)
   /// or the pointer from [`into_raw_parts`](MiniVec::into_raw_parts).
   ///

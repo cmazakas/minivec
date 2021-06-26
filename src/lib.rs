@@ -555,8 +555,11 @@ impl<T> MiniVec<T> {
   /// let new_vec = vec.drain_vec();
   ///
   /// assert_eq!(vec.len(), 0);
-  ///
   /// assert_eq!(new_vec, [1, 2, 3, 4, 5, 6, 7, 9]);
+  ///
+  /// let new_vec = vec.drain_vec();
+  /// assert_eq!(vec.len(), 0);
+  /// assert_eq!(new_vec, []);
   /// ```
   pub fn drain_vec(&mut self) -> Self {
       let mut result = Self::new();

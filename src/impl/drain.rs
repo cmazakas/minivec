@@ -88,7 +88,9 @@ impl<T> Drop for Drain<'_, T> {
 
     impl<'b, 'a, T> Drop for DropGuard<'b, 'a, T> {
       fn drop(&mut self) {
-        while let Some(_) = self.drain.next() {}
+        for x in &mut self.drain {
+          core::mem::drop(x);
+        }
 
         if self.drain.remaining_ > 0 {
           let v = unsafe { self.drain.vec_.as_mut() };

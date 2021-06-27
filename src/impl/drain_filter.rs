@@ -58,7 +58,9 @@ where
       if self.pos > self.new_len {
         let src = val as *mut T;
         let dst = unsafe { data.add(self.new_len) };
-        unsafe { core::ptr::copy_nonoverlapping(src, dst, 1) };
+        unsafe {
+          core::ptr::copy_nonoverlapping(src, dst, 1);
+        }
       }
 
       self.pos += 1;
@@ -94,14 +96,18 @@ where
       let src = unsafe { data.add(self.drain.pos) };
       let dst = unsafe { data.add(self.drain.new_len) };
 
-      unsafe { core::ptr::copy(src, dst, num_remaining) };
+      unsafe {
+        core::ptr::copy(src, dst, num_remaining);
+      }
     }
 
     if self.drain.old_len == 0 {
       return;
     }
 
-    unsafe { self.drain.vec.set_len(self.drain.new_len + num_remaining) };
+    unsafe {
+      self.drain.vec.set_len(self.drain.new_len + num_remaining);
+    }
   }
 }
 

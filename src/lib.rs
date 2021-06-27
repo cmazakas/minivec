@@ -109,7 +109,7 @@ static DEFAULT_HEADER: Header = Header {
 };
 
 impl<T> MiniVec<T> {
-  #[allow(clippy::clippy::cast_ptr_alignment)]
+  #[allow(clippy::cast_ptr_alignment)]
   fn is_default(&self) -> bool {
     core::ptr::eq(self.buf.as_ptr() as *const Header, &DEFAULT_HEADER)
   }
@@ -177,8 +177,8 @@ impl<T> MiniVec<T> {
 
     #[allow(clippy::cast_ptr_alignment)]
     unsafe {
-      core::ptr::write(new_buf.cast::<Header>(), header)
-    };
+      core::ptr::write(new_buf.cast::<Header>(), header);
+    }
 
     self.buf = unsafe { core::ptr::NonNull::<u8>::new_unchecked(new_buf) };
   }
@@ -410,7 +410,9 @@ impl<T> MiniVec<T> {
       let matches = unsafe { pred(&mut *read, &mut *write.sub(1)) };
       if !matches {
         if read != write {
-          unsafe { core::mem::swap(&mut *read, &mut *write) };
+          unsafe {
+            core::mem::swap(&mut *read, &mut *write);
+          }
         }
         write = unsafe { write.add(1) };
       }
@@ -499,7 +501,9 @@ impl<T> MiniVec<T> {
     let data = self.as_mut_ptr();
 
     if !data.is_null() {
-      unsafe { self.set_len(start_idx) };
+      unsafe {
+        self.set_len(start_idx);
+      }
     }
 
     make_drain_iterator(self, data, len - end_idx, start_idx, end_idx)
@@ -539,7 +543,6 @@ impl<T> MiniVec<T> {
     make_drain_filter_iterator(self, pred)
   }
 
-
   #[inline]
   #[must_use]
   /// Drain method which returns new instance of `MiniVec`, created by moving content out of `self`.
@@ -562,9 +565,9 @@ impl<T> MiniVec<T> {
   /// assert_eq!(new_vec, []);
   /// ```
   pub fn drain_vec(&mut self) -> Self {
-      let mut result = Self::new();
-      core::mem::swap(&mut result, self);
-      result
+    let mut result = Self::new();
+    core::mem::swap(&mut result, self);
+    result
   }
 
   /// `from_raw_part` reconstructs a `MiniVec` from a previous call to [`MiniVec::as_mut_ptr`](MiniVec::as_mut_ptr)
@@ -752,16 +755,16 @@ impl<T> MiniVec<T> {
   /// # Example
   ///
   /// ```
-  /// #[cfg(not(miri))]
-  /// fn main() {
+  /// # #[cfg(not(miri))]
+  /// # fn main() {
   /// let vec = minivec::mini_vec![1, 2, 3];
   /// let static_ref: &'static mut [i32] = minivec::MiniVec::leak(vec);
   /// static_ref[0] += 1;
   /// assert_eq!(static_ref, &[2, 2, 3]);
-  /// }
+  /// # }
   ///
-  /// #[cfg(miri)]
-  /// fn main() {}
+  /// # #[cfg(miri)]
+  /// # fn main() {}
   /// ```
   ///
   #[must_use]
@@ -850,7 +853,9 @@ impl<T> MiniVec<T> {
     }
 
     let v = unsafe { core::ptr::read(self.as_ptr().add(len - 1)) };
-    unsafe { self.set_len(len - 1) };
+    unsafe {
+      self.set_len(len - 1);
+    }
     Some(v)
   }
 
@@ -1114,7 +1119,9 @@ impl<T> MiniVec<T> {
       let should_retain = unsafe { f(&mut *read) };
       if should_retain {
         if read != write {
-          unsafe { core::mem::swap(&mut *read, &mut *write) };
+          unsafe {
+            core::mem::swap(&mut *read, &mut *write);
+          }
         }
         write = unsafe { write.add(1) };
       }
@@ -1316,7 +1323,9 @@ impl<T> MiniVec<T> {
     let data = self.as_mut_ptr();
 
     if !data.is_null() {
-      unsafe { self.set_len(start_idx) };
+      unsafe {
+        self.set_len(start_idx);
+      }
     }
 
     make_splice_iterator(
@@ -1440,14 +1449,18 @@ impl<T> MiniVec<T> {
 
     let mut other = MiniVec::with_capacity(self.capacity());
 
-    unsafe { self.set_len(at) }
-    unsafe { other.set_len(len - at) }
+    unsafe {
+      self.set_len(at);
+      other.set_len(len - at);
+    }
 
     let src = unsafe { self.as_ptr().add(at) };
     let dst = other.as_mut_ptr();
     let count = len - at;
 
-    unsafe { core::ptr::copy_nonoverlapping(src, dst, count) }
+    unsafe {
+      core::ptr::copy_nonoverlapping(src, dst, count);
+    }
 
     other
   }
@@ -1513,7 +1526,9 @@ impl<T> MiniVec<T> {
 
     let s = unsafe { core::slice::from_raw_parts_mut(self.data().add(len), self_len - len) };
 
-    unsafe { core::ptr::drop_in_place(s) };
+    unsafe {
+      core::ptr::drop_in_place(s);
+    }
   }
 
   /// `with_alignment` is similar to its counterpart [`with_capacity`](MiniVec::with_capacity)
@@ -1537,8 +1552,8 @@ impl<T> MiniVec<T> {
   ///
   /// # Example
   /// ```
-  /// #[cfg(not(miri))]
-  /// fn main() {
+  /// # #[cfg(not(miri))]
+  /// # fn main() {
   /// #[cfg(target_arch = "x86")]
   /// use std::arch::x86::*;
   /// #[cfg(target_arch = "x86_64")]
@@ -1585,10 +1600,10 @@ impl<T> MiniVec<T> {
   ///     .for_each(|(idx, v)| {
   ///         assert_eq!(*v, idx as f32 * 2.0);
   ///     });
-  /// }
+  /// # }
   ///
-  /// #[cfg(miri)]
-  /// fn main() {}
+  /// # #[cfg(miri)]
+  /// # fn main() {}
   /// ```
   ///
   pub fn with_alignment(capacity: usize, alignment: usize) -> Result<MiniVec<T>, LayoutErr> {
@@ -1691,7 +1706,9 @@ impl<T: Clone> MiniVec<T> {
       T: Clone,
     {
       fn drop(&mut self) {
-        unsafe { self.vec.set_len(self.vec.len() + self.count) };
+        unsafe {
+          self.vec.set_len(self.vec.len() + self.count);
+        }
       }
     }
 

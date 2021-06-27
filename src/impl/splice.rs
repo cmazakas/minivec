@@ -110,7 +110,9 @@ where
     // much like Drain, remove the rest of the elements from the splice range if they
     // haven't already been exhausted
     //
-    while let Some(_) = self.splice.next() {}
+    for x in &mut self.splice {
+      core::mem::drop(x);
+    }
 
     let vec = unsafe { self.splice.vec_.as_mut() };
     if vec.is_default() {
@@ -159,7 +161,9 @@ where
       // and return
       //
       if unsafe { vec.as_ptr().add(vec.len()) == self.splice.remaining_pos_.as_ptr() } {
-        unsafe { vec.set_len(vec.len() + self.splice.remaining_) };
+        unsafe {
+          vec.set_len(vec.len() + self.splice.remaining_);
+        }
         return;
       }
 
@@ -230,8 +234,8 @@ where
     unsafe {
       vec.set_len(vec.len() + self.splice.remaining_ + tmp.len());
       if !tmp.is_empty() {
-        tmp.set_len(0)
-      };
+        tmp.set_len(0);
+      }
     };
   }
 }

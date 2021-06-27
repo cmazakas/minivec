@@ -22,6 +22,25 @@ fn minivec_default_constructed() {
 }
 
 #[test]
+fn minivec_drined_constructed() {
+    let mut first = mini_vec![1, 2, 3];
+    let mut second = first.drain_vec();
+
+    assert!(first.is_empty());
+    assert_eq!(first.len(), 0);
+    assert_eq!(first.capacity(), 0);
+    assert_eq!(second, [1, 2, 3]);
+
+    first.extend_from_slice(&[4, 5, 6]);
+    assert_eq!(first.len(), 3);
+    assert_eq!(first, [4, 5, 6]);
+
+    second.extend_from_slice(&first[..]);
+    assert_eq!(second.len(), 6);
+    assert_eq!(second, [1, 2, 3, 4, 5, 6]);
+}
+
+#[test]
 fn minivec_as_mut() {
   let mut v = mini_vec![1, 2, 3];
   let x: &mut [i32] = v.as_mut();

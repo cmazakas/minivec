@@ -118,16 +118,12 @@ fn header_clone() {
   assert_eq!(header2.alignment, header.alignment);
 }
 
-static DEFAULT_HEADER: Header = Header {
-  len: 0,
-  cap: 0,
-  alignment: 1,
-};
+static DEFAULT_U8: u8 = 137;
 
 impl<T> MiniVec<T> {
   #[allow(clippy::cast_ptr_alignment)]
   fn is_default(&self) -> bool {
-    core::ptr::eq(self.buf.as_ptr() as *const Header, &DEFAULT_HEADER)
+    core::ptr::eq(self.buf.as_ptr(), &DEFAULT_U8)
   }
 
   fn header(&self) -> &Header {
@@ -341,7 +337,11 @@ impl<T> MiniVec<T> {
   ///
   #[must_use]
   pub fn capacity(&self) -> usize {
-    self.header().cap
+    if self.is_default() {
+      0
+    } else {
+      self.header().cap
+    }
   }
 
   /// `clear` clears the current contents of the `MiniVec`. Afterwards, [`len()`](MiniVec::len)
@@ -807,7 +807,11 @@ impl<T> MiniVec<T> {
   ///
   #[must_use]
   pub fn len(&self) -> usize {
-    self.header().len
+    if self.is_default() {
+      0
+    } else {
+      self.header().len
+    }
   }
 
   /// `MiniVec::new` constructs an empty `MiniVec`.
@@ -836,11 +840,8 @@ impl<T> MiniVec<T> {
       "ZSTs currently not supported"
     );
 
-    let buf = unsafe {
-      core::ptr::NonNull::<u8>::new_unchecked(
-        &DEFAULT_HEADER as *const Header as *const u8 as *mut u8,
-      )
-    };
+    let buf =
+      unsafe { core::ptr::NonNull::<u8>::new_unchecked(&DEFAULT_U8 as *const u8 as *mut u8) };
 
     MiniVec {
       buf,
@@ -1453,11 +1454,8 @@ impl<T> MiniVec<T> {
         phantom: core::marker::PhantomData,
       };
 
-      self.buf = unsafe {
-        core::ptr::NonNull::<u8>::new_unchecked(
-          &DEFAULT_HEADER as *const Header as *mut Header as *mut u8,
-        )
-      };
+      self.buf =
+        unsafe { core::ptr::NonNull::<u8>::new_unchecked(&DEFAULT_U8 as *const u8 as *mut u8) };
       self.reserve_exact(orig_cap);
 
       return other;

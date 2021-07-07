@@ -22,22 +22,42 @@ fn minivec_default_constructed() {
 }
 
 #[test]
+fn minivec_clone_empty() {
+  let v = MiniVec::<i32>::new();
+  let w = v.clone();
+
+  assert_eq!(w.capacity(), v.capacity());
+  assert_eq!(w.len(), v.len());
+}
+
+#[test]
+fn minivec_as_slice() {
+  let mut v = MiniVec::<i32>::new();
+
+  let xs = v.as_slice();
+  assert!(xs.is_empty());
+
+  let xs = v.as_mut_slice();
+  assert!(xs.is_empty());
+}
+
+#[test]
 fn minivec_drined_constructed() {
-    let mut first = mini_vec![1, 2, 3];
-    let mut second = first.drain_vec();
+  let mut first = mini_vec![1, 2, 3];
+  let mut second = first.drain_vec();
 
-    assert!(first.is_empty());
-    assert_eq!(first.len(), 0);
-    assert_eq!(first.capacity(), 0);
-    assert_eq!(second, [1, 2, 3]);
+  assert!(first.is_empty());
+  assert_eq!(first.len(), 0);
+  assert_eq!(first.capacity(), 0);
+  assert_eq!(second, [1, 2, 3]);
 
-    first.extend_from_slice(&[4, 5, 6]);
-    assert_eq!(first.len(), 3);
-    assert_eq!(first, [4, 5, 6]);
+  first.extend_from_slice(&[4, 5, 6]);
+  assert_eq!(first.len(), 3);
+  assert_eq!(first, [4, 5, 6]);
 
-    second.extend_from_slice(&first[..]);
-    assert_eq!(second.len(), 6);
-    assert_eq!(second, [1, 2, 3, 4, 5, 6]);
+  second.extend_from_slice(&first[..]);
+  assert_eq!(second.len(), 6);
+  assert_eq!(second, [1, 2, 3, 4, 5, 6]);
 }
 
 #[test]
@@ -98,6 +118,19 @@ fn minivec_deref_test() {
   assert_eq!(v[0], 1);
   assert_eq!(v[1], 2);
   assert_eq!(v[2], 3);
+
+  let v = MiniVec::<i32>::new();
+  let xs: &[i32] = &*v;
+  assert_eq!(xs.len(), 0);
+
+  let mut v = MiniVec::<i32>::new();
+  let xs: &mut [i32] = &mut *v;
+  assert_eq!(xs.len(), 0);
+}
+
+#[test]
+fn minivec_drop_empty() {
+  let _v = MiniVec::<i32>::new();
 }
 
 #[test]
@@ -659,6 +692,60 @@ fn minivec_into_iter() {
 }
 
 #[test]
+fn minivec_into_iter_as_slice() {
+  let mut iter = MiniVec::<i32>::new().into_iter();
+  let xs = iter.as_slice();
+  assert!(xs.is_empty());
+
+  let xs = iter.as_mut_slice();
+  assert!(xs.is_empty());
+}
+
+#[test]
+fn minivec_as_ref() {
+  let v = mini_vec![1, 2, 3, 4];
+
+  let xs: &MiniVec<i32> = <MiniVec<i32> as AsRef<MiniVec<i32>>>::as_ref(&v);
+  assert_eq!(xs, &[1, 2, 3, 4]);
+
+  let xs: &[_] = v.as_ref();
+  assert_eq!(xs, &[1, 2, 3, 4]);
+}
+
+#[test]
+fn minivec_borrow() {
+  use std::borrow::{Borrow, BorrowMut};
+
+  let mut v = mini_vec![1, 2, 3, 4];
+
+  let xs: &[_] = v.borrow();
+  assert_eq!(xs, &[1, 2, 3, 4]);
+
+  let xs: &mut [_] = v.borrow_mut();
+  assert_eq!(xs, &[1, 2, 3, 4]);
+}
+
+#[test]
+fn minivec_ord() {
+  let xs = mini_vec![1, 2, 3];
+  let ys = mini_vec![4, 5, 6];
+
+  assert_eq!(xs.cmp(&ys), std::cmp::Ordering::Less);
+  assert_eq!(ys.cmp(&xs), std::cmp::Ordering::Greater);
+  assert_eq!(ys.cmp(&ys), std::cmp::Ordering::Equal);
+}
+
+#[test]
+fn minivec_partial_cmp() {
+  let xs = mini_vec![1, 2, 3];
+  let ys = mini_vec![4, 5, 6];
+
+  assert_eq!(xs.partial_cmp(&ys), Some(std::cmp::Ordering::Less));
+  assert_eq!(ys.partial_cmp(&xs), Some(std::cmp::Ordering::Greater));
+  assert_eq!(ys.partial_cmp(&ys), Some(std::cmp::Ordering::Equal));
+}
+
+#[test]
 fn minivec_swap_remove() {
   let mut v: MiniVec<&str> = mini_vec!["foo", "bar", "baz", "qux"];
 
@@ -747,6 +834,17 @@ fn minivec_splice() {
 
   assert_eq!(v, &[7, 8, 9, 10, 11, 5, 6]);
   assert_eq!(u, &[1, 2]);
+
+  let mut v = mini_vec![1, 2, 3, 4, 5, 6];
+  let new = [7, 8, 9, 10, 11];
+  let iter = v.splice(..4, new.iter().cloned());
+  std::mem::drop(iter);
+
+  let mut v = mini_vec![1, 2, 3];
+  let new = [7, 8, 9];
+  let u: MiniVec<_> = v.splice(.., new.iter().cloned()).collect();
+  assert_eq!(v, &[7, 8, 9]);
+  assert_eq!(u, &[1, 2, 3]);
 }
 
 #[test]

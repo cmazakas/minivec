@@ -99,10 +99,6 @@ impl<T> Drop for Drain<'_, T> {
           let src = self.drain.remaining_pos_.as_ptr();
           let dst = unsafe { v.as_mut_ptr().add(v_len) };
 
-          if src == dst {
-            return;
-          }
-
           unsafe {
             core::ptr::copy(src, dst, self.drain.remaining_);
             v.set_len(v_len + self.drain.remaining_);

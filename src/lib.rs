@@ -102,6 +102,22 @@ struct Header {
   alignment: usize,
 }
 
+#[test]
+#[allow(clippy::clone_on_copy)]
+fn header_clone() {
+  let header = Header {
+    len: 0,
+    cap: 0,
+    alignment: 0,
+  };
+
+  let header2 = header.clone();
+
+  assert_eq!(header2.len, header.len);
+  assert_eq!(header2.cap, header.cap);
+  assert_eq!(header2.alignment, header.alignment);
+}
+
 static DEFAULT_HEADER: Header = Header {
   len: 0,
   cap: 0,

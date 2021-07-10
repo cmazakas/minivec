@@ -31,6 +31,7 @@
 //! `MiniVec` has the following associated functions not found in `Vec`:
 //! * [`with_alignment`](MiniVec::with_alignment)
 //! * [`from_raw_part`](MiniVec::from_raw_part)
+//! * [`drain_vec`](MiniVec::drain_vec)
 //!
 //! Eventual TODO's:
 //! * add `try_reserve` methods once stable
@@ -561,11 +562,12 @@ impl<T> MiniVec<T> {
 
   #[inline]
   #[must_use]
-  /// Drain method which returns new instance of `MiniVec`, created by moving content out of `self`.
+  /// `drain_vec` returns a new instance of a `MiniVec`, created by moving the content out of `self`.
   ///
-  /// Comparing to `drain` method, this is just simple swap of pointers.
+  /// Compared to `drain` method, this is just simple swap of pointers. As result, any pointer to `self` becomes
+  /// invalid.
   ///
-  /// As result any pointer to `self` becomes invalid.
+  /// # Example
   ///
   /// ```
   /// use minivec::mini_vec;

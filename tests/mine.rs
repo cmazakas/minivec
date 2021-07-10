@@ -42,7 +42,7 @@ fn minivec_as_slice() {
 }
 
 #[test]
-fn minivec_drined_constructed() {
+fn minivec_drain_vec() {
   let mut first = mini_vec![1, 2, 3];
   let mut second = first.drain_vec();
 

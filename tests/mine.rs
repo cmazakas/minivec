@@ -139,6 +139,46 @@ fn minivec_dedup_by_test() {
   v.dedup_by(|x, y| x == y);
 
   assert_eq!(v, [1, 2, 1, 3, 4, 5, 4]);
+
+  let mut v = mini_vec![
+    Box::new(1),
+    Box::new(1),
+    Box::new(2),
+    Box::new(2),
+    Box::new(2),
+    Box::new(3),
+    Box::new(3),
+    Box::new(4),
+    Box::new(5),
+  ];
+
+  std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    let mut invocations = 0;
+    let f = |x: &mut Box<i32>, y: &mut Box<i32>| -> bool {
+      invocations += 1;
+      if invocations > 3 {
+        panic!("panic during dedup");
+      }
+
+      *x == *y
+    };
+
+    v.dedup_by(f);
+  }))
+  .ok();
+
+  assert_eq!(
+    v,
+    &[
+      Box::new(1),
+      Box::new(2),
+      Box::new(2),
+      Box::new(3),
+      Box::new(3),
+      Box::new(4),
+      Box::new(5)
+    ]
+  );
 }
 
 #[test]

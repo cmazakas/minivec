@@ -392,7 +392,7 @@ impl<T> MiniVec<T> {
   }
 
   /// `dedup_by` "de-duplicates" all adjacent elements for which the supplied binary predicate
-  /// returns true.
+  /// returns `true`.
   ///
   /// # Example
   ///
@@ -404,40 +404,77 @@ impl<T> MiniVec<T> {
   /// assert_eq!(vec, [1, 7, 8, 9, 10]);
   /// ```
   ///
-  pub fn dedup_by<F>(&mut self, mut pred: F)
+  pub fn dedup_by<F>(&mut self, mut match_predicate: F)
   where
     F: FnMut(&mut T, &mut T) -> bool,
   {
-    // In essence copy what the C++ stdlib does:
-    // https://github.com/llvm/llvm-project/blob/032810f58986cd568980227c9531de91d8bcb1cd/libcxx/include/algorithm#L2174-L2191
-    //
+    struct DropGuard<'a, T> {
+      read_idx: usize,
+      write_idx: usize,
+      vec: &'a mut MiniVec<T>,
+    }
+
+    impl<'a, T> Drop for DropGuard<'a, T> {
+      fn drop(&mut self) {
+        let len = self.vec.len();
+        if self.write_idx == len {
+          return;
+        }
+
+        // if self.read_idx != self.write_idx {
+        //   let num_to_drop = self.read_idx - self.write_idx;
+        //   let s = unsafe {
+        //     core::slice::from_raw_parts_mut(self.vec.as_mut_ptr().add(self.write_idx), num_to_drop)
+        //   };
+
+        //   unsafe { core::ptr::drop_in_place(s as *mut [_]) };
+        // }
+
+        let p = self.vec.as_mut_ptr();
+        let src = unsafe { p.add(self.read_idx) };
+        let dst = unsafe { p.add(self.write_idx) };
+        let count = len - self.read_idx;
+        unsafe { core::ptr::copy(src, dst, count) };
+
+        unsafe { self.vec.set_len(len - (self.read_idx - self.write_idx)) };
+      }
+    }
+
     let len = self.len();
     if len < 2 {
       return;
     }
 
-    let data = self.as_mut_ptr();
+    let mut guard = DropGuard {
+      read_idx: 1,
+      write_idx: 1,
+      vec: self,
+    };
 
-    let mut read = unsafe { data.add(1) };
-    let mut write = read;
+    // In essence copy what the C++ stdlib does:
+    // https://github.com/llvm/llvm-project/blob/032810f58986cd568980227c9531de91d8bcb1cd/libcxx/include/algorithm#L2174-L2191
+    //
+    let data = guard.vec.as_mut_ptr();
 
-    let last = unsafe { data.add(len) };
+    while guard.read_idx < len {
+      let read = unsafe { data.add(guard.read_idx) };
+      let write = unsafe { data.add(guard.write_idx) };
 
-    while read < last {
-      let matches = unsafe { pred(&mut *read, &mut *write.sub(1)) };
-      if !matches {
+      let matches = unsafe { match_predicate(&mut *read, &mut *write.sub(1)) };
+      if matches {
+        unsafe { core::ptr::drop_in_place(read) };
+      } else {
         if read != write {
           unsafe {
-            core::mem::swap(&mut *read, &mut *write);
+            core::ptr::copy_nonoverlapping(read, write, 1);
           }
         }
-        write = unsafe { write.add(1) };
+
+        guard.write_idx += 1;
       }
 
-      read = unsafe { read.add(1) };
+      guard.read_idx += 1;
     }
-
-    self.truncate((write as usize - data as usize) / core::mem::size_of::<T>());
   }
 
   /// `dedup_by_key` "de-duplicates" all adjacent elements where `key(elem1) == key(elem2)`.

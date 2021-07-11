@@ -421,15 +421,6 @@ impl<T> MiniVec<T> {
           return;
         }
 
-        // if self.read_idx != self.write_idx {
-        //   let num_to_drop = self.read_idx - self.write_idx;
-        //   let s = unsafe {
-        //     core::slice::from_raw_parts_mut(self.vec.as_mut_ptr().add(self.write_idx), num_to_drop)
-        //   };
-
-        //   unsafe { core::ptr::drop_in_place(s as *mut [_]) };
-        // }
-
         let p = self.vec.as_mut_ptr();
         let src = unsafe { p.add(self.read_idx) };
         let dst = unsafe { p.add(self.write_idx) };
@@ -451,8 +442,12 @@ impl<T> MiniVec<T> {
       vec: self,
     };
 
-    // In essence copy what the C++ stdlib does:
+    // Original implement used partitioning scheme found here:
     // https://github.com/llvm/llvm-project/blob/032810f58986cd568980227c9531de91d8bcb1cd/libcxx/include/algorithm#L2174-L2191
+    //
+    // Unfortunately, Rust isn't C++ and in Rust we expect to handle exceptions in both destructors and the
+    // user-supplied callable so we have no choice but to, in essence, emulate exactly what the stdlib does which is
+    // drop elements in place as we evaluate the binary predicate.
     //
     let data = guard.vec.as_mut_ptr();
 

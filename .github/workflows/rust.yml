@@ -28,6 +28,9 @@ jobs:
       run: |
         sudo apt-get install -y valgrind
 
+    - name: Install Miri
+      run: rustup +nightly component add miri
+
     - name: Rust version
       run: |
         cargo --version
@@ -38,3 +41,9 @@ jobs:
 
     - name: Test (Optimized)
       run: CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER="valgrind" cargo test --release --features serde
+
+    - name: Miri Test
+      run: cargo miri test --features serde
+
+    - name: Miri Test (Optimized)  
+      run: cargo miri test --release --features serde

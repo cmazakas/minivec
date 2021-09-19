@@ -43,7 +43,7 @@ jobs:
       run: CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER="valgrind" cargo test --release --features serde
 
     - name: Miri Test
-      run: cargo miri test --features serde
+      run: cargo +nightly miri test --features serde
 
     - name: Miri Test (Optimized)  
-      run: cargo miri test --release --features serde
+      run: cargo +nightly miri test --release --features serde

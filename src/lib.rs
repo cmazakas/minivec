@@ -197,8 +197,8 @@ impl<T> MiniVec<T> {
     self.buf = unsafe { core::ptr::NonNull::<u8>::new_unchecked(new_buf) };
   }
 
-  /// `append` moves every element from `other` to the back of `self`. `other.is_empty()` is
-  /// `true` once this operation completes and its capacity is unaffected.
+  /// `append` moves every element from `other` to the back of `self`. `other.is_empty()` is `true` once this operation
+  /// completes and its capacity is unaffected.
   ///
   /// # Example
   ///
@@ -222,8 +222,10 @@ impl<T> MiniVec<T> {
       core::ptr::copy_nonoverlapping(other.as_ptr(), self.as_mut_ptr().add(self.len()), other_len);
     };
 
-    other.header_mut().len = 0;
-    self.header_mut().len += other_len;
+    unsafe {
+      other.set_len(0);
+      self.set_len(self.len() + other_len);
+    };
   }
 
   /// `as_mut_ptr` returns a `*mut T` to the underlying array.

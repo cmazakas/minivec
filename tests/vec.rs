@@ -180,14 +180,14 @@ fn test_extend() {
 
   v.extend(0..3);
   for i in 0..3 {
-    w.push(i)
+    w.push(i);
   }
 
   assert_eq!(v, w);
 
   v.extend(3..10);
   for i in 3..10 {
-    w.push(i)
+    w.push(i);
   }
 
   assert_eq!(v, w);

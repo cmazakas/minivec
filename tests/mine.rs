@@ -85,6 +85,12 @@ fn minivec_push() {
   assert_eq!(v.len(), 3);
   assert!(v.capacity() >= v.len());
 
+  let i = v.push(4);
+  *i = 1337;
+  assert_eq!(v[3], 1337);
+
+  let _: &i32 = v.push(5);
+
   let mut v: MiniVec<String> = MiniVec::new();
 
   assert_eq!(v.len(), v.capacity());

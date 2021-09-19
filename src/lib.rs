@@ -888,6 +888,9 @@ impl<T> MiniVec<T> {
   /// `push` appends an element `value` to the end of the vector. `push` automatically reallocates
   /// if the vector does not have sufficient capacity.
   ///
+  /// Unlike the standard library `Vec`, `MiniVec::push` returns a mutable reference to the newly created element that's
+  /// been placed at the back of the vector.
+  ///
   /// # Example
   ///
   /// ```
@@ -900,7 +903,7 @@ impl<T> MiniVec<T> {
   /// assert_eq!(vec.len(), 128);
   /// ```
   ///
-  pub fn push(&mut self, value: T) {
+  pub fn push(&mut self, value: T) -> &mut T {
     let (len, capacity, alignment) = (self.len(), self.capacity(), self.alignment());
     if len == capacity {
       self.grow(next_capacity::<T>(capacity), alignment);
@@ -917,6 +920,8 @@ impl<T> MiniVec<T> {
 
     let mut header = self.header_mut();
     header.len += 1;
+
+    unsafe { &mut *dst }
   }
 
   /// `remove` moves the element at the specified `index` and then returns it to the user. This

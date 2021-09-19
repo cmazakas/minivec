@@ -1238,3 +1238,17 @@ fn minivec_nonnull_option_space_optimization() {
     core::mem::size_of::<*mut u8>()
   );
 }
+
+#[test]
+fn minivec_assume_minivec_init() {
+  let mut buf = minivec::mini_vec![core::mem::MaybeUninit::<u8>::uninit(); 512];
+  buf
+    .iter_mut()
+    .for_each(|v| *v = core::mem::MaybeUninit::new(137));
+
+  unsafe { buf.set_len(512) };
+
+  let bytes = unsafe { buf.assume_minivec_init() };
+  assert_eq!(bytes[0], 137);
+  assert_eq!(bytes[511], 137);
+}

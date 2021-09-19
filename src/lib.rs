@@ -70,12 +70,12 @@ use crate::r#impl::splice::make_splice_iterator;
 
 pub use crate::r#impl::{Drain, DrainFilter, IntoIter, Splice};
 
-#[repr(transparent)]
 /// `MiniVec` is a space-optimized implementation of `alloc::vec::Vec` that is only the size of a single pointer and
 /// also extends portions of its API, including support for over-aligned allocations. `MiniVec` also aims to bring as
 /// many Nightly features from `Vec` to stable toolchains as is possible. In many cases, it is a drop-in replacement
 /// for the "real" `Vec`.
 ///
+#[repr(transparent)]
 pub struct MiniVec<T> {
   buf: core::ptr::NonNull<u8>,
   phantom: core::marker::PhantomData<T>,
@@ -653,6 +653,8 @@ impl<T> MiniVec<T> {
   /// # Safety
   ///
   /// A very unsafe function that should only really be used when passing the vector to a C API.
+  ///
+  /// Does not support over-aligned allocations. The alignment of the pointer must be that of its natural alignment.
   ///
   /// # Example
   ///
@@ -1802,6 +1804,35 @@ impl<T: Clone> MiniVec<T> {
     };
 
     guard.extend();
+  }
+}
+
+impl<T> MiniVec<core::mem::MaybeUninit<T>> {
+  /// `assume_minivec_init` is a helper designed to make working with uninitialized memory more ergonomic.
+  ///
+  /// # Safety
+  /// Whatever length the current `MiniVec` has, it is consumed and then returned to the caller as a `MiniVec<T>` thus
+  /// making the function `unsafe` as it relies on the caller to uphold length invariants.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// let mut buf = minivec::mini_vec![core::mem::MaybeUninit::<u8>::uninit(); 512];
+  /// buf
+  ///   .iter_mut()
+  ///   .for_each(|v| *v = core::mem::MaybeUninit::new(137));
+  ///
+  /// unsafe { buf.set_len(512) };
+  ///
+  /// let bytes = unsafe { buf.assume_minivec_init() };
+  /// assert_eq!(bytes[0], 137);
+  /// assert_eq!(bytes[511], 137);
+  /// ```
+  ///
+  #[must_use]
+  pub unsafe fn assume_minivec_init(self) -> MiniVec<T> {
+    let (ptr, len, cap) = self.into_raw_parts();
+    MiniVec::<T>::from_raw_parts(ptr.cast::<T>(), len, cap)
   }
 }
 

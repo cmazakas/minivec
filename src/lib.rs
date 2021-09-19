@@ -14,6 +14,9 @@
 //! In addition, its single word size makes it ideal for use as a struct member where multiple
 //! inclusions of `Vec` as a field can balloon the size.
 //!
+//!
+//! `MiniVec` is a `#[repr(transparent)]` struct so its layout is that of `core::ptr::NonNull<u8>`.
+//!
 //! ---
 //!
 //! In general, `MiniVec` aims to be API compatible with what's currently stable in the stdlib so some
@@ -32,6 +35,10 @@
 //! * [`with_alignment`](MiniVec::with_alignment)
 //! * [`from_raw_part`](MiniVec::from_raw_part)
 //! * [`drain_vec`](MiniVec::drain_vec)
+//! * [`assume_minivec_init`](MiniVec::assume_minivec_init)
+//!
+//! `MiniVec` has the following extensions to the existing `Vec` API:
+//! * [`push`](MiniVec::push) returns a mutable reference to the newly created element
 //!
 //! Eventual TODO's:
 //! * add `try_reserve` methods once stable

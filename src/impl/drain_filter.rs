@@ -42,11 +42,11 @@ where
   fn next(&mut self) -> Option<Self::Item> {
     while self.pos < self.old_len {
       let data = self.vec.data();
-      let mut val = unsafe { &mut *data.add(self.pos) };
+      let val = unsafe { &mut *data.add(self.pos) };
 
       self.panicked = true;
 
-      let pred_result = (self.pred)(&mut val);
+      let pred_result = (self.pred)(val);
 
       self.panicked = false;
 

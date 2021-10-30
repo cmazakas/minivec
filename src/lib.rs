@@ -1528,11 +1528,11 @@ impl<T> MiniVec<T> {
       );
     }
 
-    let src = unsafe { core::ptr::read(self.as_ptr().add(len - 1)) };
-    self.header_mut().len -= 1;
+    unsafe { core::ptr::swap(self.as_mut_ptr().add(len - 1), self.as_mut_ptr().add(index)) };
 
-    let dst = unsafe { self.as_mut_ptr().add(index) };
-    unsafe { core::ptr::replace(dst, src) }
+    let x = unsafe { core::ptr::read(self.as_ptr().add(self.len() - 1)) };
+    self.header_mut().len -= 1;
+    x
   }
 
   /// `truncate` adjusts the length of the vector to be `len`. If `len` is greater than or equal

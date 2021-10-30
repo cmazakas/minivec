@@ -753,19 +753,29 @@ fn minivec_partial_cmp() {
 
 #[test]
 fn minivec_swap_remove() {
-  let mut v: MiniVec<&str> = mini_vec!["foo", "bar", "baz", "qux"];
+  {
+    let mut v: MiniVec<&str> = mini_vec!["foo", "bar", "baz", "qux"];
 
-  assert_eq!(v.swap_remove(1), "bar");
-  assert_eq!(v, ["foo", "qux", "baz"]);
+    assert_eq!(v.swap_remove(1), "bar");
+    assert_eq!(v, ["foo", "qux", "baz"]);
 
-  assert_eq!(v.swap_remove(0), "foo");
-  assert_eq!(v, ["baz", "qux"]);
+    assert_eq!(v.swap_remove(0), "foo");
+    assert_eq!(v, ["baz", "qux"]);
 
-  assert_eq!(v.swap_remove(0), "baz");
-  assert_eq!(v, ["qux"]);
+    assert_eq!(v.swap_remove(0), "baz");
+    assert_eq!(v, ["qux"]);
 
-  assert_eq!(v.swap_remove(0), "qux");
-  assert!(v.is_empty());
+    assert_eq!(v.swap_remove(0), "qux");
+    assert!(v.is_empty());
+  }
+
+  {
+    let mut a = 0;
+    let mut b = 1;
+    let mut vec = mini_vec![&mut a, &mut b];
+
+    vec.swap_remove(1);
+  }
 }
 
 #[test]

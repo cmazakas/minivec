@@ -1262,3 +1262,9 @@ fn minivec_assume_minivec_init() {
   assert_eq!(bytes[0], 137);
   assert_eq!(bytes[511], 137);
 }
+
+#[test]
+fn minivec_should_fail_try_reserve_impossible() {
+  let mut buf = minivec::mini_vec![0; 512];
+  buf.try_reserve(usize::max_value()).expect_err("FAIL");
+}

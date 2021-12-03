@@ -77,10 +77,16 @@ use crate::r#impl::splice::make_splice_iterator;
 
 pub use crate::r#impl::{Drain, DrainFilter, IntoIter, Splice};
 
-#[inline(always)]
+#[inline]
 #[allow(clippy::cast_ptr_alignment)]
 fn is_default(buf: core::ptr::NonNull<u8>) -> bool {
     core::ptr::eq(buf.as_ptr(), &DEFAULT_U8)
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+//TODO: Switch to https://doc.rust-lang.org/alloc/collections/enum.TryReserveErrorKind.html once stable
+/// The error type for `try_reserve` methods.
+pub struct TryReserveError {
 }
 
 struct Grow {
@@ -93,7 +99,7 @@ struct Grow {
 }
 
 impl Grow {
-    #[inline(always)]
+    #[inline]
     fn grow(self) -> Result<Option<core::ptr::NonNull<u8>>, alloc::alloc::Layout> {
         if self.new_capacity == self.old_capacity {
             return Ok(None);
@@ -233,6 +239,28 @@ impl<T> MiniVec<T> {
         },
         Ok(None) => (),
         Err(new_layout) => alloc::alloc::handle_alloc_error(new_layout),
+    }
+  }
+
+  fn try_grow(&mut self, capacity: usize, alignment: usize) -> Result<(), TryReserveError> {
+    debug_assert!(capacity >= self.len());
+
+    let grower = Grow {
+        buf: self.buf,
+        old_capacity: self.capacity(),
+        new_capacity: capacity,
+        alignment,
+        len: self.len(),
+        type_size: core::mem::size_of::<T>(),
+    };
+
+    match grower.grow() {
+        Ok(Some(new_buf)) => {
+            self.buf = new_buf;
+            Ok(())
+        },
+        Ok(None) => Ok(()),
+        Err(_) => Err(TryReserveError {}),
     }
   }
 
@@ -1086,6 +1114,76 @@ impl<T> MiniVec<T> {
     }
 
     self.grow(total_required, self.alignment());
+  }
+
+  /// `try_reserve` ensures there is sufficient capacity for `additional` extra elements to be either
+  /// inserted or appended to the end of the vector. Will reallocate if needed otherwise this
+  /// function is a no-op.
+  ///
+  /// Guarantees that the new capacity is greater than or equal to `len() + additional`.
+  ///
+  /// # Errors
+  ///
+  /// In case of failure, old capacity is retained.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// let mut vec = minivec::MiniVec::<i32>::new();
+  ///
+  /// assert_eq!(vec.capacity(), 0);
+  ///
+  /// vec.try_reserve(128).expect("Successfully allocate extra memory");
+  ///
+  /// assert!(vec.capacity() >= 128);
+  /// ```
+  ///
+  pub fn try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError> {
+    let capacity = self.capacity();
+    let total_required = match self.len().checked_add(additional) {
+        Some(total_required) => total_required,
+        None => return Err(TryReserveError {}),
+    };
+
+    if total_required <= capacity {
+      return Ok(());
+    }
+
+    let mut new_capacity = next_capacity::<T>(capacity);
+    while new_capacity < total_required {
+      new_capacity = next_capacity::<T>(new_capacity);
+    }
+
+    self.try_grow(new_capacity, self.alignment())
+  }
+
+  /// `try_reserve_exact` ensures that the capacity of the vector is exactly equal to
+  /// `len() + additional` unless the capacity is already sufficient in which case no operation is
+  /// performed.
+  ///
+  /// # Errors
+  ///
+  /// In case of failure, old capacity is retained.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// let mut vec = minivec::MiniVec::<i32>::new();
+  /// vec.try_reserve_exact(57).expect("Oi, no capacity");
+  ///
+  /// assert_eq!(vec.capacity(), 57);
+  /// ```
+  ///
+  pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), TryReserveError> {
+    let capacity = self.capacity();
+    let len = self.len();
+
+    let total_required = len + additional;
+    if capacity >= total_required {
+      return Ok(());
+    }
+
+    self.try_grow(total_required, self.alignment())
   }
 
   /// `resize` will clone the supplied `value` as many times as required until `len()` becomes

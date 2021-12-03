@@ -22,7 +22,10 @@ pub const fn next_capacity<T>(capacity: usize) -> usize {
     };
   }
 
-  2 * capacity
+  match capacity.checked_mul(2) {
+      Some(cap) => cap,
+      None => capacity,
+  }
 }
 
 pub fn max_align<T>() -> usize {

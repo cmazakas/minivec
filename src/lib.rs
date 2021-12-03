@@ -77,6 +77,58 @@ use crate::r#impl::splice::make_splice_iterator;
 
 pub use crate::r#impl::{Drain, DrainFilter, IntoIter, Splice};
 
+#[inline(always)]
+#[allow(clippy::cast_ptr_alignment)]
+fn is_default(buf: core::ptr::NonNull<u8>) -> bool {
+    core::ptr::eq(buf.as_ptr(), &DEFAULT_U8)
+}
+
+struct Grow {
+    buf: core::ptr::NonNull<u8>,
+    old_capacity: usize,
+    new_capacity: usize,
+    alignment: usize,
+    len: usize,
+    type_size: usize,
+}
+
+impl Grow {
+    #[inline(always)]
+    fn grow(self) -> Result<Option<core::ptr::NonNull<u8>>, alloc::alloc::Layout> {
+        if self.new_capacity == self.old_capacity {
+            return Ok(None);
+        }
+
+        let new_layout = make_layout(self.new_capacity, self.alignment, self.type_size);
+
+        let new_buf = if is_default(self.buf) {
+            unsafe { alloc::alloc::alloc(new_layout) }
+        } else {
+            let old_layout = make_layout(self.old_capacity, self.alignment, self.type_size);
+
+            unsafe { alloc::alloc::realloc(self.buf.as_ptr(), old_layout, new_layout.size()) }
+        };
+
+        match core::ptr::NonNull::new(new_buf) {
+            Some(new_buf) => {
+                let header = Header {
+                  len: self.len,
+                  cap: self.new_capacity,
+                  alignment: self.alignment,
+                };
+
+                #[allow(clippy::cast_ptr_alignment)]
+                unsafe {
+                  core::ptr::write(new_buf.cast::<Header>().as_ptr(), header);
+                }
+
+                Ok(Some(new_buf))
+            },
+            None => Err(new_layout),
+        }
+    }
+}
+
 /// `MiniVec` is a space-optimized implementation of `alloc::vec::Vec` that is only the size of a single pointer and
 /// also extends portions of its API, including support for over-aligned allocations. `MiniVec` also aims to bring as
 /// many Nightly features from `Vec` to stable toolchains as is possible. In many cases, it is a drop-in replacement
@@ -130,9 +182,8 @@ fn header_clone() {
 static DEFAULT_U8: u8 = 137;
 
 impl<T> MiniVec<T> {
-  #[allow(clippy::cast_ptr_alignment)]
   fn is_default(&self) -> bool {
-    core::ptr::eq(self.buf.as_ptr(), &DEFAULT_U8)
+    is_default(self.buf)
   }
 
   fn header(&self) -> &Header {
@@ -167,41 +218,22 @@ impl<T> MiniVec<T> {
   fn grow(&mut self, capacity: usize, alignment: usize) {
     debug_assert!(capacity >= self.len());
 
-    let old_capacity = self.capacity();
-    let new_capacity = capacity;
-
-    if new_capacity == old_capacity {
-      return;
-    }
-
-    let new_layout = make_layout::<T>(new_capacity, alignment);
-
-    let len = self.len();
-
-    let new_buf = if self.is_default() {
-      unsafe { alloc::alloc::alloc(new_layout) }
-    } else {
-      let old_layout = make_layout::<T>(old_capacity, alignment);
-
-      unsafe { alloc::alloc::realloc(self.buf.as_ptr(), old_layout, new_layout.size()) }
+    let grower = Grow {
+        buf: self.buf,
+        old_capacity: self.capacity(),
+        new_capacity: capacity,
+        alignment,
+        len: self.len(),
+        type_size: core::mem::size_of::<T>(),
     };
 
-    if new_buf.is_null() {
-      alloc::alloc::handle_alloc_error(new_layout);
+    match grower.grow() {
+        Ok(Some(new_buf)) => {
+            self.buf = new_buf;
+        },
+        Ok(None) => (),
+        Err(new_layout) => alloc::alloc::handle_alloc_error(new_layout),
     }
-
-    let header = Header {
-      len,
-      cap: new_capacity,
-      alignment,
-    };
-
-    #[allow(clippy::cast_ptr_alignment)]
-    unsafe {
-      core::ptr::write(new_buf.cast::<Header>(), header);
-    }
-
-    self.buf = unsafe { core::ptr::NonNull::<u8>::new_unchecked(new_buf) };
   }
 
   /// `append` moves every element from `other` to the back of `self`. `other.is_empty()` is `true` once this operation

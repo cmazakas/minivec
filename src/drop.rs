@@ -25,7 +25,7 @@ impl<T> Drop for MiniVec<T> {
       } = core::ptr::read(self.buf.as_ptr().cast::<Header>());
 
       core::ptr::drop_in_place(core::ptr::slice_from_raw_parts_mut(self.data(), len));
-      alloc::alloc::dealloc(self.buf.as_ptr(), make_layout::<T>(cap, alignment));
+      alloc::alloc::dealloc(self.buf.as_ptr(), make_layout(cap, alignment, core::mem::size_of::<T>()));
     };
   }
 }

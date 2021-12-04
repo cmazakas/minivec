@@ -1268,3 +1268,46 @@ fn minivec_should_fail_try_reserve_impossible() {
   let mut buf = minivec::mini_vec![0; 512];
   buf.try_reserve(usize::max_value()).expect_err("FAIL");
 }
+
+#[test]
+fn minivec_should_fail_try_reserve_exact_impossible() {
+  let mut buf = minivec::mini_vec![0; 512];
+  buf.try_reserve_exact(usize::max_value()).expect_err("FAIL");
+}
+
+#[test]
+fn minivec_test_try_reserve() {
+  let mut v = MiniVec::new();
+  assert_eq!(v.capacity(), 0);
+
+  v.try_reserve(2).expect("to try 2");
+  assert!(v.capacity() >= 2);
+
+  for i in 0..16 {
+    v.push(i);
+  }
+
+  assert!(v.capacity() >= 16);
+  v.try_reserve(16).expect("to try 16");
+  assert!(v.capacity() >= 32);
+
+  v.push(16);
+
+  v.try_reserve(16).expect("to try 16 again");
+  assert!(v.capacity() >= 33)
+}
+
+#[test]
+fn minivec_overaligned_allocations_with_try_reserve_exact() {
+  #[repr(align(256))]
+  struct Foo(usize);
+  let mut v = mini_vec![Foo(273)];
+  for i in 0..0x1000 {
+    v.try_reserve_exact(i).expect("try reserve exact");
+    assert!(v[0].0 == 273);
+    assert!(v.as_ptr() as usize & 0xff == 0);
+    v.shrink_to_fit();
+    assert!(v[0].0 == 273);
+    assert!(v.as_ptr() as usize & 0xff == 0);
+  }
+}

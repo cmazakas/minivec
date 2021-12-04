@@ -1176,9 +1176,11 @@ impl<T> MiniVec<T> {
   ///
   pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), TryReserveError> {
     let capacity = self.capacity();
-    let len = self.len();
 
-    let total_required = len + additional;
+    let total_required = match self.len().checked_add(additional) {
+        Some(total_required) => total_required,
+        None => return Err(TryReserveError {}),
+    };
     if capacity >= total_required {
       return Ok(());
     }

@@ -104,6 +104,46 @@ pub enum LayoutErr {
   AlignmentNotDivisibleByTwo,
 }
 
+/// `TryReserveErrorKind` is a variant encompassing the various types of allocation failures that can occur.
+///
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum TryReserveErrorKind {
+  /// `CapacityOverflow` is returned when the current length of the vector and the requested additional number of
+  /// elements exceed the maximum possible number of elements that can be allocated.
+  ///
+  CapacityOverflow,
+  /// `AllocError` is returned when when the allocation itself fails (i.e. out-of-memory error).
+  ///
+  AllocError {
+    /// `layout` is the `Layout` that failed to allocate.
+    ///
+    layout: alloc::alloc::Layout,
+  },
+}
+
+/// `TryReserveError` is the error type returned from the `try_reserve` family of functions.
+///
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct TryReserveError {
+  kind: TryReserveErrorKind,
+}
+
+impl TryReserveError {
+  /// `kind` returns a copy of the underlying `TryReserveErrorKind`.
+  ///
+  #[must_use]
+  pub fn kind(&self) -> TryReserveErrorKind {
+    self.kind.clone()
+  }
+}
+
+impl core::convert::From<TryReserveErrorKind> for TryReserveError {
+  #[inline]
+  fn from(kind: TryReserveErrorKind) -> Self {
+    Self { kind }
+  }
+}
+
 #[derive(Clone, Copy)]
 struct Header {
   len: usize,
@@ -164,14 +204,14 @@ impl<T> MiniVec<T> {
     }
   }
 
-  fn grow(&mut self, capacity: usize, alignment: usize) {
+  fn grow(&mut self, capacity: usize, alignment: usize) -> Result<(), TryReserveError> {
     debug_assert!(capacity >= self.len());
 
     let old_capacity = self.capacity();
     let new_capacity = capacity;
 
     if new_capacity == old_capacity {
-      return;
+      return Ok(());
     }
 
     let new_layout = make_layout::<T>(new_capacity, alignment);
@@ -187,7 +227,9 @@ impl<T> MiniVec<T> {
     };
 
     if new_buf.is_null() {
-      alloc::alloc::handle_alloc_error(new_layout);
+      return Err(From::from(TryReserveErrorKind::AllocError {
+        layout: new_layout,
+      }));
     }
 
     let header = Header {
@@ -202,6 +244,8 @@ impl<T> MiniVec<T> {
     }
 
     self.buf = unsafe { core::ptr::NonNull::<u8>::new_unchecked(new_buf) };
+
+    Ok(())
   }
 
   /// `append` moves every element from `other` to the back of `self`. `other.is_empty()` is `true` once this operation
@@ -915,7 +959,12 @@ impl<T> MiniVec<T> {
   pub fn push(&mut self, value: T) -> &mut T {
     let (len, capacity, alignment) = (self.len(), self.capacity(), self.alignment());
     if len == capacity {
-      self.grow(next_capacity::<T>(capacity), alignment);
+      if let Err(TryReserveErrorKind::AllocError { layout }) = self
+        .grow(next_capacity::<T>(capacity), alignment)
+        .map_err(|e| e.kind())
+      {
+        alloc::alloc::handle_alloc_error(layout);
+      }
     }
 
     let len = self.len();
@@ -1053,7 +1102,12 @@ impl<T> MiniVec<T> {
       return;
     }
 
-    self.grow(total_required, self.alignment());
+    if let Err(TryReserveErrorKind::AllocError { layout }) = self
+      .grow(total_required, self.alignment())
+      .map_err(|e| e.kind())
+    {
+      alloc::alloc::handle_alloc_error(layout);
+    }
   }
 
   /// `resize` will clone the supplied `value` as many times as required until `len()` becomes
@@ -1229,11 +1283,12 @@ impl<T> MiniVec<T> {
       return;
     }
 
-    if capacity < min_capacity {
-      panic!("Tried to shrink to a larger capacity");
+    if let Err(TryReserveErrorKind::AllocError { layout }) = self
+      .grow(min_capacity, self.alignment())
+      .map_err(|e| e.kind())
+    {
+      alloc::alloc::handle_alloc_error(layout);
     }
-
-    self.grow(min_capacity, self.alignment());
   }
 
   /// `shrink_to_fit` will re-adjust the backing allocation such that its capacity is now equal
@@ -1260,7 +1315,11 @@ impl<T> MiniVec<T> {
     }
 
     let capacity = len;
-    self.grow(capacity, self.alignment());
+    if let Err(TryReserveErrorKind::AllocError { layout }) =
+      self.grow(capacity, self.alignment()).map_err(|e| e.kind())
+    {
+      alloc::alloc::handle_alloc_error(layout);
+    }
   }
 
   /// `spare_capacity_mut` returns a mutable slice to [`MaybeUninit<T>`](core::mem::MaybeUninit).
@@ -1653,8 +1712,11 @@ impl<T> MiniVec<T> {
     }
 
     let mut v = MiniVec::new();
-    v.grow(capacity, alignment);
-    Ok(v)
+
+    match v.grow(capacity, alignment).map_err(|e| e.kind()) {
+      Err(TryReserveErrorKind::AllocError { layout }) => alloc::alloc::handle_alloc_error(layout),
+      _ => Ok(v),
+    }
   }
 
   /// `with_capacity` is a static factory function that returns a `MiniVec` that contains space

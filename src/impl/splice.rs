@@ -202,7 +202,12 @@ where
     let total_elements = vec.len() + self.splice.remaining_ + tmp.len();
 
     if total_elements > capacity {
-      vec.grow(total_elements, vec.alignment());
+      if let Err(crate::TryReserveErrorKind::AllocError { layout }) = vec
+        .grow(total_elements, vec.alignment())
+        .map_err(|e| e.kind())
+      {
+        alloc::alloc::handle_alloc_error(layout);
+      }
     }
 
     // let's first move the Drain tail over to the right

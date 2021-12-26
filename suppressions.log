@@ -1,0 +1,103 @@
+{
+   <fishy_alloc>
+   Memcheck:FishyValue
+   malloc(size)
+   fun:malloc
+   fun:_ZN5alloc5alloc5alloc17h85d1cf65759fd6aaE
+   fun:_ZN7minivec16MiniVec$LT$T$GT$4grow17hcf30b711516d91c8E
+   fun:_ZN7minivec16MiniVec$LT$T$GT$11try_reserve17hc70436e4300e31beE
+   fun:_ZN3vec16test_try_reserve17h811a834116eea6d4E
+   fun:_ZN3vec16test_try_reserve28_$u7b$$u7b$closure$u7d$$u7d$17hddee0861d718fe51E
+   fun:_ZN4core3ops8function6FnOnce9call_once17h7ef75d344321d538E
+   fun:_ZN4test28__rust_begin_short_backtrace17h74effa4f90907c5eE
+   fun:_ZN4test8run_test14run_test_inner28_$u7b$$u7b$closure$u7d$$u7d$17h243d5767f98dd76bE
+   fun:_ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17h9b0a0ec9acaf0854E
+   fun:_ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17ha0944c3b1c2a3b97E
+   fun:_ZN3std3sys4unix6thread6Thread3new12thread_start17hee0b2d4e2414fa96E
+}
+{
+   <fishy_alloc>
+   Memcheck:FishyValue
+   realloc(size)
+   fun:realloc
+   fun:_ZN5alloc5alloc7realloc17h13e9b69157dbb4dcE
+   fun:_ZN7minivec16MiniVec$LT$T$GT$4grow17hcf30b711516d91c8E
+   fun:_ZN7minivec16MiniVec$LT$T$GT$11try_reserve17hc70436e4300e31beE
+   fun:_ZN3vec16test_try_reserve17h811a834116eea6d4E
+   fun:_ZN3vec16test_try_reserve28_$u7b$$u7b$closure$u7d$$u7d$17hddee0861d718fe51E
+   fun:_ZN4core3ops8function6FnOnce9call_once17h7ef75d344321d538E
+   fun:_ZN4test28__rust_begin_short_backtrace17h74effa4f90907c5eE
+   fun:_ZN4test8run_test14run_test_inner28_$u7b$$u7b$closure$u7d$$u7d$17h243d5767f98dd76bE
+   fun:_ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17h9b0a0ec9acaf0854E
+   fun:_ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17ha0944c3b1c2a3b97E
+   fun:_ZN3std3sys4unix6thread6Thread3new12thread_start17hee0b2d4e2414fa96E
+}
+{
+   <fishy_alloc>
+   Memcheck:FishyValue
+   realloc(size)
+   fun:realloc
+   fun:_ZN5alloc5alloc7realloc17h29be84b566f19b0cE
+   fun:_ZN7minivec16MiniVec$LT$T$GT$4grow17h51ad51b47d410a09E
+   fun:_ZN7minivec16MiniVec$LT$T$GT$11try_reserve17h1574be41033296ffE
+   fun:_ZN3vec16test_try_reserve17h811a834116eea6d4E
+   fun:_ZN3vec16test_try_reserve28_$u7b$$u7b$closure$u7d$$u7d$17hddee0861d718fe51E
+   fun:_ZN4core3ops8function6FnOnce9call_once17h7ef75d344321d538E
+   fun:_ZN4test28__rust_begin_short_backtrace17h74effa4f90907c5eE
+   fun:_ZN4test8run_test14run_test_inner28_$u7b$$u7b$closure$u7d$$u7d$17h243d5767f98dd76bE
+   fun:_ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17h9b0a0ec9acaf0854E
+   fun:_ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17ha0944c3b1c2a3b97E
+   fun:_ZN3std3sys4unix6thread6Thread3new12thread_start17hee0b2d4e2414fa96E
+}
+{
+   <fishy_alloc>
+   Memcheck:FishyValue
+   malloc(size)
+   fun:malloc
+   fun:_ZN5alloc5alloc5alloc17h85d1cf65759fd6aaE
+   fun:_ZN7minivec16MiniVec$LT$T$GT$4grow17hcf30b711516d91c8E
+   fun:_ZN7minivec16MiniVec$LT$T$GT$17try_reserve_exact17hc554d48d6ec400dbE
+   fun:_ZN3vec22test_try_reserve_exact17h88bfe8392fc25bebE
+   fun:_ZN3vec22test_try_reserve_exact28_$u7b$$u7b$closure$u7d$$u7d$17h53d6a66dad51c2dcE
+   fun:_ZN4core3ops8function6FnOnce9call_once17h4bbbb4a4f92450a6E
+   fun:_ZN4test28__rust_begin_short_backtrace17h74effa4f90907c5eE
+   fun:_ZN4test8run_test14run_test_inner28_$u7b$$u7b$closure$u7d$$u7d$17h243d5767f98dd76bE
+   fun:_ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17h9b0a0ec9acaf0854E
+   fun:_ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17ha0944c3b1c2a3b97E
+   fun:_ZN3std3sys4unix6thread6Thread3new12thread_start17hee0b2d4e2414fa96E
+}
+{
+   <fishy_alloc>
+   Memcheck:FishyValue
+   realloc(size)
+   fun:realloc
+   fun:_ZN5alloc5alloc7realloc17h13e9b69157dbb4dcE
+   fun:_ZN7minivec16MiniVec$LT$T$GT$4grow17hcf30b711516d91c8E
+   fun:_ZN7minivec16MiniVec$LT$T$GT$17try_reserve_exact17hc554d48d6ec400dbE
+   fun:_ZN3vec22test_try_reserve_exact17h88bfe8392fc25bebE
+   fun:_ZN3vec22test_try_reserve_exact28_$u7b$$u7b$closure$u7d$$u7d$17h53d6a66dad51c2dcE
+   fun:_ZN4core3ops8function6FnOnce9call_once17h4bbbb4a4f92450a6E
+   fun:_ZN4test28__rust_begin_short_backtrace17h74effa4f90907c5eE
+   fun:_ZN4test8run_test14run_test_inner28_$u7b$$u7b$closure$u7d$$u7d$17h243d5767f98dd76bE
+   fun:_ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17h9b0a0ec9acaf0854E
+   fun:_ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17ha0944c3b1c2a3b97E
+   fun:_ZN3std3sys4unix6thread6Thread3new12thread_start17hee0b2d4e2414fa96E
+}
+
+{
+   <fishy_alloc>
+   Memcheck:FishyValue
+   realloc(size)
+   fun:realloc
+   fun:_ZN5alloc5alloc7realloc17h29be84b566f19b0cE
+   fun:_ZN7minivec16MiniVec$LT$T$GT$4grow17h51ad51b47d410a09E
+   fun:_ZN7minivec16MiniVec$LT$T$GT$17try_reserve_exact17h77d5a0ffc8d68b08E
+   fun:_ZN3vec22test_try_reserve_exact17h88bfe8392fc25bebE
+   fun:_ZN3vec22test_try_reserve_exact28_$u7b$$u7b$closure$u7d$$u7d$17h53d6a66dad51c2dcE
+   fun:_ZN4core3ops8function6FnOnce9call_once17h4bbbb4a4f92450a6E
+   fun:_ZN4test28__rust_begin_short_backtrace17h74effa4f90907c5eE
+   fun:_ZN4test8run_test14run_test_inner28_$u7b$$u7b$closure$u7d$$u7d$17h243d5767f98dd76bE
+   fun:_ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17h9b0a0ec9acaf0854E
+   fun:_ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17ha0944c3b1c2a3b97E
+   fun:_ZN3std3sys4unix6thread6Thread3new12thread_start17hee0b2d4e2414fa96E
+}

@@ -559,19 +559,19 @@ impl<T> MiniVec<T> {
       core::ops::Bound::Unbounded => len,
     };
 
-    if start_idx > end_idx {
-      panic!(
-        "start drain index (is {}) should be <= end drain index (is {})",
-        start_idx, end_idx
-      );
-    }
+    assert!(
+      (start_idx <= end_idx),
+      "start drain index (is {}) should be <= end drain index (is {})",
+      start_idx,
+      end_idx
+    );
 
-    if end_idx > len {
-      panic!(
-        "end drain index (is {}) should be <= len (is {})",
-        end_idx, len
-      );
-    }
+    assert!(
+      (end_idx <= len),
+      "end drain index (is {}) should be <= len (is {})",
+      end_idx,
+      len
+    );
 
     let data = self.as_mut_ptr();
 
@@ -763,12 +763,12 @@ impl<T> MiniVec<T> {
   pub fn insert(&mut self, index: usize, element: T) {
     let len = self.len();
 
-    if index > len {
-      panic!(
-        "insertion index (is {}) should be <= len (is {})",
-        index, len
-      );
-    }
+    assert!(
+      (index <= len),
+      "insertion index (is {}) should be <= len (is {})",
+      index,
+      len
+    );
 
     if len == self.capacity() {
       self.reserve(1);
@@ -1001,9 +1001,13 @@ impl<T> MiniVec<T> {
   ///
   pub fn remove(&mut self, index: usize) -> T {
     let len = self.len();
-    if index >= len {
-      panic!("removal index (is {}) should be < len (is {})", index, len);
-    }
+
+    assert!(
+      (index < len),
+      "removal index (is {}) should be < len (is {})",
+      index,
+      len
+    );
 
     unsafe {
       let p = self.as_mut_ptr().add(index);
@@ -1065,19 +1069,11 @@ impl<T> MiniVec<T> {
   /// ```
   ///
   pub fn reserve(&mut self, additional: usize) {
-    let capacity = self.capacity();
-    let total_required = self.len() + additional;
-
-    if total_required <= capacity {
-      return;
+    if let Err(TryReserveErrorKind::AllocError { layout }) =
+      self.try_reserve(additional).map_err(|e| e.kind())
+    {
+      alloc::alloc::handle_alloc_error(layout);
     }
-
-    let mut new_capacity = next_capacity::<T>(capacity);
-    while new_capacity < total_required {
-      new_capacity = next_capacity::<T>(new_capacity);
-    }
-
-    self.grow(new_capacity, self.alignment());
   }
 
   /// `reserve_exact` ensures that the capacity of the vector is exactly equal to
@@ -1283,6 +1279,11 @@ impl<T> MiniVec<T> {
       return;
     }
 
+    assert!(
+      (capacity >= min_capacity),
+      "Tried to shrink to a larger capacity"
+    );
+
     if let Err(TryReserveErrorKind::AllocError { layout }) = self
       .grow(min_capacity, self.alignment())
       .map_err(|e| e.kind())
@@ -1405,19 +1406,19 @@ impl<T> MiniVec<T> {
       core::ops::Bound::Unbounded => len,
     };
 
-    if start_idx > end_idx {
-      panic!(
-        "start splice index (is {}) should be <= end splice index (is {})",
-        start_idx, end_idx
-      );
-    }
+    assert!(
+      (start_idx <= end_idx),
+      "start splice index (is {}) should be <= end splice index (is {})",
+      start_idx,
+      end_idx
+    );
 
-    if end_idx > len {
-      panic!(
-        "end splice index (is {}) should be <= len (is {})",
-        end_idx, len
-      );
-    }
+    assert!(
+      (end_idx <= len),
+      "end splice index (is {}) should be <= len (is {})",
+      end_idx,
+      len
+    );
 
     let data = self.as_mut_ptr();
 
@@ -1514,9 +1515,13 @@ impl<T> MiniVec<T> {
   #[allow(clippy::ptr_as_ptr)]
   pub fn split_off(&mut self, at: usize) -> MiniVec<T> {
     let len = self.len();
-    if at > len {
-      panic!("`at` split index (is {}) should be <= len (is {})", at, len);
-    }
+
+    assert!(
+      (at <= len),
+      "`at` split index (is {}) should be <= len (is {})",
+      at,
+      len
+    );
 
     if len == 0 {
       let other = if self.capacity() > 0 {
@@ -1580,12 +1585,13 @@ impl<T> MiniVec<T> {
   ///
   pub fn swap_remove(&mut self, index: usize) -> T {
     let len = self.len();
-    if index >= len {
-      panic!(
-        "swap_remove index (is {}) should be < len (is {})",
-        index, len
-      );
-    }
+
+    assert!(
+      (index < len),
+      "swap_remove index (is {}) should be < len (is {})",
+      index,
+      len
+    );
 
     unsafe { core::ptr::swap(self.as_mut_ptr().add(len - 1), self.as_mut_ptr().add(index)) };
 
@@ -1936,19 +1942,19 @@ impl<T: Clone> MiniVec<T> {
       core::ops::Bound::Unbounded => len,
     };
 
-    if start_idx > end_idx {
-      panic!(
-        "start extend_from_within index (is {}) should be <= end (is {})",
-        start_idx, end_idx
-      );
-    }
+    assert!(
+      (start_idx <= end_idx),
+      "start extend_from_within index (is {}) should be <= end (is {})",
+      start_idx,
+      end_idx
+    );
 
-    if end_idx > len {
-      panic!(
-        "end extend_from_within index (is {}) should be <= len (is {})",
-        end_idx, len
-      );
-    }
+    assert!(
+      (end_idx <= len),
+      "end extend_from_within index (is {}) should be <= len (is {})",
+      end_idx,
+      len
+    );
 
     if len == 0 {
       return;

@@ -72,7 +72,7 @@ mod serde;
 
 use crate::r#impl::drain::make_drain_iterator;
 use crate::r#impl::drain_filter::make_drain_filter_iterator;
-use crate::r#impl::helpers::{make_layout, max_align, next_aligned, next_capacity};
+use crate::r#impl::helpers::{make_layout, max_align, max_elems, next_aligned, next_capacity};
 use crate::r#impl::splice::make_splice_iterator;
 
 pub use crate::r#impl::{Drain, DrainFilter, IntoIter, Splice};
@@ -1625,6 +1625,53 @@ impl<T> MiniVec<T> {
     unsafe {
       core::ptr::drop_in_place(s);
     }
+  }
+
+  /// `try_reserve` attempts to reserve space for at least `additional` elements, returning a `Result` indicating if
+  /// the allocation was succesful.
+  ///
+  /// # Errors
+  ///
+  /// Returns a `TryReserveError` that wraps the failed `Layout` or a `CapacityOverflow` error if the requested number
+  /// of additional elements would overflow maximum allocation size.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// let mut v = minivec::MiniVec::<i32>::new();
+  /// assert_eq!(v.capacity(), 0);
+  ///
+  /// let result = v.try_reserve(1337);
+  ///
+  /// assert!(result.is_ok());
+  /// assert!(v.capacity() > 0);
+  /// ```
+  ///
+  pub fn try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError> {
+    let capacity = self.capacity();
+    let total_required = self.len().saturating_add(additional);
+
+    if total_required <= capacity {
+      return Ok(());
+    }
+
+    let mut new_capacity = next_capacity::<T>(capacity);
+    while new_capacity < total_required {
+      new_capacity = next_capacity::<T>(new_capacity);
+    }
+
+    let alignment = self.alignment();
+    let max_elems = max_elems::<T>(alignment);
+
+    if !self.is_empty() && total_required > max_elems {
+      return Err(From::from(TryReserveErrorKind::CapacityOverflow));
+    }
+
+    if additional > max_elems {
+      new_capacity = max_elems;
+    }
+
+    self.grow(new_capacity, alignment)
   }
 
   /// `with_alignment` is similar to its counterpart [`with_capacity`](MiniVec::with_capacity)

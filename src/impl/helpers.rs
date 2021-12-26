@@ -43,6 +43,14 @@ pub fn make_layout<T>(capacity: usize, alignment: usize) -> alloc::alloc::Layout
   alloc::alloc::Layout::from_size_align(num_bytes, alignment).unwrap()
 }
 
+pub fn max_elems<T>(alignment: usize) -> usize {
+  let header_bytes = next_aligned(core::mem::size_of::<Header>(), alignment);
+  let max = usize::MAX;
+  let m = max - (max % alignment) - header_bytes;
+
+  m / core::mem::size_of::<T>()
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

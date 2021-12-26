@@ -22,7 +22,7 @@ pub const fn next_capacity<T>(capacity: usize) -> usize {
     };
   }
 
-  2 * capacity
+  capacity.saturating_mul(2)
 }
 
 pub fn max_align<T>() -> usize {

@@ -1674,6 +1674,50 @@ impl<T> MiniVec<T> {
     self.grow(new_capacity, alignment)
   }
 
+  /// `try_reserve_exact` attempts to reserve space for exactly `additional` elements, returning a `Result` indicating
+  /// if the allocation was succesful.
+  ///
+  /// # Errors
+  ///
+  /// Returns a `TryReserveError` that wraps the failed `Layout` or a `CapacityOverflow` error if the requested number
+  /// of additional elements would overflow maximum allocation size.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// let mut v = minivec::MiniVec::<i32>::new();
+  /// assert_eq!(v.capacity(), 0);
+  ///
+  /// let result = v.try_reserve_exact(1337);
+  ///
+  /// assert!(result.is_ok());
+  /// assert_eq!(v.capacity(),  1337);
+  /// ```
+  ///
+  pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), TryReserveError> {
+    let capacity = self.capacity();
+    let total_required = self.len().saturating_add(additional);
+
+    if total_required <= capacity {
+      return Ok(());
+    }
+
+    let mut new_capacity = total_required;
+
+    let alignment = self.alignment();
+    let max_elems = max_elems::<T>(alignment);
+
+    if !self.is_empty() && total_required > max_elems {
+      return Err(From::from(TryReserveErrorKind::CapacityOverflow));
+    }
+
+    if total_required > max_elems {
+      new_capacity = max_elems;
+    }
+
+    self.grow(new_capacity, alignment)
+  }
+
   /// `with_alignment` is similar to its counterpart [`with_capacity`](MiniVec::with_capacity)
   /// except it takes an additional argument: the alignment to use for the allocation.
   ///

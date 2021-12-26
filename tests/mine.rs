@@ -1276,3 +1276,17 @@ fn minivec_try_reserve() {
   assert!(result.is_ok());
   assert!(v.capacity() > 0);
 }
+
+#[test]
+fn minivec_try_reserve_exact() {
+  // the stdlib test cases cover things like overflow and maximum allocation size but we need at least _one_ test to
+  // tell us that our capacity actually increased
+  //
+  let mut v = minivec::MiniVec::<i32>::new();
+  assert_eq!(v.capacity(), 0);
+
+  let result = v.try_reserve_exact(1337);
+
+  assert!(result.is_ok());
+  assert_eq!(v.capacity(), 1337);
+}

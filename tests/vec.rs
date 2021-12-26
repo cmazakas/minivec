@@ -1616,103 +1616,144 @@ fn test_try_reserve() {
   }
 }
 
-// #[test]
-// #[cfg_attr(miri, ignore)] // Miri does not support signalling OOM
-// #[cfg_attr(target_os = "android", ignore)] // Android used in CI has a broken dlmalloc
-// fn test_try_reserve_exact() {
-//     // This is exactly the same as test_try_reserve with the method changed.
-//     // See that test for comments.
+#[test]
+#[cfg_attr(miri, ignore)] // Miri does not support signalling OOM
+#[cfg_attr(target_os = "android", ignore)] // Android used in CI has a broken dlmalloc
+fn test_try_reserve_exact() {
+  use minivec::TryReserveErrorKind::*;
 
-//     const MAX_CAP: usize = isize::MAX as usize;
-//     const MAX_USIZE: usize = usize::MAX;
+  // This is exactly the same as test_try_reserve with the method changed.
+  // See that test for comments.
 
-//     let guards_against_isize = size_of::<usize>() < 8;
+  const MAX_CAP: usize = isize::MAX as usize;
+  const MAX_USIZE: usize = usize::MAX;
 
-//     {
-//         let mut empty_bytes: MiniVec<u8> = MiniVec::new();
+  let guards_against_isize = size_of::<usize>() < 8;
 
-//         if let Err(CapacityOverflow) = empty_bytes.try_reserve_exact(MAX_CAP) {
-//             panic!("isize::MAX shouldn't trigger an overflow!");
-//         }
-//         if let Err(CapacityOverflow) = empty_bytes.try_reserve_exact(MAX_CAP) {
-//             panic!("isize::MAX shouldn't trigger an overflow!");
-//         }
+  {
+    let mut empty_bytes: MiniVec<u8> = MiniVec::new();
 
-//         if guards_against_isize {
-//             if let Err(CapacityOverflow) = empty_bytes.try_reserve_exact(MAX_CAP + 1) {
-//             } else {
-//                 panic!("isize::MAX + 1 should trigger an overflow!")
-//             }
+    if let Err(CapacityOverflow) = empty_bytes.try_reserve_exact(MAX_CAP).map_err(|e| e.kind()) {
+      panic!("isize::MAX shouldn't trigger an overflow!");
+    }
+    if let Err(CapacityOverflow) = empty_bytes.try_reserve_exact(MAX_CAP).map_err(|e| e.kind()) {
+      panic!("isize::MAX shouldn't trigger an overflow!");
+    }
 
-//             if let Err(CapacityOverflow) = empty_bytes.try_reserve_exact(MAX_USIZE) {
-//             } else {
-//                 panic!("usize::MAX should trigger an overflow!")
-//             }
-//         } else {
-//             if let Err(AllocError { .. }) = empty_bytes.try_reserve_exact(MAX_CAP + 1) {
-//             } else {
-//                 panic!("isize::MAX + 1 should trigger an OOM!")
-//             }
+    if guards_against_isize {
+      if let Err(CapacityOverflow) = empty_bytes
+        .try_reserve_exact(MAX_CAP + 1)
+        .map_err(|e| e.kind())
+      {
+      } else {
+        panic!("isize::MAX + 1 should trigger an overflow!")
+      }
 
-//             if let Err(AllocError { .. }) = empty_bytes.try_reserve_exact(MAX_USIZE) {
-//             } else {
-//                 panic!("usize::MAX should trigger an OOM!")
-//             }
-//         }
-//     }
+      if let Err(CapacityOverflow) = empty_bytes
+        .try_reserve_exact(MAX_USIZE)
+        .map_err(|e| e.kind())
+      {
+      } else {
+        panic!("usize::MAX should trigger an overflow!")
+      }
+    } else {
+      if let Err(AllocError { .. }) = empty_bytes
+        .try_reserve_exact(MAX_CAP + 1)
+        .map_err(|e| e.kind())
+      {
+      } else {
+        panic!("isize::MAX + 1 should trigger an OOM!")
+      }
 
-//     {
-//         let mut ten_bytes: MiniVec<u8> = mini_vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+      if let Err(AllocError { .. }) = empty_bytes
+        .try_reserve_exact(MAX_USIZE)
+        .map_err(|e| e.kind())
+      {
+      } else {
+        panic!("usize::MAX should trigger an OOM!")
+      }
+    }
+  }
 
-//         if let Err(CapacityOverflow) = ten_bytes.try_reserve_exact(MAX_CAP - 10) {
-//             panic!("isize::MAX shouldn't trigger an overflow!");
-//         }
-//         if let Err(CapacityOverflow) = ten_bytes.try_reserve_exact(MAX_CAP - 10) {
-//             panic!("isize::MAX shouldn't trigger an overflow!");
-//         }
-//         if guards_against_isize {
-//             if let Err(CapacityOverflow) = ten_bytes.try_reserve_exact(MAX_CAP - 9) {
-//             } else {
-//                 panic!("isize::MAX + 1 should trigger an overflow!");
-//             }
-//         } else {
-//             if let Err(AllocError { .. }) = ten_bytes.try_reserve_exact(MAX_CAP - 9) {
-//             } else {
-//                 panic!("isize::MAX + 1 should trigger an OOM!")
-//             }
-//         }
-//         if let Err(CapacityOverflow) = ten_bytes.try_reserve_exact(MAX_USIZE) {
-//         } else {
-//             panic!("usize::MAX should trigger an overflow!")
-//         }
-//     }
+  {
+    let mut ten_bytes: MiniVec<u8> = mini_vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-//     {
-//         let mut ten_u32s: MiniVec<u32> = mini_vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    if let Err(CapacityOverflow) = ten_bytes
+      .try_reserve_exact(MAX_CAP - 10)
+      .map_err(|e| e.kind())
+    {
+      panic!("isize::MAX shouldn't trigger an overflow!");
+    }
+    if let Err(CapacityOverflow) = ten_bytes
+      .try_reserve_exact(MAX_CAP - 10)
+      .map_err(|e| e.kind())
+    {
+      panic!("isize::MAX shouldn't trigger an overflow!");
+    }
+    if guards_against_isize {
+      if let Err(CapacityOverflow) = ten_bytes
+        .try_reserve_exact(MAX_CAP - 9)
+        .map_err(|e| e.kind())
+      {
+      } else {
+        panic!("isize::MAX + 1 should trigger an overflow!");
+      }
+    } else {
+      if let Err(AllocError { .. }) = ten_bytes
+        .try_reserve_exact(MAX_CAP - 9)
+        .map_err(|e| e.kind())
+      {
+      } else {
+        panic!("isize::MAX + 1 should trigger an OOM!")
+      }
+    }
+    if let Err(CapacityOverflow) = ten_bytes.try_reserve_exact(MAX_USIZE).map_err(|e| e.kind()) {
+    } else {
+      panic!("usize::MAX should trigger an overflow!")
+    }
+  }
 
-//         if let Err(CapacityOverflow) = ten_u32s.try_reserve_exact(MAX_CAP / 4 - 10) {
-//             panic!("isize::MAX shouldn't trigger an overflow!");
-//         }
-//         if let Err(CapacityOverflow) = ten_u32s.try_reserve_exact(MAX_CAP / 4 - 10) {
-//             panic!("isize::MAX shouldn't trigger an overflow!");
-//         }
-//         if guards_against_isize {
-//             if let Err(CapacityOverflow) = ten_u32s.try_reserve_exact(MAX_CAP / 4 - 9) {
-//             } else {
-//                 panic!("isize::MAX + 1 should trigger an overflow!");
-//             }
-//         } else {
-//             if let Err(AllocError { .. }) = ten_u32s.try_reserve_exact(MAX_CAP / 4 - 9) {
-//             } else {
-//                 panic!("isize::MAX + 1 should trigger an OOM!")
-//             }
-//         }
-//         if let Err(CapacityOverflow) = ten_u32s.try_reserve_exact(MAX_USIZE - 20) {
-//         } else {
-//             panic!("usize::MAX should trigger an overflow!")
-//         }
-//     }
-// }
+  {
+    let mut ten_u32s: MiniVec<u32> = mini_vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+    if let Err(CapacityOverflow) = ten_u32s
+      .try_reserve_exact(MAX_CAP / 4 - 10)
+      .map_err(|e| e.kind())
+    {
+      panic!("isize::MAX shouldn't trigger an overflow!");
+    }
+    if let Err(CapacityOverflow) = ten_u32s
+      .try_reserve_exact(MAX_CAP / 4 - 10)
+      .map_err(|e| e.kind())
+    {
+      panic!("isize::MAX shouldn't trigger an overflow!");
+    }
+    if guards_against_isize {
+      if let Err(CapacityOverflow) = ten_u32s
+        .try_reserve_exact(MAX_CAP / 4 - 9)
+        .map_err(|e| e.kind())
+      {
+      } else {
+        panic!("isize::MAX + 1 should trigger an overflow!");
+      }
+    } else {
+      if let Err(AllocError { .. }) = ten_u32s
+        .try_reserve_exact(MAX_CAP / 4 - 9)
+        .map_err(|e| e.kind())
+      {
+      } else {
+        panic!("isize::MAX + 1 should trigger an OOM!")
+      }
+    }
+    if let Err(CapacityOverflow) = ten_u32s
+      .try_reserve_exact(MAX_USIZE - 20)
+      .map_err(|e| e.kind())
+    {
+    } else {
+      panic!("usize::MAX should trigger an overflow!")
+    }
+  }
+}
 
 #[test]
 fn test_stable_pointers() {

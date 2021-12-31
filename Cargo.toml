@@ -1,11 +1,11 @@
 [package]
 name = "minivec"
-version = "0.4.0"
-authors = ["LeonineKing1199 <christian.mazakas@gmail.com>"]
+version = "0.4.1"
+authors = ["Christian Mazakas <christian.mazakas@gmail.com>"]
 edition = "2018"
 license = "BSL-1.0"
 description = "A version of Vec that's only the size of a single pointer"
-repository = "https://github.com/LeonineKing1199/minivec"
+repository = "https://github.com/cmazakas/minivec"
 categories = ["data-structures"]
 keywords = ["vec", "vector"]
 

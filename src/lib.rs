@@ -14,9 +14,6 @@
 //! In addition, its single word size makes it ideal for use as a struct member where multiple
 //! inclusions of `Vec` as a field can balloon the size.
 //!
-//!
-//! `MiniVec` is a `#[repr(transparent)]` struct so its layout is that of `core::ptr::NonNull<u8>`.
-//!
 //! ---
 //!
 //! In general, `MiniVec` aims to be API compatible with what's currently stable in the stdlib so some
@@ -40,10 +37,16 @@
 //! `MiniVec` has the following extensions to the existing `Vec` API:
 //! * [`push`](MiniVec::push) returns a mutable reference to the newly created element
 //!
+//! `MiniVec` is `#![no_std]`-compliant.
+//!
+//! `MiniVec` does not support zero-sized types.
+//!
 //! Eventual TODO's:
-//! * add `try_reserve` methods once stable
 //! * add myriad specializations to associated functions such as `FromIterator` once stable
 //! * add Allocator support once stable
+//!   * Because `MiniVec` is only a single pointer, `MiniVec::new_in()` will be forced to allocate when using a stateful
+//!     `Allocator`. A  theoretical implementation of `MiniVec` might be able to avoid an allocation here in the case of
+//!     a custom zero-sized `Allocator` but that has not been implemented.
 //!
 
 extern crate alloc;

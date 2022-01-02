@@ -465,14 +465,33 @@ impl<T> MiniVec<T> {
   /// assert_eq!(vec, [1, 7, 8, 9, 10]);
   /// ```
   ///
+  #[allow(clippy::cast_sign_loss)]
   pub fn dedup_by<F>(&mut self, mut pred: F)
   where
     F: FnMut(&mut T, &mut T) -> bool,
   {
-    // In essence copy what the C++ stdlib does:
-    // https://github.com/llvm/llvm-project/blob/032810f58986cd568980227c9531de91d8bcb1cd/libcxx/include/algorithm#L2174-L2191
-    //
-    let len = self.len();
+    struct DropGuard<'a, T> {
+      read: *const T,
+      write: *mut T,
+      last: *const T,
+      len: usize,
+      vec: &'a mut MiniVec<T>,
+    }
+
+    impl<'a, T> Drop for DropGuard<'a, T> {
+      fn drop(&mut self) {
+        if self.read != self.write {
+          let src = self.read;
+          let dst = self.write;
+          let count = unsafe { self.last.offset_from(self.read) as usize };
+          unsafe { core::ptr::copy(src, dst, count) };
+        }
+
+        unsafe { self.vec.set_len(self.len) };
+      }
+    }
+
+    let mut len = self.len();
     if len < 2 {
       return;
     }
@@ -485,20 +504,39 @@ impl<T> MiniVec<T> {
     let last = unsafe { data.add(len) };
 
     while read < last {
+      let mut guard = DropGuard {
+        read,
+        write,
+        last,
+        len,
+        vec: self,
+      };
+
       let matches = unsafe { pred(&mut *read, &mut *write.sub(1)) };
-      if !matches {
+      if matches {
+        let v = unsafe { core::ptr::read(read) };
+        len -= 1;
+        guard.len -= 1;
+        guard.read = unsafe { guard.read.add(1) };
+
+        core::mem::drop(v);
+      } else {
         if read != write {
-          unsafe {
-            core::mem::swap(&mut *read, &mut *write);
-          }
+          let src = read;
+          let dst = write;
+          let count = 1;
+          unsafe { core::ptr::copy(src, dst, count) };
         }
+
         write = unsafe { write.add(1) };
       }
 
       read = unsafe { read.add(1) };
+
+      core::mem::forget(guard);
     }
 
-    self.truncate((write as usize - data as usize) / core::mem::size_of::<T>());
+    unsafe { self.set_len(len) };
   }
 
   /// `dedup_by_key` "de-duplicates" all adjacent elements where `key(elem1) == key(elem2)`.

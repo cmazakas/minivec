@@ -14,3 +14,7 @@ keywords = ["vec", "vector"]
 version = "1"
 default-features = false
 optional = true
+
+[features]
+minivec_nightly = []
+

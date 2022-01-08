@@ -6,6 +6,7 @@ use std::{
   convert::From,
   hash::{Hash, Hasher},
   ops::{Index, IndexMut},
+  panic::catch_unwind,
 };
 
 #[test]
@@ -28,6 +29,45 @@ fn minivec_clone_empty() {
 
   assert_eq!(w.capacity(), v.capacity());
   assert_eq!(w.len(), v.len());
+}
+
+#[test]
+fn minivec_clone_panic() {
+  struct Panics {
+    _x: i32,
+  }
+
+  static mut CLONE_COUNT: i32 = 0;
+  static mut DROP_COUNT: i32 = 0;
+
+  impl Clone for Panics {
+    fn clone(&self) -> Self {
+      unsafe { CLONE_COUNT += 1 };
+      if unsafe { CLONE_COUNT } >= 4 {
+        panic!("test proper cleanup");
+      }
+
+      Panics { _x: 0 }
+    }
+  }
+
+  impl Drop for Panics {
+    fn drop(&mut self) {
+      unsafe { DROP_COUNT += 1 };
+    }
+  }
+
+  catch_unwind(|| {
+    let mut xs = MiniVec::<Panics>::new();
+    for _i in 0..4 {
+      xs.push(Panics { _x: 0 });
+    }
+
+    let _ys = xs.clone();
+  })
+  .unwrap_err();
+
+  assert_eq!(unsafe { DROP_COUNT }, 4 + 3);
 }
 
 #[test]

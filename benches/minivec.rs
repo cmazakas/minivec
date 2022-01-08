@@ -1,5 +1,6 @@
 #![feature(test)]
 #![feature(slice_partition_dedup)]
+#![allow(clippy::all)]
 
 extern crate minivec;
 extern crate test;

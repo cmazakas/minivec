@@ -1,60 +1,63 @@
 use crate::MiniVec;
 
+// We take tons of inspiration from the stdlib here but also choose to optimize
+// based on the underlying type needing to be dropped or not
+//
+// This enables us to take advantage of types that aren't Copy but don't implement Drop
+// by avoiding the store to the `DropGuard { len }` data member.
+//
+
+fn to_vec<T: Clone>(xs: &[T]) -> MiniVec<T> {
+  struct DropGuard<'a, T> {
+    pub vec: &'a mut MiniVec<T>,
+    pub len: usize,
+  }
+
+  impl<'a, T> Drop for DropGuard<'a, T> {
+    fn drop(&mut self) {
+      unsafe { self.vec.set_len(self.len) };
+    }
+  }
+
+  if xs.is_empty() {
+    return MiniVec::<T>::new();
+  }
+
+  let len = xs.len();
+  let mut cpy = MiniVec::<T>::with_capacity(len);
+
+  if core::mem::needs_drop::<T>() {
+    let mut guard = DropGuard {
+      vec: &mut cpy,
+      len: 0,
+    };
+
+    let dst = guard.vec.spare_capacity_mut();
+
+    for (idx, v) in xs.iter().enumerate().take(len) {
+      dst[idx] = core::mem::MaybeUninit::<T>::new(v.clone());
+      guard.len += 1;
+    }
+
+    unsafe { guard.vec.set_len(len) };
+    core::mem::forget(guard);
+  } else {
+    let dst = cpy.spare_capacity_mut();
+
+    for (idx, v) in xs.iter().enumerate().take(len) {
+      dst[idx] = core::mem::MaybeUninit::<T>::new(v.clone());
+    }
+
+    unsafe { cpy.set_len(len) };
+  }
+
+  cpy
+}
+
 #[cfg(feature = "minivec_nightly")]
 impl<T: Clone> Clone for MiniVec<T> {
   default fn clone(&self) -> Self {
-    struct DropGuard<'a, T> {
-      vec: &'a mut MiniVec<T>,
-      len: usize,
-    }
-
-    impl<'a, T> Drop for DropGuard<'a, T> {
-      fn drop(&mut self) {
-        unsafe { self.vec.set_len(self.len) };
-      }
-    }
-
-    impl<'a, T: Clone> DropGuard<'a, T> {
-      fn init(&mut self, xs: &[T]) {
-        let len = &mut self.len;
-        let vec = &mut self.vec;
-
-        xs.iter()
-          .zip(vec.spare_capacity_mut().iter_mut())
-          .for_each(|(v, p)| {
-            *p = core::mem::MaybeUninit::new(v.clone());
-            *len += 1;
-          });
-      }
-    }
-
-    if self.is_empty() {
-      return MiniVec::<T>::new();
-    }
-
-    let len = self.len();
-    let mut cpy = MiniVec::<T>::with_capacity(len);
-
-    if !core::mem::needs_drop::<T>() {
-      self
-        .as_slice()
-        .iter()
-        .zip(cpy.spare_capacity_mut().iter_mut())
-        .for_each(|(v, p)| {
-          *p = core::mem::MaybeUninit::new(v.clone());
-        });
-
-      unsafe { cpy.set_len(len) };
-    } else {
-      let mut guard = DropGuard {
-        vec: &mut cpy,
-        len: 0,
-      };
-
-      guard.init(self.as_slice());
-    }
-
-    cpy
+    to_vec(self.as_slice())
   }
 }
 
@@ -82,17 +85,6 @@ impl<T: Copy> Clone for MiniVec<T> {
 #[cfg(not(feature = "minivec_nightly"))]
 impl<T: Clone> Clone for MiniVec<T> {
   fn clone(&self) -> Self {
-    if self.is_default() {
-      return MiniVec::new();
-    }
-
-    let mut copy = MiniVec::<T>::new();
-
-    copy.reserve(self.len());
-    for i in 0..self.len() {
-      copy.push(self[i].clone());
-    }
-
-    copy
+    to_vec(self.as_slice())
   }
 }

@@ -2,13 +2,10 @@ use crate::Header;
 
 extern crate alloc;
 
+// copy what the great glen fernandes does in Boost.Align for `align_up`
+//
 pub const fn next_aligned(n: usize, alignment: usize) -> usize {
-  let remaining = n % alignment;
-  if remaining == 0 {
-    n
-  } else {
-    n + (alignment - remaining)
-  }
+  (n + (alignment - 1)) & !(alignment - 1)
 }
 
 pub const fn next_capacity<T>(capacity: usize) -> usize {

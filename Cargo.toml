@@ -18,3 +18,8 @@ optional = true
 [features]
 minivec_nightly = []
 
+[dev-dependencies]
+rand = "0.7"
+
+[profile.bench]
+debug = true

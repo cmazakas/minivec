@@ -45,5 +45,17 @@ jobs:
     - name: Miri Test
       run: MIRIFLAGS="-Zmiri-tag-raw-pointers -Zmiri-symbolic-alignment-check" cargo +nightly miri test --features serde
 
-    - name: Miri Test (Optimized)  
+    - name: Miri Test (Optimized)
       run: MIRIFLAGS="-Zmiri-tag-raw-pointers -Zmiri-symbolic-alignment-check" cargo +nightly miri test --release --features serde
+
+    - name: Test (Nightly)
+      run: CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER="valgrind" cargo +nightly test --features serde --features minivec_nigtly
+
+    - name: Test (Optimized, Nightly)
+      run: CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER="valgrind" cargo +nightly test --release --features serde --features minivec_nigtly
+
+    - name: Miri Test (Nightly)
+      run: MIRIFLAGS="-Zmiri-tag-raw-pointers -Zmiri-symbolic-alignment-check" cargo +nightly miri test --features serde --features minivec_nigtly
+
+    - name: Miri Test (Optimized, Nightly)
+      run: MIRIFLAGS="-Zmiri-tag-raw-pointers -Zmiri-symbolic-alignment-check" cargo +nightly miri test --release --features serde --features minivec_nigtly

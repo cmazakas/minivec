@@ -1,9 +1,6 @@
 #![no_std]
 #![warn(clippy::pedantic, missing_docs)]
-#![cfg_attr(
-  feature = "minivec_nightly",
-  feature(min_specialization)
-)]
+#![cfg_attr(feature = "minivec_nightly", feature(min_specialization))]
 
 //! A space-optimized version of `alloc::vec::Vec` that's only the size of a single pointer!
 //! Ideal for low-level APIs where ABI calling conventions will typically require most structs be
@@ -21,8 +18,7 @@
 //! ---
 //!
 //! In general, `MiniVec` aims to be API compatible with what's currently stable in the stdlib so some
-//! Nightly features are not supported. `MiniVec` also supports myriad extensions, one such being
-//! support for over-alignment via the associated function [`with_alignment`](MiniVec::with_alignment).
+//! Nightly features are not supported.
 //!
 //! `MiniVec` has stable implementations of the following nightly-only associated functions on `Vec`:
 //! * [`into_raw_parts`](MiniVec::into_raw_parts)
@@ -33,7 +29,6 @@
 //! * [`extend_from_within`](MiniVec::extend_from_within)
 //!
 //! `MiniVec` has the following associated functions not found in `Vec`:
-//! * [`with_alignment`](MiniVec::with_alignment)
 //! * [`from_raw_part`](MiniVec::from_raw_part)
 //! * [`drain_vec`](MiniVec::drain_vec)
 //! * [`assume_minivec_init`](MiniVec::assume_minivec_init)
@@ -155,23 +150,17 @@ impl core::convert::From<TryReserveErrorKind> for TryReserveError {
 struct Header {
   len: usize,
   cap: usize,
-  alignment: usize,
 }
 
 #[test]
 #[allow(clippy::clone_on_copy)]
 fn header_clone() {
-  let header = Header {
-    len: 0,
-    cap: 0,
-    alignment: 0,
-  };
+  let header = Header { len: 0, cap: 0 };
 
   let header2 = header.clone();
 
   assert_eq!(header2.len, header.len);
   assert_eq!(header2.cap, header.cap);
-  assert_eq!(header2.alignment, header.alignment);
 }
 
 static DEFAULT_U8: u8 = 137;
@@ -199,19 +188,11 @@ impl<T> MiniVec<T> {
   fn data(&self) -> *mut T {
     debug_assert!(!self.is_default());
 
-    let count = next_aligned(core::mem::size_of::<Header>(), self.alignment());
+    let count = next_aligned(core::mem::size_of::<Header>(), max_align::<T>());
     unsafe { self.buf.as_ptr().add(count).cast::<T>() }
   }
 
-  fn alignment(&self) -> usize {
-    if self.capacity() == 0 {
-      max_align::<T>()
-    } else {
-      self.header().alignment
-    }
-  }
-
-  fn grow(&mut self, capacity: usize, alignment: usize) -> Result<(), TryReserveError> {
+  fn grow(&mut self, capacity: usize) -> Result<(), TryReserveError> {
     debug_assert!(capacity >= self.len());
 
     let old_capacity = self.capacity();
@@ -221,14 +202,14 @@ impl<T> MiniVec<T> {
       return Ok(());
     }
 
-    let new_layout = make_layout::<T>(new_capacity, alignment);
+    let new_layout = make_layout::<T>(new_capacity);
 
     let len = self.len();
 
     let new_buf = if self.is_default() {
       unsafe { alloc::alloc::alloc(new_layout) }
     } else {
-      let old_layout = make_layout::<T>(old_capacity, alignment);
+      let old_layout = make_layout::<T>(old_capacity);
 
       unsafe { alloc::alloc::realloc(self.buf.as_ptr(), old_layout, new_layout.size()) }
     };
@@ -242,7 +223,6 @@ impl<T> MiniVec<T> {
     let header = Header {
       len,
       cap: new_capacity,
-      alignment,
     };
 
     #[allow(clippy::cast_ptr_alignment)]
@@ -1002,10 +982,10 @@ impl<T> MiniVec<T> {
   /// ```
   ///
   pub fn push(&mut self, value: T) -> &mut T {
-    let (len, capacity, alignment) = (self.len(), self.capacity(), self.alignment());
+    let (len, capacity) = (self.len(), self.capacity());
     if len == capacity {
       if let Err(TryReserveErrorKind::AllocError { layout }) = self
-        .grow(next_capacity::<T>(capacity), alignment)
+        .grow(next_capacity::<T>(capacity))
         .map_err(|e| e.kind())
       {
         alloc::alloc::handle_alloc_error(layout);
@@ -1143,9 +1123,8 @@ impl<T> MiniVec<T> {
       return;
     }
 
-    if let Err(TryReserveErrorKind::AllocError { layout }) = self
-      .grow(total_required, self.alignment())
-      .map_err(|e| e.kind())
+    if let Err(TryReserveErrorKind::AllocError { layout }) =
+      self.grow(total_required).map_err(|e| e.kind())
     {
       alloc::alloc::handle_alloc_error(layout);
     }
@@ -1329,9 +1308,8 @@ impl<T> MiniVec<T> {
       "Tried to shrink to a larger capacity"
     );
 
-    if let Err(TryReserveErrorKind::AllocError { layout }) = self
-      .grow(min_capacity, self.alignment())
-      .map_err(|e| e.kind())
+    if let Err(TryReserveErrorKind::AllocError { layout }) =
+      self.grow(min_capacity).map_err(|e| e.kind())
     {
       alloc::alloc::handle_alloc_error(layout);
     }
@@ -1362,7 +1340,7 @@ impl<T> MiniVec<T> {
 
     let capacity = len;
     if let Err(TryReserveErrorKind::AllocError { layout }) =
-      self.grow(capacity, self.alignment()).map_err(|e| e.kind())
+      self.grow(capacity).map_err(|e| e.kind())
     {
       alloc::alloc::handle_alloc_error(layout);
     }
@@ -1711,8 +1689,7 @@ impl<T> MiniVec<T> {
       new_capacity = next_capacity::<T>(new_capacity);
     }
 
-    let alignment = self.alignment();
-    let max_elems = max_elems::<T>(alignment);
+    let max_elems = max_elems::<T>();
 
     if !self.is_empty() && total_required > max_elems {
       return Err(From::from(TryReserveErrorKind::CapacityOverflow));
@@ -1722,7 +1699,7 @@ impl<T> MiniVec<T> {
       new_capacity = max_elems;
     }
 
-    self.grow(new_capacity, alignment)
+    self.grow(new_capacity)
   }
 
   /// `try_reserve_exact` attempts to reserve space for exactly `additional` elements, returning a `Result` indicating
@@ -1755,8 +1732,7 @@ impl<T> MiniVec<T> {
 
     let mut new_capacity = total_required;
 
-    let alignment = self.alignment();
-    let max_elems = max_elems::<T>(alignment);
+    let max_elems = max_elems::<T>();
 
     if !self.is_empty() && total_required > max_elems {
       return Err(From::from(TryReserveErrorKind::CapacityOverflow));
@@ -1766,99 +1742,7 @@ impl<T> MiniVec<T> {
       new_capacity = max_elems;
     }
 
-    self.grow(new_capacity, alignment)
-  }
-
-  /// `with_alignment` is similar to its counterpart [`with_capacity`](MiniVec::with_capacity)
-  /// except it takes an additional argument: the alignment to use for the allocation.
-  ///
-  /// The supplied alignment must be a number divisible by 2 and larger than or equal to the
-  /// result of `core::mem::align_of::<*const ()>()`.
-  ///
-  /// The internal allocation used to store the header information for `MiniVec` is aligned to the
-  /// supplied value and then sufficient padding is inserted such that the result of [`as_ptr()`](MiniVec::as_ptr)
-  /// will always be aligned as well.
-  ///
-  /// This is useful for creating over-aligned allocations for primitive types such as when using
-  /// `SIMD` intrinsics. For example, some vectorized floating point loads and stores _must_ be
-  /// aligned on a 32 byte boundary. `with_alignment` is intended to make this possible with a
-  /// `Vec`-like container.
-  ///
-  /// # Errors
-  ///
-  /// Returns a `Result` that contains either `MiniVec<T>` or a `LayoutErr`.
-  ///
-  /// # Example
-  /// ```
-  /// # #[cfg(not(miri))]
-  /// # fn main() {
-  /// #[cfg(target_arch = "x86")]
-  /// use std::arch::x86::*;
-  /// #[cfg(target_arch = "x86_64")]
-  /// use std::arch::x86_64::*;
-  ///
-  /// let alignment = 32;
-  /// let num_elems = 2048;
-  /// let mut v1 = minivec::MiniVec::<f32>::with_alignment(num_elems, alignment).unwrap();
-  /// let mut v2 = minivec::MiniVec::<f32>::with_alignment(num_elems, alignment).unwrap();
-  ///
-  /// v1
-  ///     .spare_capacity_mut()
-  ///     .iter_mut()
-  ///     .zip(v2.spare_capacity_mut().iter_mut())
-  ///     .enumerate()
-  ///     .for_each(|(idx, (x1, x2))| {
-  ///         *x1 = core::mem::MaybeUninit::new(idx as f32);
-  ///         *x2 = core::mem::MaybeUninit::new(idx as f32);
-  ///     });
-  ///
-  /// unsafe {
-  ///     v1.set_len(num_elems);
-  ///     v2.set_len(num_elems);
-  ///
-  ///     // use vectorization to speed up the summation of two vectors
-  ///     //
-  ///     for idx in 0..(num_elems / 8) {
-  ///         let offset = idx * 8;
-  ///
-  ///         let p = v1.as_mut_ptr().add(offset);
-  ///         let q = v2.as_mut_ptr().add(offset);
-  ///
-  ///         let r1 = _mm256_load_ps(p);
-  ///         let r2 = _mm256_load_ps(q);
-  ///         let r3 = _mm256_add_ps(r1, r2);
-  ///
-  ///         _mm256_store_ps(p, r3);
-  ///     }
-  /// }
-  ///
-  /// v1
-  ///     .iter()
-  ///     .enumerate()
-  ///     .for_each(|(idx, v)| {
-  ///         assert_eq!(*v, idx as f32 * 2.0);
-  ///     });
-  /// # }
-  ///
-  /// # #[cfg(miri)]
-  /// # fn main() {}
-  /// ```
-  ///
-  pub fn with_alignment(capacity: usize, alignment: usize) -> Result<MiniVec<T>, LayoutErr> {
-    if alignment < max_align::<T>() {
-      return Err(LayoutErr::AlignmentTooSmall);
-    }
-
-    if alignment % 2 > 0 {
-      return Err(LayoutErr::AlignmentNotDivisibleByTwo);
-    }
-
-    let mut v = MiniVec::new();
-
-    match v.grow(capacity, alignment).map_err(|e| e.kind()) {
-      Err(TryReserveErrorKind::AllocError { layout }) => alloc::alloc::handle_alloc_error(layout),
-      _ => Ok(v),
-    }
+    self.grow(new_capacity)
   }
 
   /// `with_capacity` is a static factory function that returns a `MiniVec` that contains space

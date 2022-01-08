@@ -18,14 +18,10 @@ impl<T> Drop for MiniVec<T> {
 
     unsafe {
       #[allow(clippy::cast_ptr_alignment)]
-      let Header {
-        len,
-        cap,
-        alignment,
-      } = core::ptr::read(self.buf.as_ptr().cast::<Header>());
+      let Header { len, cap } = core::ptr::read(self.buf.as_ptr().cast::<Header>());
 
       core::ptr::drop_in_place(core::ptr::slice_from_raw_parts_mut(self.data(), len));
-      alloc::alloc::dealloc(self.buf.as_ptr(), make_layout::<T>(cap, alignment));
+      alloc::alloc::dealloc(self.buf.as_ptr(), make_layout::<T>(cap));
     };
   }
 }

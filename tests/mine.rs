@@ -1062,57 +1062,6 @@ fn minivec_spare_capacity_mut() {
   assert_eq!(vec, expected);
 }
 
-#[allow(clippy::many_single_char_names, clippy::float_cmp, clippy::identity_op)]
-#[cfg(target_feature = "avx")]
-#[test]
-fn minivec_with_alignment() {
-  assert!(MiniVec::<i32>::with_alignment(24, 1).is_err());
-  assert!(MiniVec::<i32>::with_alignment(24, 9).is_err());
-  assert!(MiniVec::<i32>::with_alignment(24, core::mem::align_of::<*const ()>()).is_ok());
-
-  let alignment = 32;
-  let num_elems = 64;
-
-  assert!(num_elems % alignment == 0);
-
-  let mut vec = MiniVec::<f32>::with_alignment(num_elems, alignment).unwrap();
-
-  let p = vec.as_ptr();
-  assert!(p as usize % alignment == 0);
-
-  let s = vec.spare_capacity_mut();
-  assert_eq!(s.len(), num_elems);
-
-  s.iter_mut().enumerate().for_each(|(idx, x)| {
-    *x = core::mem::MaybeUninit::new(idx as f32);
-  });
-
-  unsafe {
-    vec.set_len(num_elems);
-  }
-
-  let p = vec.as_mut_ptr();
-  for idx in 0..(num_elems / 8) {
-    unsafe {
-      let x = core::arch::x86_64::_mm256_load_ps(p.add(idx * 8));
-      let y = core::arch::x86_64::_mm256_set_ps(8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0);
-      let z = core::arch::x86_64::_mm256_add_ps(x, y);
-      core::arch::x86_64::_mm256_store_ps(p.add(idx * 8), z);
-    }
-  }
-
-  for idx in 0..(num_elems / 8) {
-    assert_eq!(vec[idx * 8 + 0], (idx * 8 + 0) as f32 + 1.0);
-    assert_eq!(vec[idx * 8 + 1], (idx * 8 + 1) as f32 + 2.0);
-    assert_eq!(vec[idx * 8 + 2], (idx * 8 + 2) as f32 + 3.0);
-    assert_eq!(vec[idx * 8 + 3], (idx * 8 + 3) as f32 + 4.0);
-    assert_eq!(vec[idx * 8 + 4], (idx * 8 + 4) as f32 + 5.0);
-    assert_eq!(vec[idx * 8 + 5], (idx * 8 + 5) as f32 + 6.0);
-    assert_eq!(vec[idx * 8 + 6], (idx * 8 + 6) as f32 + 7.0);
-    assert_eq!(vec[idx * 8 + 7], (idx * 8 + 7) as f32 + 8.0);
-  }
-}
-
 #[test]
 fn minivec_into_raw_parts() {
   let vec = minivec::mini_vec![1, 2, 3, 4, 5];
@@ -1126,14 +1075,6 @@ fn minivec_into_raw_parts() {
 
   let vec = unsafe { minivec::MiniVec::from_raw_parts(ptr, len, cap) };
   assert_eq!(vec, [1, 2, 3, 4, 5]);
-}
-
-#[test]
-fn minivec_page_aligned() {
-  let capacity = 1024;
-  let alignment = 4096;
-  let mut vec = minivec::MiniVec::<i32>::with_alignment(capacity, alignment).unwrap();
-  assert_eq!(vec.as_mut_ptr() as usize % alignment, 0);
 }
 
 #[test]

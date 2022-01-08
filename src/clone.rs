@@ -33,20 +33,21 @@ fn to_vec<T: Clone>(xs: &[T]) -> MiniVec<T> {
     };
 
     let dst = guard.vec.spare_capacity_mut();
+    let cnt = &mut guard.len;
 
-    for (idx, v) in xs.iter().enumerate().take(len) {
-      dst[idx] = core::mem::MaybeUninit::<T>::new(v.clone());
-      guard.len += 1;
-    }
+    xs.iter().zip(dst.iter_mut()).for_each(|(x, p)| {
+      *p = core::mem::MaybeUninit::new(x.clone());
+      *cnt += 1;
+    });
 
     unsafe { guard.vec.set_len(len) };
     core::mem::forget(guard);
   } else {
     let dst = cpy.spare_capacity_mut();
 
-    for (idx, v) in xs.iter().enumerate().take(len) {
-      dst[idx] = core::mem::MaybeUninit::<T>::new(v.clone());
-    }
+    xs.iter().zip(dst.iter_mut()).for_each(|(x, p)| {
+      *p = core::mem::MaybeUninit::new(x.clone());
+    });
 
     unsafe { cpy.set_len(len) };
   }

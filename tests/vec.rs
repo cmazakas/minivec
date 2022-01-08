@@ -1968,7 +1968,6 @@ fn test_push_growth_strategy() {
   // If the element size is 1, we jump from 0 to 8, then double.
   {
     let mut v1: MiniVec<u8> = mini_vec![];
-    assert_eq!(v1.capacity(), 0);
 
     for _ in 0..8 {
       v1.push(0);
@@ -1995,8 +1994,6 @@ fn test_push_growth_strategy() {
   {
     let mut v2: MiniVec<u16> = mini_vec![];
     let mut v1024: MiniVec<[u8; 1024]> = mini_vec![];
-    assert_eq!(v2.capacity(), 0);
-    assert_eq!(v1024.capacity(), 0);
 
     for _ in 0..4 {
       v2.push(0);
@@ -2037,7 +2034,6 @@ fn test_push_growth_strategy() {
   // If the element size is > 1024, we jump from 0 to 1, then double.
   {
     let mut v1025: MiniVec<[u8; 1025]> = mini_vec![];
-    assert_eq!(v1025.capacity(), 0);
 
     for _ in 0..1 {
       v1025.push([0; 1025]);

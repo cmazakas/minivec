@@ -115,12 +115,6 @@ where
     }
 
     let vec = unsafe { self.splice.vec_.as_mut() };
-    if vec.is_default() {
-      for x in &mut self.splice.fill_ {
-        vec.push(x);
-      }
-      return;
-    }
 
     // first, figure out where our draining operation started
     // this is at offset vec.len() from the start of [T]'s data

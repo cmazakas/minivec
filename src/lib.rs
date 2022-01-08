@@ -163,14 +163,7 @@ fn header_clone() {
   assert_eq!(header2.cap, header.cap);
 }
 
-static DEFAULT_U8: u8 = 137;
-
 impl<T> MiniVec<T> {
-  #[allow(clippy::cast_ptr_alignment)]
-  fn is_default(&self) -> bool {
-    core::ptr::eq(self.buf.as_ptr(), &DEFAULT_U8)
-  }
-
   fn header(&self) -> &Header {
     #[allow(clippy::cast_ptr_alignment)]
     unsafe {
@@ -186,8 +179,6 @@ impl<T> MiniVec<T> {
   }
 
   fn data(&self) -> *mut T {
-    debug_assert!(!self.is_default());
-
     let count = next_aligned(core::mem::size_of::<Header>(), max_align::<T>());
     unsafe { self.buf.as_ptr().add(count).cast::<T>() }
   }
@@ -206,11 +197,8 @@ impl<T> MiniVec<T> {
 
     let len = self.len();
 
-    let new_buf = if self.is_default() {
-      unsafe { alloc::alloc::alloc(new_layout) }
-    } else {
+    let new_buf = {
       let old_layout = make_layout::<T>(old_capacity);
-
       unsafe { alloc::alloc::realloc(self.buf.as_ptr(), old_layout, new_layout.size()) }
     };
 
@@ -287,10 +275,6 @@ impl<T> MiniVec<T> {
   /// ```
   ///
   pub fn as_mut_ptr(&mut self) -> *mut T {
-    if self.is_default() {
-      return core::ptr::null_mut();
-    }
-
     self.data()
   }
 
@@ -335,10 +319,6 @@ impl<T> MiniVec<T> {
   ///
   #[must_use]
   pub fn as_ptr(&self) -> *const T {
-    if self.is_default() {
-      return core::ptr::null();
-    }
-
     self.data()
   }
 
@@ -379,11 +359,7 @@ impl<T> MiniVec<T> {
   ///
   #[must_use]
   pub fn capacity(&self) -> usize {
-    if self.is_default() {
-      0
-    } else {
-      self.header().cap
-    }
+    self.header().cap
   }
 
   /// `clear` clears the current contents of the `MiniVec`. Afterwards, [`len()`](MiniVec::len)
@@ -894,16 +870,16 @@ impl<T> MiniVec<T> {
   ///
   #[must_use]
   pub fn len(&self) -> usize {
-    if self.is_default() {
-      0
-    } else {
-      self.header().len
-    }
+    self.header().len
   }
 
   /// `MiniVec::new` constructs an empty `MiniVec`.
   ///
-  /// Note: does not allocate any memory.
+  /// Unlike `Vec` in the standard library, `MiniVec::new()` _will_ allocate memory. This is a consequence
+  /// of supporting stateful allocators. Because `MiniVec` isn't a struct with any other data members aside
+  /// from a pointer, it is unable to store the user-provided Allocator which may potentially contain state.
+  /// Instead of attempting to bifurcate the implementation for ZST Allocators, it is simply easier for the
+  /// library to unconditionally allocate, even cases where the global Allocator is being used.
   ///
   /// # Panics
   ///
@@ -914,26 +890,14 @@ impl<T> MiniVec<T> {
   /// ```
   /// let mut vec = minivec::MiniVec::<i32>::new();
   ///
-  /// assert_eq!(vec.as_mut_ptr(), std::ptr::null_mut());
+  /// assert!(!vec.as_ptr().is_null());
   /// assert_eq!(vec.len(), 0);
-  /// assert_eq!(vec.capacity(), 0);
+  /// assert!(vec.capacity() > 0);
   /// ```
   ///
   #[must_use]
-  #[allow(clippy::ptr_as_ptr)]
   pub fn new() -> MiniVec<T> {
-    assert!(
-      core::mem::size_of::<T>() > 0,
-      "ZSTs currently not supported"
-    );
-
-    let buf =
-      unsafe { core::ptr::NonNull::<u8>::new_unchecked(&DEFAULT_U8 as *const u8 as *mut u8) };
-
-    MiniVec {
-      buf,
-      phantom: core::marker::PhantomData,
-    }
+    MiniVec::with_capacity(0)
   }
 
   /// `pop` removes the last element from the vector, should it exist, and returns an [`Option`](core::option::Option)
@@ -1086,7 +1050,7 @@ impl<T> MiniVec<T> {
   /// ```
   /// let mut vec = minivec::MiniVec::<i32>::new();
   ///
-  /// assert_eq!(vec.capacity(), 0);
+  /// assert!(vec.capacity() < 128);
   ///
   /// vec.reserve(128);
   ///
@@ -1547,25 +1511,15 @@ impl<T> MiniVec<T> {
     );
 
     if len == 0 {
-      let other = if self.capacity() > 0 {
-        MiniVec::with_capacity(self.capacity())
-      } else {
-        MiniVec::new()
-      };
-
+      let other = MiniVec::with_capacity(self.capacity());
       return other;
     }
 
     if at == 0 {
       let orig_cap = self.capacity();
+      let mut other = MiniVec::with_capacity(orig_cap);
 
-      let other = MiniVec {
-        buf: self.buf,
-        phantom: core::marker::PhantomData,
-      };
-
-      self.buf =
-        unsafe { core::ptr::NonNull::<u8>::new_unchecked(&DEFAULT_U8 as *const u8 as *mut u8) };
+      core::mem::swap(self, &mut other);
       self.reserve_exact(orig_cap);
 
       return other;
@@ -1668,7 +1622,7 @@ impl<T> MiniVec<T> {
   ///
   /// ```
   /// let mut v = minivec::MiniVec::<i32>::new();
-  /// assert_eq!(v.capacity(), 0);
+  /// assert!(v.capacity() < 1337);
   ///
   /// let result = v.try_reserve(1337);
   ///
@@ -1714,7 +1668,7 @@ impl<T> MiniVec<T> {
   ///
   /// ```
   /// let mut v = minivec::MiniVec::<i32>::new();
-  /// assert_eq!(v.capacity(), 0);
+  /// assert!(v.capacity() < 1337);
   ///
   /// let result = v.try_reserve_exact(1337);
   ///
@@ -1751,6 +1705,10 @@ impl<T> MiniVec<T> {
   /// This function is logically equivalent to calling [`.reserve_exact()`](MiniVec::reserve_exact)
   /// on a vector with `0` capacity.
   ///
+  /// # Panics
+  ///
+  /// Panics if the underlying allocation fails.
+  ///
   /// # Example
   ///
   /// ```
@@ -1761,10 +1719,37 @@ impl<T> MiniVec<T> {
   /// ```
   ///
   #[must_use]
+  #[allow(clippy::cast_ptr_alignment)]
   pub fn with_capacity(capacity: usize) -> MiniVec<T> {
-    let mut v = MiniVec::new();
-    v.reserve_exact(capacity);
-    v
+    assert!(
+      core::mem::size_of::<T>() > 0,
+      "ZSTs currently not supported"
+    );
+
+    let capacity = if capacity == 0 {
+      next_capacity::<T>(0)
+    } else {
+      capacity
+    };
+
+    let layout = make_layout::<T>(capacity);
+
+    let buf = unsafe { alloc::alloc::alloc(layout) };
+    if buf.is_null() {
+      alloc::alloc::handle_alloc_error(layout);
+    }
+
+    let header = Header {
+      len: 0,
+      cap: capacity,
+    };
+
+    unsafe { core::ptr::write(buf.cast::<Header>(), header) };
+
+    MiniVec {
+      buf: unsafe { core::ptr::NonNull::new_unchecked(buf) },
+      phantom: core::marker::PhantomData,
+    }
   }
 
   #[doc(hidden)]

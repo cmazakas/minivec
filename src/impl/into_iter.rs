@@ -20,11 +20,7 @@ impl<T> IntoIter<T> {
   #[must_use]
   pub(crate) fn new(w: crate::MiniVec<T>) -> Self {
     let v = w;
-    let pos = if v.is_default() {
-      core::ptr::null_mut()
-    } else {
-      v.data()
-    };
+    let pos = v.data();
 
     Self {
       v,
@@ -37,23 +33,15 @@ impl<T> IntoIter<T> {
   ///
   #[must_use]
   pub fn as_slice(&self) -> &[T] {
-    if self.v.is_default() {
-      &[]
-    } else {
-      let data = self.pos;
-      unsafe { core::slice::from_raw_parts(data, self.v.len()) }
-    }
+    let data = self.pos;
+    unsafe { core::slice::from_raw_parts(data, self.v.len()) }
   }
 
   /// `as_mut_slice` returns a mutable slice to the remaining elements of the iterator that have not yet been moved.
   ///
   pub fn as_mut_slice(&mut self) -> &mut [T] {
-    if self.v.is_default() {
-      &mut []
-    } else {
-      let data: *mut T = self.pos as *mut T;
-      unsafe { core::slice::from_raw_parts_mut(data, self.v.len()) }
-    }
+    let data: *mut T = self.pos as *mut T;
+    unsafe { core::slice::from_raw_parts_mut(data, self.v.len()) }
   }
 }
 
@@ -85,10 +73,6 @@ impl<T: alloc::fmt::Debug> alloc::fmt::Debug for IntoIter<T> {
 
 impl<T> DoubleEndedIterator for IntoIter<T> {
   fn next_back(&mut self) -> Option<Self::Item> {
-    if self.v.is_default() {
-      return None;
-    }
-
     let header = self.v.header_mut();
 
     let data = self.pos;
@@ -129,10 +113,6 @@ impl<T> Iterator for IntoIter<T> {
   type Item = T;
 
   fn next(&mut self) -> Option<Self::Item> {
-    if self.v.is_default() {
-      return None;
-    }
-
     let header = self.v.header_mut();
 
     let data = self.pos;

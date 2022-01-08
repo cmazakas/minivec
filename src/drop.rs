@@ -12,10 +12,6 @@ extern crate alloc;
 
 impl<T> Drop for MiniVec<T> {
   fn drop(&mut self) {
-    if self.is_default() {
-      return;
-    }
-
     unsafe {
       #[allow(clippy::cast_ptr_alignment)]
       let Header { len, cap } = core::ptr::read(self.buf.as_ptr().cast::<Header>());

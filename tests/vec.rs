@@ -1,22 +1,4 @@
-#![allow(
-  unknown_lints,
-  unused_must_use,
-  clippy::unnecessary_operation,
-  clippy::op_ref,
-  clippy::verbose_bit_mask,
-  clippy::reversed_empty_ranges,
-  clippy::vtable_address_comparisons,
-  clippy::clippy::assign_op_pattern,
-  clippy::clippy::many_single_char_names,
-  clippy::clippy::redundant_closure,
-  clippy::unit_arg,
-  clippy::unnecessary_filter_map,
-  clippy::eq_op,
-  clippy::redundant_slicing,
-  clippy::iter_count,
-  clippy::assign_op_pattern,
-  clippy::redundant_closure
-)]
+#![allow(unknown_lints, unused_must_use, clippy::all)]
 
 extern crate minivec;
 

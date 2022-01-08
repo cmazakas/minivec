@@ -33,7 +33,7 @@ pub const fn max_align<T>() -> usize {
   }
 }
 
-pub fn make_layout<T>(capacity: usize) -> alloc::alloc::Layout {
+pub const fn make_layout<T>(capacity: usize) -> alloc::alloc::Layout {
   let alignment = max_align::<T>();
   let header_size = core::mem::size_of::<Header>();
 
@@ -44,7 +44,7 @@ pub fn make_layout<T>(capacity: usize) -> alloc::alloc::Layout {
       + next_aligned(capacity * core::mem::size_of::<T>(), alignment)
   };
 
-  alloc::alloc::Layout::from_size_align(num_bytes, alignment).unwrap()
+  unsafe { alloc::alloc::Layout::from_size_align_unchecked(num_bytes, alignment) }
 }
 
 pub const fn max_elems<T>() -> usize {

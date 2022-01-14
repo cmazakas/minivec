@@ -163,6 +163,8 @@ fn header_clone() {
 }
 
 impl<T> MiniVec<T> {
+  const N: usize = next_aligned(core::mem::size_of::<Header>(), max_align::<T>());
+
   fn header(&self) -> &Header {
     #[allow(clippy::cast_ptr_alignment)]
     unsafe {
@@ -178,8 +180,7 @@ impl<T> MiniVec<T> {
   }
 
   fn data(&self) -> *mut T {
-    let count = next_aligned(core::mem::size_of::<Header>(), max_align::<T>());
-    unsafe { self.buf.as_ptr().add(count).cast::<T>() }
+    unsafe { self.buf.as_ptr().add(Self::N).cast::<T>() }
   }
 
   fn grow(&mut self, capacity: usize) -> Result<(), TryReserveError> {
@@ -678,11 +679,8 @@ impl<T> MiniVec<T> {
   pub unsafe fn from_raw_part(ptr: *mut T) -> MiniVec<T> {
     debug_assert!(!ptr.is_null());
 
-    let header_size = core::mem::size_of::<Header>();
-    let aligned = next_aligned(header_size, core::mem::align_of::<T>());
-
     let p = ptr.cast::<u8>();
-    let buf = p.sub(aligned);
+    let buf = p.sub(Self::N);
 
     MiniVec {
       buf: core::ptr::NonNull::<u8>::new_unchecked(buf),
@@ -727,11 +725,8 @@ impl<T> MiniVec<T> {
   pub unsafe fn from_raw_parts(ptr: *mut T, length: usize, capacity: usize) -> MiniVec<T> {
     debug_assert!(!ptr.is_null());
 
-    let header_size = core::mem::size_of::<Header>();
-    let aligned = next_aligned(header_size, core::mem::align_of::<T>());
-
     let p = ptr.cast::<u8>();
-    let buf = p.sub(aligned);
+    let buf = p.sub(Self::N);
 
     debug_assert!((*buf.cast::<Header>()).len == length);
     debug_assert!((*buf.cast::<Header>()).cap == capacity);

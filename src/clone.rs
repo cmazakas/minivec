@@ -65,18 +65,13 @@ impl<T: Clone> Clone for MiniVec<T> {
 #[cfg(feature = "minivec_nightly")]
 impl<T: Copy> Clone for MiniVec<T> {
   fn clone(&self) -> Self {
-    if self.is_empty() {
-      return MiniVec::<T>::new();
-    }
-
     let len = self.len();
     let mut cpy = MiniVec::<T>::with_capacity(len);
 
     let src = self.as_ptr();
     let dst = cpy.as_mut_ptr();
-    let count = len;
 
-    unsafe { core::ptr::copy_nonoverlapping(src, dst, count) };
+    unsafe { core::ptr::copy_nonoverlapping(src, dst, len) };
     unsafe { cpy.set_len(len) };
 
     cpy

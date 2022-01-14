@@ -80,9 +80,8 @@ use crate::r#impl::splice::make_splice_iterator;
 pub use crate::r#impl::{Drain, DrainFilter, IntoIter, Splice};
 
 /// `MiniVec` is a space-optimized implementation of `alloc::vec::Vec` that is only the size of a single pointer and
-/// also extends portions of its API, including support for over-aligned allocations. `MiniVec` also aims to bring as
-/// many Nightly features from `Vec` to stable toolchains as is possible. In many cases, it is a drop-in replacement
-/// for the "real" `Vec`.
+/// also extends portions of its API. `MiniVec` also aims to bring as many Nightly features from `Vec` to stable
+/// toolchains as is possible. In many cases, it is a drop-in replacement for `Vec`.
 ///
 #[repr(transparent)]
 pub struct MiniVec<T> {

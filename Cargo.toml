@@ -1,25 +1,30 @@
 [package]
-name = "minivec"
-version = "0.5.0"
 authors = ["Christian Mazakas <christian.mazakas@gmail.com>"]
-edition = "2018"
-license = "BSL-1.0"
-description = "A version of Vec that's only the size of a single pointer"
-repository = "https://github.com/cmazakas/minivec"
 categories = ["data-structures"]
+description = "A version of Vec that's only the size of a single pointer"
+edition = "2018"
 keywords = ["vec", "vector"]
+license = "BSL-1.0"
+name = "minivec"
+repository = "https://github.com/cmazakas/minivec"
+version = "0.5.0"
 
 # Enable with feature `serde`
 [dependencies.serde]
-version = "1"
 default-features = false
 optional = true
+version = "1"
 
 [features]
 minivec_nightly = []
 
 [dev-dependencies]
+criterion = "0.3"
 rand = "0.7"
 
 [profile.bench]
 debug = true
+
+[[bench]]
+harness = false
+name = "minivec"

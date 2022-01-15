@@ -1494,6 +1494,7 @@ impl<T> MiniVec<T> {
   /// ```
   ///
   #[allow(clippy::ptr_as_ptr)]
+  #[must_use]
   pub fn split_off(&mut self, at: usize) -> MiniVec<T> {
     let len = self.len();
 

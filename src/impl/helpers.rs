@@ -37,12 +37,8 @@ pub const fn make_layout<T>(capacity: usize) -> alloc::alloc::Layout {
   let alignment = max_align::<T>();
   let header_size = core::mem::size_of::<Header>();
 
-  let num_bytes = if capacity == 0 {
-    next_aligned(header_size, alignment)
-  } else {
-    next_aligned(header_size, alignment)
-      + next_aligned(capacity * core::mem::size_of::<T>(), alignment)
-  };
+  let num_bytes = next_aligned(header_size, alignment)
+    + next_aligned(capacity * core::mem::size_of::<T>(), alignment);
 
   unsafe { alloc::alloc::Layout::from_size_align_unchecked(num_bytes, alignment) }
 }

@@ -1,6 +1,6 @@
 #![no_std]
 #![warn(clippy::pedantic, missing_docs)]
-#![cfg_attr(feature = "minivec_nightly", feature(min_specialization))]
+#![cfg_attr(feature = "minivec_nightly", feature(min_specialization, trusted_len))]
 
 //! A space-optimized version of `alloc::vec::Vec` that's only the size of a single pointer!
 //! Ideal for low-level APIs where ABI calling conventions will typically require most structs be

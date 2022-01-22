@@ -1,23 +1,29 @@
-#![feature(slice_partition_dedup)]
+#![feature(slice_partition_dedup, test)]
 #![allow(clippy::all, unused_imports)]
 
 extern crate minivec;
+extern crate test;
 
-use criterion::{black_box, criterion_group, criterion_main, Bencher, Criterion};
 use rand::RngCore;
 use std::iter::{repeat, FromIterator};
+use test::{black_box, Bencher};
 
 use minivec::{mini_vec, MiniVec};
 
-// #[bench]
-// fn bench_new(b: &mut Bencher) {
-//   b.iter(|| MiniVec::<u32>::new())
-// }
+#[bench]
+fn bench_new_vec(b: &mut Bencher) {
+  b.iter(|| Vec::<u32>::new())
+}
+
+#[bench]
+fn bench_new_minivec(b: &mut Bencher) {
+  b.iter(|| MiniVec::<u32>::new())
+}
 
 // fn do_bench_with_capacity(b: &mut Bencher, src_len: usize) {
 //   b.bytes = src_len as u64;
 
-//   b.iter(|| MiniVec::<u32>::with_capacity(src_len))
+//   b.iter(|| Vec::<u32>::with_capacity(src_len))
 // }
 
 // #[bench]
@@ -43,7 +49,7 @@ use minivec::{mini_vec, MiniVec};
 // fn do_bench_from_fn(b: &mut Bencher, src_len: usize) {
 //   b.bytes = src_len as u64;
 
-//   b.iter(|| (0..src_len).collect::<MiniVec<_>>())
+//   b.iter(|| (0..src_len).collect::<Vec<_>>())
 // }
 
 // #[bench]
@@ -69,7 +75,7 @@ use minivec::{mini_vec, MiniVec};
 // fn do_bench_from_elem(b: &mut Bencher, src_len: usize) {
 //   b.bytes = src_len as u64;
 
-//   b.iter(|| repeat(5).take(src_len).collect::<MiniVec<usize>>())
+//   b.iter(|| repeat(5).take(src_len).collect::<Vec<usize>>())
 // }
 
 // #[bench]
@@ -93,7 +99,7 @@ use minivec::{mini_vec, MiniVec};
 // }
 
 // fn do_bench_from_slice(b: &mut Bencher, src_len: usize) {
-//   let src: MiniVec<_> = FromIterator::from_iter(0..src_len);
+//   let src: Vec<_> = FromIterator::from_iter(0..src_len);
 
 //   b.bytes = src_len as u64;
 
@@ -121,12 +127,12 @@ use minivec::{mini_vec, MiniVec};
 // }
 
 // fn do_bench_from_iter(b: &mut Bencher, src_len: usize) {
-//   let src: MiniVec<_> = FromIterator::from_iter(0..src_len);
+//   let src: Vec<_> = FromIterator::from_iter(0..src_len);
 
 //   b.bytes = src_len as u64;
 
 //   b.iter(|| {
-//     let dst: MiniVec<_> = FromIterator::from_iter(src.iter().cloned());
+//     let dst: Vec<_> = FromIterator::from_iter(src.iter().cloned());
 //     dst
 //   });
 // }
@@ -152,8 +158,8 @@ use minivec::{mini_vec, MiniVec};
 // }
 
 // fn do_bench_extend(b: &mut Bencher, dst_len: usize, src_len: usize) {
-//   let dst: MiniVec<_> = FromIterator::from_iter(0..dst_len);
-//   let src: MiniVec<_> = FromIterator::from_iter(dst_len..dst_len + src_len);
+//   let dst: Vec<_> = FromIterator::from_iter(0..dst_len);
+//   let src: Vec<_> = FromIterator::from_iter(dst_len..dst_len + src_len);
 
 //   b.bytes = src_len as u64;
 
@@ -200,8 +206,8 @@ use minivec::{mini_vec, MiniVec};
 // }
 
 // fn do_bench_extend_from_slice(b: &mut Bencher, dst_len: usize, src_len: usize) {
-//   let dst: MiniVec<_> = FromIterator::from_iter(0..dst_len);
-//   let src: MiniVec<_> = FromIterator::from_iter(dst_len..dst_len + src_len);
+//   let dst: Vec<_> = FromIterator::from_iter(0..dst_len);
+//   let src: Vec<_> = FromIterator::from_iter(dst_len..dst_len + src_len);
 
 //   b.bytes = src_len as u64;
 
@@ -214,11 +220,11 @@ use minivec::{mini_vec, MiniVec};
 
 // #[bench]
 // fn bench_extend_recycle(b: &mut Bencher) {
-//   let mut data = mini_vec![0; 1000];
+//   let mut data = vec![0; 1000];
 
 //   b.iter(|| {
 //     let tmp = std::mem::take(&mut data);
-//     let mut to_extend = black_box(MiniVec::new());
+//     let mut to_extend = black_box(Vec::new());
 //     to_extend.extend(tmp.into_iter());
 //     data = black_box(to_extend);
 //   });
@@ -261,64 +267,57 @@ use minivec::{mini_vec, MiniVec};
 //   do_bench_extend_from_slice(b, 1000, 1000)
 // }
 
-fn do_bench_clone<V: Clone + FromIterator<usize>>(b: &mut Bencher, src_len: usize) {
+fn do_bench_clone<V: FromIterator<usize> + Clone>(b: &mut Bencher, src_len: usize) {
   let src: V = FromIterator::from_iter(0..src_len);
+
+  b.bytes = src_len as u64;
+
   b.iter(|| src.clone());
 }
 
-fn bench_clone_0000(c: &mut Criterion) {
-  c.bench_function("vec_bench_clone_0000", |b| {
-    do_bench_clone::<Vec<usize>>(b, 0)
-  });
-
-  c.bench_function("minivec_bench_clone_0000", |b| {
-    do_bench_clone::<MiniVec<usize>>(b, 0)
-  });
+#[bench]
+fn bench_clone_0000_vec(b: &mut Bencher) {
+  do_bench_clone::<Vec<usize>>(b, 0)
 }
 
-fn bench_clone_0010(c: &mut Criterion) {
-  c.bench_function("vec_bench_clone_0010", |b| {
-    do_bench_clone::<Vec<usize>>(b, 10)
-  });
-
-  c.bench_function("minivec_bench_clone_0010", |b| {
-    do_bench_clone::<MiniVec<usize>>(b, 10)
-  });
+#[bench]
+fn bench_clone_0010_vec(b: &mut Bencher) {
+  do_bench_clone::<Vec<usize>>(b, 10)
 }
 
-fn bench_clone_0100(c: &mut Criterion) {
-  c.bench_function("vec_bench_clone_0100", |b| {
-    do_bench_clone::<Vec<usize>>(b, 100)
-  });
-
-  c.bench_function("minivec_bench_clone_0100", |b| {
-    do_bench_clone::<MiniVec<usize>>(b, 100)
-  });
+#[bench]
+fn bench_clone_0100_vec(b: &mut Bencher) {
+  do_bench_clone::<Vec<usize>>(b, 100)
 }
 
-fn bench_clone_1000(c: &mut Criterion) {
-  c.bench_function("vec_bench_clone_1000", |b| {
-    do_bench_clone::<Vec<usize>>(b, 1000)
-  });
-
-  c.bench_function("minivec_bench_clone_1000", |b| {
-    do_bench_clone::<MiniVec<usize>>(b, 1000)
-  });
+#[bench]
+fn bench_clone_1000_vec(b: &mut Bencher) {
+  do_bench_clone::<Vec<usize>>(b, 1000)
 }
 
-fn bench_clone_1000000(c: &mut Criterion) {
-  c.bench_function("vec_bench_clone_1000000", |b| {
-    do_bench_clone::<Vec<usize>>(b, 1000000)
-  });
+#[bench]
+fn bench_clone_0000_minivec(b: &mut Bencher) {
+  do_bench_clone::<MiniVec<usize>>(b, 0)
+}
 
-  c.bench_function("minivec_bench_clone_1000000", |b| {
-    do_bench_clone::<MiniVec<usize>>(b, 1000000)
-  });
+#[bench]
+fn bench_clone_0010_minivec(b: &mut Bencher) {
+  do_bench_clone::<MiniVec<usize>>(b, 10)
+}
+
+#[bench]
+fn bench_clone_0100_minivec(b: &mut Bencher) {
+  do_bench_clone::<MiniVec<usize>>(b, 100)
+}
+
+#[bench]
+fn bench_clone_1000_minivec(b: &mut Bencher) {
+  do_bench_clone::<Vec<usize>>(b, 1000)
 }
 
 // fn do_bench_clone_from(b: &mut Bencher, times: usize, dst_len: usize, src_len: usize) {
-//   let dst: MiniVec<_> = FromIterator::from_iter(0..src_len);
-//   let src: MiniVec<_> = FromIterator::from_iter(dst_len..dst_len + src_len);
+//   let dst: Vec<_> = FromIterator::from_iter(0..src_len);
+//   let src: Vec<_> = FromIterator::from_iter(dst_len..dst_len + src_len);
 
 //   b.bytes = (times * src_len) as u64;
 
@@ -459,11 +458,11 @@ fn bench_clone_1000000(c: &mut Criterion) {
 //             #[bench]
 //             fn $fname(b: &mut Bencher) {
 //                 b.iter(|| {
-//                     let src: MiniVec<$type> = black_box(mini_vec![$init; $count]);
+//                     let src: Vec<$type> = black_box(vec![$init; $count]);
 //                     src.into_iter()
 //                         .enumerate()
 //                         .map(|(idx, e)| idx as $type ^ e)
-//                         .collect::<MiniVec<$type>>()
+//                         .collect::<Vec<$type>>()
 //                 });
 //             }
 //         )+
@@ -493,7 +492,7 @@ fn bench_clone_1000000(c: &mut Criterion) {
 
 // #[bench]
 // fn bench_in_place_recycle(b: &mut Bencher) {
-//   let mut data = mini_vec![0; 1000];
+//   let mut data = vec![0; 1000];
 
 //   b.iter(|| {
 //     let tmp = std::mem::take(&mut data);
@@ -503,16 +502,16 @@ fn bench_clone_1000000(c: &mut Criterion) {
 //         .enumerate()
 //         .map(|(idx, e)| idx.wrapping_add(e))
 //         .fuse()
-//         .collect::<MiniVec<usize>>(),
+//         .collect::<Vec<usize>>(),
 //     );
 //   });
 // }
 
 // #[bench]
 // fn bench_in_place_zip_recycle(b: &mut Bencher) {
-//   let mut data = mini_vec![0u8; 1000];
+//   let mut data = vec![0u8; 1000];
 //   let mut rng = rand::thread_rng();
-//   let mut subst = mini_vec![0u8; 1000];
+//   let mut subst = vec![0u8; 1000];
 //   rng.fill_bytes(&mut subst[..]);
 
 //   b.iter(|| {
@@ -522,16 +521,16 @@ fn bench_clone_1000000(c: &mut Criterion) {
 //       .zip(subst.iter().copied())
 //       .enumerate()
 //       .map(|(i, (d, s))| d.wrapping_add(i as u8) ^ s)
-//       .collect::<MiniVec<_>>();
+//       .collect::<Vec<_>>();
 //     data = black_box(mangled);
 //   });
 // }
 
 // #[bench]
 // fn bench_in_place_zip_iter_mut(b: &mut Bencher) {
-//   let mut data = mini_vec![0u8; 256];
+//   let mut data = vec![0u8; 256];
 //   let mut rng = rand::thread_rng();
-//   let mut subst = mini_vec![0u8; 1000];
+//   let mut subst = vec![0u8; 1000];
 //   rng.fill_bytes(&mut subst[..]);
 
 //   b.iter(|| {
@@ -543,7 +542,7 @@ fn bench_clone_1000000(c: &mut Criterion) {
 //   black_box(data);
 // }
 
-// pub fn vec_cast<T, U>(input: MiniVec<T>) -> MiniVec<U> {
+// pub fn vec_cast<T, U>(input: Vec<T>) -> Vec<U> {
 //   input
 //     .into_iter()
 //     .map(|e| unsafe { std::mem::transmute_copy(&e) })
@@ -552,7 +551,7 @@ fn bench_clone_1000000(c: &mut Criterion) {
 
 // #[bench]
 // fn bench_transmute(b: &mut Bencher) {
-//   let mut vec = mini_vec![10u32; 100];
+//   let mut vec = vec![10u32; 100];
 //   b.bytes = 800; // 2 casts x 4 bytes x 100
 //   b.iter(|| {
 //     let v = std::mem::take(&mut vec);
@@ -573,24 +572,30 @@ fn bench_clone_1000000(c: &mut Criterion) {
 
 // #[bench]
 // fn bench_in_place_collect_droppable(b: &mut Bencher) {
-//   let v: MiniVec<Droppable> = std::iter::repeat_with(|| Droppable(0)).take(1000).collect();
+//   let v: Vec<Droppable> = std::iter::repeat_with(|| Droppable(0)).take(1000).collect();
 //   b.iter(|| {
 //     v.clone()
 //       .into_iter()
 //       .skip(100)
 //       .enumerate()
 //       .map(|(i, e)| Droppable(i ^ e.0))
-//       .collect::<MiniVec<_>>()
+//       .collect::<Vec<_>>()
 //   })
 // }
 
-// const LEN: usize = 16384;
+const LEN: usize = 16384;
 
-// #[bench]
-// fn bench_chain_collect(b: &mut Bencher) {
-//   let data = black_box([0; LEN]);
-//   b.iter(|| data.iter().cloned().chain([1]).collect::<MiniVec<_>>());
-// }
+#[bench]
+fn bench_chain_collect_vec(b: &mut Bencher) {
+  let data = black_box([0; LEN]);
+  b.iter(|| data.iter().cloned().chain([1]).collect::<Vec<_>>());
+}
+
+#[bench]
+fn bench_chain_collect_minivec(b: &mut Bencher) {
+  let data = black_box([0; LEN]);
+  b.iter(|| data.iter().cloned().chain([1]).collect::<MiniVec<_>>());
+}
 
 // #[bench]
 // fn bench_chain_chain_collect(b: &mut Bencher) {
@@ -601,7 +606,7 @@ fn bench_clone_1000000(c: &mut Criterion) {
 //       .cloned()
 //       .chain([1])
 //       .chain([2])
-//       .collect::<MiniVec<_>>()
+//       .collect::<Vec<_>>()
 //   });
 // }
 
@@ -613,20 +618,20 @@ fn bench_clone_1000000(c: &mut Criterion) {
 //       .iter()
 //       .cloned()
 //       .chain([1].iter().chain([2].iter()).cloned())
-//       .collect::<MiniVec<_>>()
+//       .collect::<Vec<_>>()
 //   });
 // }
 
 // #[bench]
 // fn bench_range_map_collect(b: &mut Bencher) {
-//   b.iter(|| (0..LEN).map(|_| u32::default()).collect::<MiniVec<_>>());
+//   b.iter(|| (0..LEN).map(|_| u32::default()).collect::<Vec<_>>());
 // }
 
 // #[bench]
 // fn bench_chain_extend_ref(b: &mut Bencher) {
 //   let data = black_box([0; LEN]);
 //   b.iter(|| {
-//     let mut v = MiniVec::<u32>::with_capacity(data.len() + 1);
+//     let mut v = Vec::<u32>::with_capacity(data.len() + 1);
 //     v.extend(data.iter().chain([1].iter()));
 //     v
 //   });
@@ -636,7 +641,7 @@ fn bench_clone_1000000(c: &mut Criterion) {
 // fn bench_chain_extend_value(b: &mut Bencher) {
 //   let data = black_box([0; LEN]);
 //   b.iter(|| {
-//     let mut v = MiniVec::<u32>::with_capacity(data.len() + 1);
+//     let mut v = Vec::<u32>::with_capacity(data.len() + 1);
 //     v.extend(data.iter().cloned().chain(Some(1)));
 //     v
 //   });
@@ -646,7 +651,7 @@ fn bench_clone_1000000(c: &mut Criterion) {
 // fn bench_rev_1(b: &mut Bencher) {
 //   let data = black_box([0; LEN]);
 //   b.iter(|| {
-//     let mut v = MiniVec::<u32>::new();
+//     let mut v = Vec::<u32>::new();
 //     v.extend(data.iter().rev());
 //     v
 //   });
@@ -656,7 +661,7 @@ fn bench_clone_1000000(c: &mut Criterion) {
 // fn bench_rev_2(b: &mut Bencher) {
 //   let data = black_box([0; LEN]);
 //   b.iter(|| {
-//     let mut v = MiniVec::<u32>::with_capacity(data.len());
+//     let mut v = Vec::<u32>::with_capacity(data.len());
 //     v.extend(data.iter().rev());
 //     v
 //   });
@@ -666,7 +671,7 @@ fn bench_clone_1000000(c: &mut Criterion) {
 // fn bench_map_regular(b: &mut Bencher) {
 //   let data = black_box([(0, 0); LEN]);
 //   b.iter(|| {
-//     let mut v = MiniVec::<u32>::new();
+//     let mut v = Vec::<u32>::new();
 //     v.extend(data.iter().map(|t| t.1));
 //     v
 //   });
@@ -676,7 +681,7 @@ fn bench_clone_1000000(c: &mut Criterion) {
 // fn bench_map_fast(b: &mut Bencher) {
 //   let data = black_box([(0, 0); LEN]);
 //   b.iter(|| {
-//     let mut result = MiniVec::with_capacity(data.len());
+//     let mut result = Vec::with_capacity(data.len());
 //     for i in 0..data.len() {
 //       unsafe {
 //         *result.get_unchecked_mut(i) = data[i].0;
@@ -708,7 +713,7 @@ fn bench_clone_1000000(c: &mut Criterion) {
 // }
 
 // fn bench_vec_dedup_old(b: &mut Bencher, sz: usize) {
-//   let mut template = mini_vec![0u32; sz];
+//   let mut template = vec![0u32; sz];
 //   b.bytes = std::mem::size_of_val(template.as_slice()) as u64;
 //   random_sorted_fill(0x43, &mut template);
 
@@ -727,7 +732,7 @@ fn bench_clone_1000000(c: &mut Criterion) {
 // }
 
 // fn bench_vec_dedup_new(b: &mut Bencher, sz: usize) {
-//   let mut template = mini_vec![0u32; sz];
+//   let mut template = vec![0u32; sz];
 //   b.bytes = std::mem::size_of_val(template.as_slice()) as u64;
 //   random_sorted_fill(0x43, &mut template);
 
@@ -778,18 +783,18 @@ fn bench_clone_1000000(c: &mut Criterion) {
 
 // #[bench]
 // fn bench_flat_map_collect(b: &mut Bencher) {
-//   let v = mini_vec![777u32; 500000];
+//   let v = vec![777u32; 500000];
 //   b.iter(|| {
 //     v.iter()
 //       .flat_map(|color| color.rotate_left(8).to_be_bytes())
-//       .collect::<MiniVec<_>>()
+//       .collect::<Vec<_>>()
 //   });
 // }
 
 // /// Reference benchmark that `retain` has to compete with.
 // #[bench]
 // fn bench_retain_iter_100000(b: &mut Bencher) {
-//   let mut v = MiniVec::with_capacity(100000);
+//   let mut v = Vec::with_capacity(100000);
 
 //   b.iter(|| {
 //     let mut tmp = std::mem::take(&mut v);
@@ -801,7 +806,7 @@ fn bench_clone_1000000(c: &mut Criterion) {
 
 // #[bench]
 // fn bench_retain_100000(b: &mut Bencher) {
-//   let mut v = MiniVec::with_capacity(100000);
+//   let mut v = Vec::with_capacity(100000);
 
 //   b.iter(|| {
 //     v.clear();
@@ -812,17 +817,6 @@ fn bench_clone_1000000(c: &mut Criterion) {
 
 // #[bench]
 // fn bench_retain_whole_100000(b: &mut Bencher) {
-//   let mut v = black_box(mini_vec![826u32; 100000]);
+//   let mut v = black_box(vec![826u32; 100000]);
 //   b.iter(|| v.retain(|x| *x == 826u32));
 // }
-
-criterion_group!(
-  benches,
-  bench_clone_0000,
-  bench_clone_0010,
-  bench_clone_0100,
-  bench_clone_1000,
-  bench_clone_1000000
-);
-
-criterion_main!(benches);

@@ -19,12 +19,7 @@ version = "1"
 minivec_nightly = []
 
 [dev-dependencies]
-criterion = "0.3"
 rand = "0.7"
 
 [profile.bench]
 debug = true
-
-[[bench]]
-harness = false
-name = "minivec"

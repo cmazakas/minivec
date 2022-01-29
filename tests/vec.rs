@@ -1,4 +1,8 @@
 #![allow(unknown_lints, unused_must_use, clippy::all)]
+#![cfg_attr(
+  feature = "minivec_nightly",
+  feature(min_specialization, trusted_len, inplace_iteration)
+)]
 
 extern crate minivec;
 
@@ -1045,27 +1049,34 @@ fn test_into_iter_leak() {
 //   assert_eq!(i.len(), 0);
 // }
 
-// #[test]
-// fn test_from_iter_specialization() {
-//   let src: MiniVec<usize> = mini_vec![0usize; 1];
-//   let srcptr = src.as_ptr();
-//   let sink = src.into_iter().collect::<MiniVec<_>>();
-//   let sinkptr = sink.as_ptr();
-//   assert_eq!(srcptr, sinkptr);
-// }
+#[cfg(feature = "minivec_nightly")]
+#[test]
+fn test_from_iter_specialization() {
+  let src: MiniVec<usize> = mini_vec![0usize; 1];
+  let srcptr = src.as_ptr();
+  let sink = src.into_iter().collect::<MiniVec<_>>();
+  let sinkptr = sink.as_ptr();
+  assert_eq!(srcptr, sinkptr);
+}
 
-// #[test]
-// fn test_from_iter_partially_drained_in_place_specialization() {
-//   let src: MiniVec<usize> = mini_vec![0usize; 10];
-//   let srcptr = src.as_ptr();
-//   let mut iter = src.into_iter();
-//   iter.next();
-//   iter.next();
-//   let sink = iter.collect::<MiniVec<_>>();
-//   let sinkptr = sink.as_ptr();
-//   assert_eq!(srcptr, sinkptr);
-// }
+#[cfg(feature = "minivec_nightly")]
+#[test]
+fn test_from_iter_partially_drained_in_place_specialization() {
+  let src: MiniVec<usize> = mini_vec![0usize; 10];
+  let srcptr = src.as_ptr();
+  let mut iter = src.into_iter();
+  iter.next();
+  iter.next();
+  let sink = iter.collect::<MiniVec<_>>();
+  let sinkptr = sink.as_ptr();
+  assert_eq!(srcptr, sinkptr);
+}
 
+// Getting the adapters to work here is going to require quite a bit of specialization voodoo using several
+// undocumented traits like `InPlaceIterable`
+//
+
+// #[cfg(feature = "minivec_nightly")]
 // #[test]
 // fn test_from_iter_specialization_with_iterator_adapters() {
 //   fn assert_in_place_trait<T: InPlaceIterable>(_: &T) {}
@@ -1092,6 +1103,7 @@ fn test_into_iter_leak() {
 //   assert_eq!(srcptr, sinkptr as *const usize);
 // }
 
+// #[cfg(feature = "minivec_nightly")]
 // #[test]
 // fn test_from_iter_specialization_head_tail_drop() {
 //   let drop_count: MiniVec<_> = (0..=2).map(|_| Rc::new(())).collect();
@@ -1230,24 +1242,22 @@ fn assert_covariance() {
   }
 }
 
-// this test requires specializtion of FromIterator which we can't do yet
-//
+#[cfg(feature = "minivec_nightly")]
+#[test]
+fn from_into_inner() {
+  let vec = mini_vec![1, 2, 3];
+  let ptr = vec.as_ptr();
+  let vec = vec.into_iter().collect::<MiniVec<_>>();
+  assert_eq!(vec, [1, 2, 3]);
+  assert_eq!(vec.as_ptr(), ptr);
 
-// #[test]
-// fn from_into_inner() {
-//   let vec = mini_vec![1, 2, 3];
-//   let ptr = vec.as_ptr();
-//   let vec = vec.into_iter().collect::<MiniVec<_>>();
-//   assert_eq!(vec, [1, 2, 3]);
-//   assert_eq!(vec.as_ptr(), ptr);
-
-//   let ptr = &vec[1] as *const _;
-//   let mut it = vec.into_iter();
-//   it.next().unwrap();
-//   let vec = it.collect::<MiniVec<_>>();
-//   assert_eq!(vec, [2, 3]);
-//   assert!(ptr != vec.as_ptr());
-// }
+  let ptr = &vec[1] as *const _;
+  let mut it = vec.into_iter();
+  it.next().unwrap();
+  let vec = it.collect::<MiniVec<_>>();
+  assert_eq!(vec, [2, 3]);
+  assert!(ptr != vec.as_ptr());
+}
 
 #[test]
 fn overaligned_allocations() {

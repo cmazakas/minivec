@@ -11,8 +11,8 @@ extern crate alloc;
 /// caller when iterated.
 ///
 pub struct IntoIter<T> {
-  v: crate::MiniVec<T>,
-  pos: *const T,
+  pub(crate) v: crate::MiniVec<T>,
+  pub(crate) pos: *const T,
   marker: core::marker::PhantomData<T>,
 }
 
@@ -137,3 +137,5 @@ impl<T> Iterator for IntoIter<T> {
 
 unsafe impl<T: Send> Send for IntoIter<T> {}
 unsafe impl<T: Sync> Sync for IntoIter<T> {}
+
+// unsafe impl<T> core::iter::InPlaceIterable for IntoIter<T> {}

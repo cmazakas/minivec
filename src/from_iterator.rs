@@ -1,4 +1,4 @@
-use crate::MiniVec;
+use crate::{IntoIter, MiniVec};
 
 #[cfg(not(feature = "minivec_nightly"))]
 impl<T> core::iter::FromIterator<T> for MiniVec<T> {
@@ -48,13 +48,7 @@ where
 }
 
 #[cfg(feature = "minivec_nightly")]
-struct SpecFromIterator<T, I: Iterator<Item = T>> {
-  _a: core::marker::PhantomData<T>,
-  _b: core::marker::PhantomData<I>,
-}
-
-#[cfg(feature = "minivec_nightly")]
-impl<T, I: Iterator<Item = T>> MiniVecFromIter<T, I> for SpecFromIterator<T, I> {
+impl<T, I: Iterator<Item = T>> MiniVecFromIter<T, I> for MiniVec<T> {
   default fn from_iter(iter: I) -> MiniVec<T> {
     struct DropGuard<'a, T> {
       v: &'a mut MiniVec<T>,
@@ -92,7 +86,7 @@ impl<T, I: Iterator<Item = T>> MiniVecFromIter<T, I> for SpecFromIterator<T, I> 
 }
 
 #[cfg(feature = "minivec_nightly")]
-impl<T, I: core::iter::TrustedLen<Item = T>> MiniVecFromIter<T, I> for SpecFromIterator<T, I> {
+impl<T, I: core::iter::TrustedLen<Item = T>> MiniVecFromIter<T, I> for MiniVec<T> {
   fn from_iter(iter: I) -> MiniVec<T> {
     let (lower_bound, _) = iter.size_hint();
     let mut v = MiniVec::<T>::with_capacity(lower_bound);
@@ -108,9 +102,29 @@ impl<T, I: core::iter::TrustedLen<Item = T>> MiniVecFromIter<T, I> for SpecFromI
 }
 
 #[cfg(feature = "minivec_nightly")]
+impl<T> MiniVecFromIter<T, IntoIter<T>> for MiniVec<T> {
+  fn from_iter(mut iter: IntoIter<T>) -> MiniVec<T> {
+    let pos = iter.pos;
+    let ptr = iter.v.as_mut_ptr();
+
+    if pos != ptr {
+      let src = pos;
+      let dst = ptr;
+      let count = iter.v.len();
+
+      unsafe { core::ptr::copy(src, dst, count) };
+    }
+
+    core::mem::forget(iter);
+
+    unsafe { MiniVec::from_raw_part(ptr) }
+  }
+}
+
+#[cfg(feature = "minivec_nightly")]
 impl<T> core::iter::FromIterator<T> for MiniVec<T> {
   fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
     let iter = iter.into_iter();
-    <SpecFromIterator<T, I::IntoIter> as MiniVecFromIter<T, I::IntoIter>>::from_iter(iter)
+    <MiniVec<T> as MiniVecFromIter<T, I::IntoIter>>::from_iter(iter)
   }
 }

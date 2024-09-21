@@ -40,7 +40,7 @@ impl<T> IntoIter<T> {
   /// `as_mut_slice` returns a mutable slice to the remaining elements of the iterator that have not yet been moved.
   ///
   pub fn as_mut_slice(&mut self) -> &mut [T] {
-    let data: *mut T = self.pos as *mut T;
+    let data: *mut T = self.pos.cast_mut();
     unsafe { core::slice::from_raw_parts_mut(data, self.v.len()) }
   }
 }

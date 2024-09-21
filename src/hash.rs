@@ -8,7 +8,7 @@ where
   where
     H: core::hash::Hasher,
   {
-    let this: &[T] = &**self;
+    let this: &[T] = self;
     core::hash::Hash::hash(this, state);
   }
 }

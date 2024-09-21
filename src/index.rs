@@ -7,7 +7,7 @@ where
   type Output = <I as core::slice::SliceIndex<[T]>>::Output;
 
   fn index(&self, index: I) -> &<MiniVec<T> as core::ops::Index<I>>::Output {
-    let v: &[T] = &**self;
+    let v: &[T] = self;
     core::ops::Index::index(v, index)
   }
 }
@@ -17,7 +17,7 @@ where
   I: core::slice::SliceIndex<[T]>,
 {
   fn index_mut(&mut self, index: I) -> &mut <MiniVec<T> as core::ops::Index<I>>::Output {
-    let v: &mut [T] = &mut **self;
+    let v: &mut [T] = self;
     core::ops::IndexMut::index_mut(v, index)
   }
 }

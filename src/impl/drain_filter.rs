@@ -52,7 +52,7 @@ where
 
       if pred_result {
         self.pos += 1;
-        return Some(unsafe { core::ptr::read(val as *mut T) });
+        return Some(unsafe { core::ptr::read(core::ptr::from_mut(val)) });
       }
 
       if self.pos > self.new_len {

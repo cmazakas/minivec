@@ -847,7 +847,7 @@ impl<T> MiniVec<T> {
   {
     let len = vec.len();
     let mut vec = core::mem::ManuallyDrop::new(vec);
-    let vec: &mut MiniVec<T> = &mut *vec;
+    let vec: &mut MiniVec<T> = &mut vec;
     unsafe { core::slice::from_raw_parts_mut(vec.as_mut_ptr(), len) }
   }
 
@@ -959,7 +959,7 @@ impl<T> MiniVec<T> {
       core::ptr::write(dst, value);
     };
 
-    let mut header = self.header_mut();
+    let header = self.header_mut();
     header.len += 1;
 
     unsafe { &mut *dst }
@@ -1192,7 +1192,7 @@ impl<T> MiniVec<T> {
       if should_retain {
         if read != write {
           unsafe {
-            core::mem::swap(&mut *read, &mut *write);
+            core::ptr::swap(read, write);
           }
         }
         write = unsafe { write.add(1) };
@@ -1817,7 +1817,7 @@ impl<T: Clone> MiniVec<T> {
       }
     }
 
-    impl<'a, 'b, T> PanicGuard<'a, T>
+    impl<'a, T> PanicGuard<'a, T>
     where
       T: Clone,
     {

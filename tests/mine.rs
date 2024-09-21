@@ -163,11 +163,11 @@ fn minivec_deref_test() {
   assert_eq!(v[2], 3);
 
   let v = MiniVec::<i32>::new();
-  let xs: &[i32] = &*v;
+  let xs: &[i32] = &v;
   assert_eq!(xs.len(), 0);
 
   let mut v = MiniVec::<i32>::new();
-  let xs: &mut [i32] = &mut *v;
+  let xs: &mut [i32] = &mut v;
   assert_eq!(xs.len(), 0);
 }
 
@@ -475,7 +475,7 @@ fn minivec_extend() {
   let mut v = mini_vec![String::from("1"), String::from("2"), String::from("3")];
   let other = vec![String::from("4"), String::from("5"), String::from("6")];
 
-  v.extend(other.into_iter());
+  v.extend(other);
 
   assert_eq!(
     v,

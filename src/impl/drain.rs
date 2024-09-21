@@ -57,8 +57,8 @@ impl<T> Iterator for Drain<'_, T> {
   }
 
   fn size_hint(&self) -> (usize, Option<usize>) {
-    let len = (self.drain_end_.as_ptr() as *const _ as usize
-      - self.drain_pos_.as_ptr() as *const _ as usize)
+    let len = (self.drain_end_.as_ptr().cast_const() as usize
+      - self.drain_pos_.as_ptr().cast_const() as usize)
       / core::mem::size_of::<T>();
 
     (len, Some(len))

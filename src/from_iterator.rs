@@ -1,4 +1,4 @@
-use crate::{IntoIter, MiniVec};
+use crate::MiniVec;
 
 #[cfg(not(feature = "minivec_nightly"))]
 impl<T> core::iter::FromIterator<T> for MiniVec<T> {

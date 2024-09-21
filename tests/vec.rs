@@ -546,7 +546,10 @@ fn test_cmp() {
 #[test]
 fn test_vec_truncate_drop() {
   static mut DROPS: u32 = 0;
+
+  #[allow(dead_code)]
   struct Elem(i32);
+
   impl Drop for Elem {
     fn drop(&mut self) {
       unsafe {
@@ -1952,7 +1955,7 @@ fn vec_macro_repeating_null_raw_fat_pointer() {
 
   let vec = mini_vec![null_raw_dyn; 1];
   dbg!(ptr_metadata(vec[0]));
-  assert!(vec[0] == null_raw_dyn);
+  assert!(std::ptr::addr_eq(vec[0], null_raw_dyn));
 
   // Polyfill for https://github.com/rust-lang/rfcs/pull/2580
 
@@ -2381,6 +2384,7 @@ fn test_vec_dedup_multiple_ident() {
 
 #[test]
 fn test_vec_dedup_partialeq() {
+  #[allow(dead_code)]
   #[derive(Debug)]
   struct Foo(i32, i32);
 

@@ -29,8 +29,8 @@ where
   T: PartialOrd,
 {
   fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-    let x: &[T] = &**self;
-    let y: &[T] = &**other;
+    let x: &[T] = self;
+    let y: &[T] = other;
     PartialOrd::partial_cmp(x, y)
   }
 }

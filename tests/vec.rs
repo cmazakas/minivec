@@ -1585,7 +1585,6 @@ fn test_reserve_exact() {
 
 #[test]
 #[cfg_attr(miri, ignore)] // Miri does not support signalling OOM
-#[cfg_attr(target_os = "android", ignore)] // Android used in CI has a broken dlmalloc
 fn test_try_reserve() {
   use minivec::TryReserveErrorKind::*;
 
@@ -1597,14 +1596,8 @@ fn test_try_reserve() {
   // * overflow may trigger when adding `len` to `cap` (in number of elements)
   // * overflow may trigger when multiplying `new_cap` by size_of::<T> (to get bytes)
 
-  const MAX_CAP: usize = isize::MAX as usize;
+  const MAX_CAP: usize = (isize::MAX as usize - 7) - 16;
   const MAX_USIZE: usize = usize::MAX;
-
-  // On 16/32-bit, we check that allocations don't exceed isize::MAX,
-  // on 64-bit, we assume the OS will give an OOM for such a ridiculous size.
-  // Any platform that succeeds for these requests is technically broken with
-  // ptr::offset because LLVM is the worst.
-  let guards_against_isize = usize::BITS < 64;
 
   {
     // Note: basic stuff is checked by test_reserve
@@ -1619,30 +1612,16 @@ fn test_try_reserve() {
       panic!("isize::MAX shouldn't trigger an overflow!");
     }
 
-    if guards_against_isize {
-      // Check isize::MAX + 1 does count as overflow
-      if let Err(CapacityOverflow) = empty_bytes.try_reserve(MAX_CAP + 1).map_err(|e| e.kind()) {
-      } else {
-        panic!("isize::MAX + 1 should trigger an overflow!");
-      }
-
-      // Check usize::MAX does count as overflow
-      if let Err(CapacityOverflow) = empty_bytes.try_reserve(MAX_USIZE).map_err(|e| e.kind()) {
-      } else {
-        panic!("usize::MAX should trigger an overflow!");
-      }
+    // Check isize::MAX + 1 does count as overflow
+    if let Err(CapacityOverflow) = empty_bytes.try_reserve(MAX_CAP + 1).map_err(|e| e.kind()) {
     } else {
-      // Check isize::MAX + 1 is an OOM
-      if let Err(AllocError { .. }) = empty_bytes.try_reserve(MAX_CAP + 1).map_err(|e| e.kind()) {
-      } else {
-        panic!("isize::MAX + 1 should trigger an OOM!");
-      }
+      panic!("isize::MAX + 1 should trigger an overflow!");
+    }
 
-      // Check usize::MAX is an OOM
-      if let Err(AllocError { .. }) = empty_bytes.try_reserve(MAX_USIZE).map_err(|e| e.kind()) {
-      } else {
-        panic!("usize::MAX should trigger an OOM!");
-      }
+    // Check usize::MAX does count as overflow
+    if let Err(CapacityOverflow) = empty_bytes.try_reserve(MAX_USIZE).map_err(|e| e.kind()) {
+    } else {
+      panic!("usize::MAX should trigger an overflow!");
     }
   }
 
@@ -1656,17 +1635,12 @@ fn test_try_reserve() {
     if let Err(CapacityOverflow) = ten_bytes.try_reserve(MAX_CAP - 10).map_err(|e| e.kind()) {
       panic!("isize::MAX shouldn't trigger an overflow!");
     }
-    if guards_against_isize {
-      if let Err(CapacityOverflow) = ten_bytes.try_reserve(MAX_CAP - 9).map_err(|e| e.kind()) {
-      } else {
-        panic!("isize::MAX + 1 should trigger an overflow!");
-      }
+
+    if let Err(CapacityOverflow) = ten_bytes.try_reserve(MAX_CAP - 9).map_err(|e| e.kind()) {
     } else {
-      if let Err(AllocError { .. }) = ten_bytes.try_reserve(MAX_CAP - 9).map_err(|e| e.kind()) {
-      } else {
-        panic!("isize::MAX + 1 should trigger an OOM!");
-      }
+      panic!("isize::MAX + 1 should trigger an overflow!");
     }
+
     // Should always overflow in the add-to-len
     if let Err(CapacityOverflow) = ten_bytes.try_reserve(MAX_USIZE).map_err(|e| e.kind()) {
     } else {
@@ -1684,17 +1658,12 @@ fn test_try_reserve() {
     if let Err(CapacityOverflow) = ten_u32s.try_reserve(MAX_CAP / 4 - 10).map_err(|e| e.kind()) {
       panic!("isize::MAX shouldn't trigger an overflow!");
     }
-    if guards_against_isize {
-      if let Err(CapacityOverflow) = ten_u32s.try_reserve(MAX_CAP / 4 - 9).map_err(|e| e.kind()) {
-      } else {
-        panic!("isize::MAX + 1 should trigger an overflow!");
-      }
+
+    if let Err(CapacityOverflow) = ten_u32s.try_reserve(MAX_CAP / 4 - 9).map_err(|e| e.kind()) {
     } else {
-      if let Err(AllocError { .. }) = ten_u32s.try_reserve(MAX_CAP / 4 - 9).map_err(|e| e.kind()) {
-      } else {
-        panic!("isize::MAX + 1 should trigger an OOM!");
-      }
+      panic!("isize::MAX + 1 should trigger an overflow!");
     }
+
     // Should fail in the mul-by-size
     if let Err(CapacityOverflow) = ten_u32s.try_reserve(MAX_USIZE - 20).map_err(|e| e.kind()) {
     } else {
@@ -1705,17 +1674,14 @@ fn test_try_reserve() {
 
 #[test]
 #[cfg_attr(miri, ignore)] // Miri does not support signalling OOM
-#[cfg_attr(target_os = "android", ignore)] // Android used in CI has a broken dlmalloc
 fn test_try_reserve_exact() {
   use minivec::TryReserveErrorKind::*;
 
   // This is exactly the same as test_try_reserve with the method changed.
   // See that test for comments.
 
-  const MAX_CAP: usize = isize::MAX as usize;
+  const MAX_CAP: usize = (isize::MAX as usize - 7) - 16;
   const MAX_USIZE: usize = usize::MAX;
-
-  let guards_against_isize = size_of::<usize>() < 8;
 
   {
     let mut empty_bytes: MiniVec<u8> = MiniVec::new();
@@ -1727,38 +1693,20 @@ fn test_try_reserve_exact() {
       panic!("isize::MAX shouldn't trigger an overflow!");
     }
 
-    if guards_against_isize {
-      if let Err(CapacityOverflow) = empty_bytes
-        .try_reserve_exact(MAX_CAP + 1)
-        .map_err(|e| e.kind())
-      {
-      } else {
-        panic!("isize::MAX + 1 should trigger an overflow!");
-      }
-
-      if let Err(CapacityOverflow) = empty_bytes
-        .try_reserve_exact(MAX_USIZE)
-        .map_err(|e| e.kind())
-      {
-      } else {
-        panic!("usize::MAX should trigger an overflow!");
-      }
+    if let Err(CapacityOverflow) = empty_bytes
+      .try_reserve_exact(MAX_CAP + 1)
+      .map_err(|e| e.kind())
+    {
     } else {
-      if let Err(AllocError { .. }) = empty_bytes
-        .try_reserve_exact(MAX_CAP + 1)
-        .map_err(|e| e.kind())
-      {
-      } else {
-        panic!("isize::MAX + 1 should trigger an OOM!");
-      }
+      panic!("isize::MAX + 1 should trigger an overflow!");
+    }
 
-      if let Err(AllocError { .. }) = empty_bytes
-        .try_reserve_exact(MAX_USIZE)
-        .map_err(|e| e.kind())
-      {
-      } else {
-        panic!("usize::MAX should trigger an OOM!");
-      }
+    if let Err(CapacityOverflow) = empty_bytes
+      .try_reserve_exact(MAX_USIZE)
+      .map_err(|e| e.kind())
+    {
+    } else {
+      panic!("usize::MAX should trigger an overflow!");
     }
   }
 
@@ -1777,22 +1725,12 @@ fn test_try_reserve_exact() {
     {
       panic!("isize::MAX shouldn't trigger an overflow!");
     }
-    if guards_against_isize {
-      if let Err(CapacityOverflow) = ten_bytes
-        .try_reserve_exact(MAX_CAP - 9)
-        .map_err(|e| e.kind())
-      {
-      } else {
-        panic!("isize::MAX + 1 should trigger an overflow!");
-      }
+    if let Err(CapacityOverflow) = ten_bytes
+      .try_reserve_exact(MAX_CAP - 9)
+      .map_err(|e| e.kind())
+    {
     } else {
-      if let Err(AllocError { .. }) = ten_bytes
-        .try_reserve_exact(MAX_CAP - 9)
-        .map_err(|e| e.kind())
-      {
-      } else {
-        panic!("isize::MAX + 1 should trigger an OOM!");
-      }
+      panic!("isize::MAX + 1 should trigger an overflow!");
     }
 
     if let Err(CapacityOverflow) = ten_bytes.try_reserve_exact(MAX_USIZE).map_err(|e| e.kind()) {
@@ -1816,22 +1754,12 @@ fn test_try_reserve_exact() {
     {
       panic!("isize::MAX shouldn't trigger an overflow!");
     }
-    if guards_against_isize {
-      if let Err(CapacityOverflow) = ten_u32s
-        .try_reserve_exact(MAX_CAP / 4 - 9)
-        .map_err(|e| e.kind())
-      {
-      } else {
-        panic!("isize::MAX + 1 should trigger an overflow!");
-      }
+    if let Err(CapacityOverflow) = ten_u32s
+      .try_reserve_exact(MAX_CAP / 4 - 9)
+      .map_err(|e| e.kind())
+    {
     } else {
-      if let Err(AllocError { .. }) = ten_u32s
-        .try_reserve_exact(MAX_CAP / 4 - 9)
-        .map_err(|e| e.kind())
-      {
-      } else {
-        panic!("isize::MAX + 1 should trigger an OOM!");
-      }
+      panic!("isize::MAX + 1 should trigger an overflow!");
     }
 
     if let Err(CapacityOverflow) = ten_u32s

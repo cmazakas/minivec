@@ -74,7 +74,7 @@ mod serde;
 
 use crate::r#impl::drain::make_drain_iterator;
 use crate::r#impl::drain_filter::make_drain_filter_iterator;
-use crate::r#impl::helpers::{make_layout, max_align, max_elems, next_aligned, next_capacity};
+use crate::r#impl::helpers::{make_layout, max_align, next_aligned, next_capacity, prev_aligned};
 use crate::r#impl::splice::make_splice_iterator;
 
 pub use crate::r#impl::{Drain, DrainFilter, IntoIter, Splice};
@@ -1633,19 +1633,21 @@ impl<T> MiniVec<T> {
       return Ok(());
     }
 
+    let alignment = max_align::<T>();
+    let max = prev_aligned(isize::MAX as usize, alignment)
+      - next_aligned(core::mem::size_of::<Header>(), alignment);
+
     let mut new_capacity = next_capacity::<T>(capacity);
     while new_capacity < total_required {
       new_capacity = next_capacity::<T>(new_capacity);
     }
 
-    let max_elems = max_elems::<T>();
-
-    if !self.is_empty() && total_required > max_elems {
-      return Err(From::from(TryReserveErrorKind::CapacityOverflow));
-    }
-
-    if additional > max_elems {
-      new_capacity = max_elems;
+    if new_capacity.saturating_mul(core::mem::size_of::<T>()) > max {
+      if total_required.saturating_mul(core::mem::size_of::<T>()) <= max {
+        new_capacity = total_required;
+      } else {
+        return Err(From::from(TryReserveErrorKind::CapacityOverflow));
+      }
     }
 
     self.grow(new_capacity)
@@ -1679,19 +1681,15 @@ impl<T> MiniVec<T> {
       return Ok(());
     }
 
-    let mut new_capacity = total_required;
+    let alignment = max_align::<T>();
+    let max = prev_aligned(isize::MAX as usize, alignment)
+      - next_aligned(core::mem::size_of::<Header>(), alignment);
 
-    let max_elems = max_elems::<T>();
-
-    if !self.is_empty() && total_required > max_elems {
+    if total_required.saturating_mul(core::mem::size_of::<T>()) > max {
       return Err(From::from(TryReserveErrorKind::CapacityOverflow));
     }
 
-    if total_required > max_elems {
-      new_capacity = max_elems;
-    }
-
-    self.grow(new_capacity)
+    self.grow(total_required)
   }
 
   /// `with_capacity` is a static factory function that returns a `MiniVec` that contains space
